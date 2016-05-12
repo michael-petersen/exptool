@@ -15,6 +15,65 @@ O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',co
 
 tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
 
+XX,YY = np.meshgrid(np.linspace(-0.05,0.05,63),np.linspace(-0.05,0.05,63))
+
+plt.figure(0)
+plt.contourf(XX,YY,np.log10(np.rot90(np.sum(tt,axis=0),1)),36)
+plt.axis([-0.04,0.04,-0.04,0.04])
+plt.text(-0.03,0.03,'Fiducial, T=2.0')
+plt.xticks([-0.03,0.0,0.03])
+plt.yticks([-0.03,0.0,0.03])
+plt.savefig('/Users/mpetersen/Desktop/041916_2.png')
+
+
+
+
+plt.figure(1)
+O = psp_io.Input('/Users/mpetersen/Research/NBody/OUT.run013p.01000',comp='star')
+
+tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
+
+plt.contourf(XX,YY,np.log10(np.sum(tt,axis=0)),36)
+plt.axis([-0.04,0.04,-0.04,0.04])
+plt.text(-0.03,0.03,'StellarDisk, T=2.0')
+plt.xticks([-0.03,0.0,0.03])
+plt.yticks([-0.03,0.0,0.03])
+plt.savefig('/Users/mpetersen/Desktop/041916_2.png')
+
+
+
+
+plt.figure(2)
+O = psp_io.Input('/Users/mpetersen/Research/NBody/OUT.run013p.01000',comp='darkdisk')
+
+tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
+
+plt.contourf(XX,YY,np.log10(np.sum(tt,axis=0)),36)
+plt.axis([-0.04,0.04,-0.04,0.04])
+plt.text(-0.03,0.03,'DarkDisk, T=2.0')
+plt.xticks([-0.03,0.0,0.03])
+plt.yticks([-0.03,0.0,0.03])
+plt.savefig('/Users/mpetersen/Desktop/041916_3.png')
+
+
+
+
+plt.figure(3)
+O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.00300',comp='star')
+
+tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
+
+plt.contourf(XX,YY,np.log10(np.sum(tt,axis=0)),36)
+plt.axis([-0.04,0.04,-0.04,0.04])
+plt.text(-0.03,0.03,'Fiducial, T=0.6')
+plt.xticks([-0.03,0.0,0.03])
+plt.yticks([-0.03,0.0,0.03])
+plt.savefig('/Users/mpetersen/Desktop/041916_4.png')
+
+
+
+
+plt.contourf(np.sum(tt,axis=2))
 
 xmin,xmax = np.min(O.xpos),np.max(O.xpos)
 ymin,ymax = np.min(O.ypos),np.max(O.ypos)

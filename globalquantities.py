@@ -16,6 +16,7 @@ import globalquantities
 
 
 rbins=np.linspace(0.,0.08,200)
+Q = globalquantities.GQuantities('/scratch/mpetersen/Disk074a/filelist.dat',comp='star',rbins=rbins,verbose=2)
 
 # Remember (in the original version) that the infile in the call below is a data file that is a list of files.
 # That is, a text file where the first (only) line is the file you want to open.
@@ -48,15 +49,17 @@ blenp = phase_change(Q)
 fourmax = np.zeros(1000)
 blenf = np.zeros(1000)
 blenp = np.zeros(1000)
+pmax = np.zeros(1000)
 k = 0
-for j in range(0,1000,10):
-     filename = '/scratch/mpetersen/Disk064a/OUT.run064a.%05i' %j
+for j in range(210,1000,20):
+     filename = '/scratch/mpetersen/Disk074a/OUT.run074a.%05i' %j
      print filename
      rbins=np.linspace(0.,0.04,100)
      Q = globalquantities.GQuantities(filename,comp='star',rbins=rbins,verbose=2,multi=False)
      globalquantities.GQuantities.compute_fourier(Q)
      barst = (Q.aval[2,0,:]**2. + Q.bval[2,0,:]**2.)**0.5/Q.aval[0,0,:]
      fourmax[k] = rbins[barst.argmax()]
+     pmax[k] = np.max(barst)
      blenf[k] = globalquantities.frac_power(Q)
      blenp[k] = globalquantities.phase_change(Q)
      k+=1
@@ -65,6 +68,7 @@ for j in range(0,1000,10):
 fourmax = fourmax[0:k]
 blenf = blenf[0:k]
 blenp = blenp[0:k]
+pmax = pmax[0:k]
 
 
 '''

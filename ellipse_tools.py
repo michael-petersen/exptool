@@ -33,7 +33,7 @@ ellipse_tools.EllipseFinder.generate_flat_field(E,O.xpos,O.ypos,O.zpos,O.mass,xb
 
 # plot the contours
 plt.figure(0)
-plt.contourf(E.xarr,E.yarr,E.posarr,36)
+plt.contourf(E.xarr,E.yarr,E.posarr.T,36)
 
 
 # add a field of ellipses
@@ -42,6 +42,8 @@ ellipse_tools.EllipseFinder.add_ellipse_field(E,check=0,cbins=80)
 
 
 bar_length_ellipse = ellip_drop(E.AVALS,E.BVALS,drop=0.4)
+
+
 
 # would like to compare the the bar extent in all simulations with the ellipse fit to see if they are different
 # Look at any orbit that passes into the bar ellipse and take the time average of those, plus time average of angular momentum with some thoughts about what it means
@@ -279,14 +281,23 @@ class genEllipse:
 
 def ellip_drop(A,B,drop=0.4):
     found = False
-    j = 1
+    j = 2
     while found==False:
         d = (1.-B[j-1]/A[j-1]) - (1.-B[j]/A[j])
         if d > drop:
             found = True
             print 'INDEX VALUE is %i' %(j-1)
         j += 1
+        if j==len(A):
+            found = True
+            j=2
     return A[j-2]
+
+
+
+def max_ellip_drop(A,B):
+    edrop = np.ediff1d((1.-B/A),to_end=0.)
+    return A[ np.where(np.min(edrop)==edrop)[0]]
 
         
 
