@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import _cntr as cntr
 from numpy.linalg import eig, inv
 import matplotlib.pyplot as plt
-
+import kde_3d
 from scipy.optimize import curve_fit
 
 
@@ -19,6 +19,9 @@ O = psp_io.Input('/Volumes/SIMSET/OUT.run064a.00800',comp='star')
 
 O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='star')
 
+
+O = psp_io.Input('/scratch/mpetersen/Disk013/OUT.run013p.01000',comp='star')
+
 #
 # Two methods to fit ellipses to a simulation output.
 #
@@ -28,16 +31,21 @@ O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',co
 E = ellipse_tools.EllipseFinder()
 
 # make a field to fit ellipses to
-ellipse_tools.EllipseFinder.generate_flat_field(E,O.xpos,O.ypos,O.zpos,O.mass,xbins=np.linspace(-0.05,0.05,51),normamass=True,logvals=True)
+import time
+t1 = time.time()
+E.generate_flat_field_kde(O.xpos,O.ypos,O.zpos,O.mass,xbins=np.linspace(-0.05,0.05,121),normamass=True,logvals=True)
+print time.time()-t1
+
+
 # several fields are now defined: E.xarr, E.yarr, E.posarr
 
 # plot the contours
 plt.figure(0)
-plt.contourf(E.xarr,E.yarr,E.posarr.T,36)
+plt.contourf(E.xarr,E.yarr,E.posarr,36,cmap=cm.gnuplot)
 
 
 # add a field of ellipses
-ellipse_tools.EllipseFinder.add_ellipse_field(E,check=0,cbins=80)
+E.add_ellipse_field(E,check=0,cbins=80)
 # many more fields are defined now, some examples are below
 
 
@@ -137,7 +145,7 @@ print 'The length of the bar in ellipse measurements is %4.3f' %bar_length_ellip
 T = ellipse_tools.genEllipse()
 
 # use the simulation output from above to 
-ellipse_tools.genEllipse.fitEllipse(T,O,xbins=np.linspace(-0.05,0.05,51),loggy=True)
+T.fitEllipse(O,xbins=np.linspace(-0.05,0.05,51),loggy=True)
 
 j=24
 _ = plt.plot(T.R[j]*np.cos(T.TH[j]+T.ANG[j]-np.pi/2.-0.08)+T.CEN[j,0],T.R[j]*np.sin(T.TH[j]+T.ANG[j]-np.pi/2.-0.08)+T.CEN[j,1],color='black',lw=1.)
@@ -188,6 +196,16 @@ def gen_ellipse(th,a,b,c):
 
 
 
+def fixed_ellipse(th,a,b):
+    # returns c=2 ellipse in polar coordinates
+    xcomp = ( abs(np.cos(th))**2.0) / a**2.0
+    ycomp = ( abs(np.sin(th))**2.0) / b**2.0
+    gell =  ( (xcomp + ycomp) )**(-1./2.0)
+    return gell
+
+
+
+
 
 class genEllipse:
 
@@ -195,7 +213,7 @@ class genEllipse:
     # least-squares (and soon to be Fourier) fitting of generalized ellipses
     #
     
-    def fitEllipse(self,O,thres=200,xbins=np.linspace(-0.03,0.03,51),loggy=False):
+    def fitEllipse(self,O,thres=200,xbins=np.linspace(-0.03,0.03,51),loggy=False,generalize=True):
         # here, I have made the input a PSP call...but this could be generalized better.
         
         #
@@ -203,7 +221,7 @@ class genEllipse:
         #
         E = EllipseFinder()
 
-        EllipseFinder.generate_flat_field(E,O.xpos,O.ypos,O.zpos,O.mass,xbins=xbins,logvals=loggy)
+        EllipseFinder.generate_flat_field_kde(E,O.xpos,O.ypos,O.zpos,O.mass,xbins=xbins,logvals=loggy)
 
         ncbins = 50
         EllipseFinder.add_ellipse_field(E,check=0,cbins=ncbins)
@@ -241,10 +259,16 @@ class genEllipse:
             #
             # perform the fitting
             #
-            popt, pcov = curve_fit(gen_ellipse, th2,rr)
-
             thind = np.linspace(0.,2.*np.pi,thres)
-            rind = gen_ellipse(thind,popt[0],popt[1],popt[2])
+
+            if generalize:
+                popt, pcov = curve_fit(gen_ellipse, th2,rr)
+
+                rind = gen_ellipse(thind,popt[0],popt[1],popt[2])
+
+            else:
+                popt, pcov = curve_fit(fixed_ellipse, th2, rr)
+                rind = fixed_ellipse(thind,popt[0],popt[1])
 
             # could put in a block for avals that fit too small
             atmp = np.max([popt[0],popt[1]])
@@ -256,7 +280,7 @@ class genEllipse:
                 self.TH[k] = thind
                 self.A[k]  = atmp
                 self.B[k]  = btmp
-                self.C[k]  = popt[2]
+                if generalize: self.C[k]  = popt[2]
                 self.CEN[k] = [E.CENTER[j][0],E.CENTER[j][1]]
                 self.ANG[k] = E.PHITALLY[j]
 
@@ -267,7 +291,7 @@ class genEllipse:
         self.TH = self.TH[0:k]
         self.A = self.A[0:k]
         self.B = self.B[0:k]
-        self.C = self.C[0:k]
+        if generalize: self.C = self.C[0:k]
         self.CEN = self.CEN[0:k]
         self.ANG = self.ANG[0:k]
             
@@ -409,7 +433,94 @@ class EllipseFinder():
         if logvals:
             self.posarr = np.log10(self.posarr+np.min(massuse))
 
-                                         
+
+    def generate_flat_field_kde(self,xpos,ypos,zpos,mass,zcut=0.1,xres=30,xbins=[0],normamass=False,numdens=False,logvals=False):
+
+        # ToDo : add support for zpos to make slices.
+
+        if xbins[0] == 0:
+            print 'EllipseFinder.generate_flat_field: xbins is not user specified. using default...'
+            
+            self.xbins = np.linspace(-np.max(xpos),np.max(xpos),xres)
+
+        else:
+
+            self.xbins = xbins
+            xres = len(self.xbins)
+
+        if normamass:
+            massuse = mass/np.median(mass)
+        else:
+            massuse = mass
+
+
+        tt = kde_3d.fast_kde(xpos,ypos,zpos, gridsize=(xres+2,xres+2,xres+2), extents=[np.min(xbins),np.max(xbins),np.min(xbins),np.max(xbins),-zcut,zcut], nocorrelation=False, weights=massuse)
+        
+        self.posarr = np.sum(tt[1:(xres+1),1:(xres+1),1:(xres+1)],axis=0)
+
+        self.xarr,self.yarr = np.meshgrid(self.xbins,self.xbins)
+
+
+        
+        #self.xarr,self.yarr,self.posarr = helpers.quick_contour(self.xbins,self.xbins,xpos,ypos,massuse)
+
+        if numdens:
+            print 'ellipse_tools.generate_flat_field_kde: numdens is not currently accepted.'
+            #xt,yt,pt = helpers.quick_contour(self.xbins,self.xbins,xpos,ypos,np.ones(len(xpos)))
+        
+        if logvals:
+            self.posarr = np.log10(self.posarr+np.min(massuse))
+
+
+            
+
+    def determine_contour_levels(self,cbins=50):
+
+        # cbins is the number of output contours desired
+
+
+        # use matplotlib's marching squares contour finder for this. to be improved with a better algorithm later...
+        c = cntr.Cntr(self.xarr,self.yarr,self.posarr)
+
+
+        # how about a smarter way to decide where to lay the contours?
+        startval = 0.90*np.max(self.posarr)                  # maximum limit for contours
+
+        eps = 1.e-10*np.max(self.posarr)                     # make an epsilon in case there are zero bins
+        endval = 1.0*np.min(self.posarr) + eps               # minimum limit for contours
+
+        stepsize = (startval-endval)/1000.
+        #print 'The INITIAL Stepsize is ',stepsize,'(',startval,endval,')'
+
+        # iterate down and up to find where contours exist       
+        conlevels = np.zeros(1000)
+
+        indval = startval
+        j = 0
+        
+        while (indval > endval):
+            res = c.trace(indval)
+            if (len(res) > 0):             # does the contour level exist?
+                if (len(res[0])>10):       # only accept those with greater than 10 vertices
+                    conlevels[j] = indval
+                    j += 1
+                    
+            indval -= stepsize
+            
+
+        cvals = conlevels[0:j]            # truncate list to number of valid contours
+
+
+        # redefine startval and stepsize
+        startval = np.max(cvals)
+        endval = np.min(cvals)
+        stepsize = (startval-endval)/float(cbins)
+        #print 'The FINAL Stepsize is ',stepsize,'(',startval,endval,')'
+
+        # define the contour levels
+        self.clevels = np.array([ (stepsize*x + startval) for x in range(0,cbins)])
+
+        
                         
     def add_ellipse_field(self,xarr=None,yarr=None,posarr=None,check=0,cbins=50):
 

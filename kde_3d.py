@@ -11,21 +11,49 @@ and http://stackoverflow.com/questions/18921419/implementing-a-2d-fft-based-kern
 import psp_io
 import kde_3d
 
+O = psp_io.Input('/scratch/mpetersen/Disk014/OUT.run014e.00089',comp='star')
+
+
 O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='star')
 
-tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
+O = psp_io.Input('/scratch/mpetersen/Disk013/OUT.run013p.01000',comp='star')
 
-XX,YY = np.meshgrid(np.linspace(-0.05,0.05,63),np.linspace(-0.05,0.05,63))
+
+extent = 0.06
+
+tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(128,128,128), extents=[-extent,extent,-extent,extent,-0.05,0.05], nocorrelation=False, weights=O.mass)
+
+XX,YY = np.meshgrid(np.linspace(-extent,extent,127),np.linspace(-extent,extent,127))
+
+
+
 
 plt.figure(0)
-plt.contourf(XX,YY,np.log10(np.rot90(np.sum(tt,axis=0),1)),36)
-plt.axis([-0.04,0.04,-0.04,0.04])
+plt.contourf(XX,YY,np.log10(np.sum(tt,axis=1)),32,cmap=cm.gnuplot)
+
+
+plt.axis([-extent,extent,-extent,extent])
 plt.text(-0.03,0.03,'Fiducial, T=2.0')
 plt.xticks([-0.03,0.0,0.03])
 plt.yticks([-0.03,0.0,0.03])
+
+
+
+#
+# try going back to the beginning with self-consistency of.
+#
+
+#
+# also try building the potential reconstructions with eof_reader
+#
+
+
+
 plt.savefig('/Users/mpetersen/Desktop/041916_2.png')
 
 
+O = psp_io.Input('/scratch/mpetersen/Disk013/OUT.run013p.01000',comp='star',nout=100000)
+plt.scatter(O.xpos,O.ypos,color='black',s=.1)
 
 
 plt.figure(1)
@@ -203,7 +231,7 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
     # Calculate the covariance matrix (in pixel coords)
     cov = np.cov(xyzi)
 
-    print cov
+    #print cov
     
     # make all off-diagonals zero
     if nocorrelation:
@@ -262,3 +290,131 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
         return kde1
     else:
         return np.flipud(grid)
+
+
+
+
+
+def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None):
+    """
+    Performs a gaussian kernel density estimate over a regular grid using a
+    convolution of the gaussian kernel with a 2D histogram of the data.
+
+    This function is typically several orders of magnitude faster than 
+    scipy.stats.kde.gaussian_kde for large (>1e7) numbers of points and 
+    produces an essentially identical result.
+
+    Input:
+        x: The x-coords of the input data points
+        y: The y-coords of the input data points
+        gridsize: (default: 200x200) A (nx,ny) tuple of the size of the output 
+            grid
+        extents: (default: extent of input data) A (xmin, xmax, ymin, ymax)
+            tuple of the extents of output grid
+        nocorrelation: (default: False) If True, the correlation between the
+            x and y coords will be ignored when preforming the KDE.
+        weights: (default: None) An array of the same shape as x & y that 
+            weighs each sample (x_i, y_i) by each value in weights (w_i).
+            Defaults to an array of ones the same size as x & y.
+    Output:
+        A gridded 2D kernel density estimate of the input points. 
+    """
+    #---- Setup --------------------------------------------------------------
+    x, y = np.asarray(x), np.asarray(y)
+    x, y = np.squeeze(x), np.squeeze(y)
+    
+    if x.size != y.size:
+        raise ValueError('Input x & y arrays must be the same size!')
+
+    nx, ny = gridsize
+    n = x.size
+
+    if weights is None:
+        # Default: Weight all points equally
+        weights = np.ones(n)
+    else:
+        weights = np.squeeze(np.asarray(weights))
+        if weights.size != x.size:
+            raise ValueError('Input weights must be an array of the same size'
+                    ' as input x & y arrays!')
+
+    # Default extents are the extent of the data
+    if extents is None:
+        xmin, xmax = x.min(), x.max()
+        ymin, ymax = y.min(), y.max()
+    else:
+        xmin, xmax, ymin, ymax = map(float, extents)
+    dx = (xmax - xmin) / (nx - 1)
+    dy = (ymax - ymin) / (ny - 1)
+
+    #---- Preliminary Calculations -------------------------------------------
+
+    # First convert x & y over to pixel coordinates
+    # (Avoiding np.digitize due to excessive memory usage!)
+    xyi = np.vstack((x,y)).T
+    xyi -= [xmin, ymin]
+    xyi /= [dx, dy]
+    xyi = np.floor(xyi, xyi).T
+
+    # Next, make a 2D histogram of x & y
+    # Avoiding np.histogram2d due to excessive memory usage with many points
+    grid = sp.sparse.coo_matrix((weights, xyi), shape=(nx, ny)).toarray()
+
+    # Calculate the covariance matrix (in pixel coords)
+    cov = np.cov(xyi)
+
+    if nocorrelation:
+        cov[1,0] = 0
+        cov[0,1] = 0
+
+    # Scaling factor for bandwidth
+    scotts_factor = np.power(n, -1.0 / 6) # For 2D
+
+    #---- Make the gaussian kernel -------------------------------------------
+
+    # First, determine how big the kernel needs to be
+    std_devs = np.diag(np.sqrt(cov))
+    kern_nx, kern_ny = np.round(scotts_factor * 2 * np.pi * std_devs)
+
+    # Determine the bandwidth to use for the gaussian kernel
+    inv_cov = np.linalg.inv(cov * scotts_factor**2) 
+
+    # x & y (pixel) coords of the kernel grid, with <x,y> = <0,0> in center
+    xx = np.arange(kern_nx, dtype=np.float) - kern_nx / 2.0
+    yy = np.arange(kern_ny, dtype=np.float) - kern_ny / 2.0
+    xx, yy = np.meshgrid(xx, yy)
+
+    # Then evaluate the gaussian function on the kernel grid
+    kernel = np.vstack((xx.flatten(), yy.flatten()))
+    kernel = np.dot(inv_cov, kernel) * kernel 
+    kernel = np.sum(kernel, axis=0) / 2.0 
+    kernel = np.exp(-kernel) 
+    kernel = kernel.reshape((kern_ny, kern_nx))
+
+    #---- Produce the kernel density estimate --------------------------------
+
+    # Convolve the gaussian kernel with the 2D histogram, producing a gaussian
+    # kernel density estimate on a regular grid
+    grid = sp.signal.convolve2d(grid, kernel, mode='same', boundary='fill').T
+
+    # Normalization factor to divide result by so that units are in the same
+    # units as scipy.stats.kde.gaussian_kde's output.  
+    norm_factor = 2 * np.pi * cov * scotts_factor**2
+    norm_factor = np.linalg.det(norm_factor)
+    norm_factor = n * dx * dy * np.sqrt(norm_factor)
+
+    # Normalize the result
+    grid /= norm_factor
+
+    return np.flipud(grid)
+    
+    
+'''
+# for that pesky np.sqrt, if desired
+    
+    with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+
+
+#http://stackoverflow.com/questions/29347987/why-cant-i-suppress-numpy-warnings
+'''

@@ -17,80 +17,25 @@ import helpers
 import trapping
 
 B = trapping.BarDetermine()
-B = trapping.BarDetermine.read_bar(B,'/scratch/mpetersen/disk064abar.dat')
+B.read_bar('/scratch/mpetersen/disk064abar.dat')
+
+
 
 #B = trapping.BarDetermine('/scratch/mpetersen/Disk007/testfiles3.dat',verbose=2)
 
 
 D = trapping.BarDetermine()
-trapping.BarDetermine.accept_inputs(D,'/scratch/mpetersen/Disk013/run013pfiles.dat',verbose=2)
+D.accept_inputs('/scratch/mpetersen/Disk013/run013pfiles.dat',verbose=2)
 
-
-trapping.BarDetermine.unwrap_bar_position(D)
-trapping.BarDetermine.frequency_and_derivative(D,smth_order=0) # go ahead and print the whole thing, can always re-run
-
-
-
-trapping.BarDetermine.print_bar(D,'/scratch/mpetersen/disk013pbar.dat')
+D.unwrap_bar_position()
+D.frequency_and_derivative(smth_order=0) # go ahead and print the whole thing, can always re-run
+D.print_bar('/scratch/mpetersen/disk013pbar.dat')
 
 
 
 trapping.BarDetermine.frequency_and_derivative(B,smth_order=2)
 trapping.BarDetermine.frequency_and_derivative(C,smth_order=2)
 
-plt.figure(0)
-plt.plot(B.bar_time,B.bar_deriv,color='gray')
-plt.plot(C.bar_time,C.bar_deriv,color='black')
-plt.xlabel('Time',size=20)
-plt.ylabel('$\\Omega_p$',size=20)
-plt.axis([0.4,1.6,0.,100])
-
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-# this whole exercise takes about 30 seconds
-Oa = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00719',comp='star',verbose=2)
-Ob = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00720',comp='star',verbose=2)
-Oc = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00721',comp='star',verbose=2)
-
-Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
-Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
-Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
-
-aps = np.logical_and(Ob.R>Oa.R,Ob.R>Oc.R)
-
-plt.figure(0)
-#plt.scatter(Ob.xpos[aps],Ob.ypos[aps],color='black',s=1.)
-
-
-yes = np.where( (Ob.R[aps]>0.003) & (Ob.R[aps]<0.01) )[0]
-
-aps_th = np.arctan(Ob.ypos[aps[yes]]/Ob.xpos[aps[yes]])
-
-# bin up the theta positions
-binpos = np.linspace(-np.pi/2.,np.pi/2.,60)
-hist,bins = np.histogram(aps_th,bins=binpos)
-
-plt.plot(bins[0:-1],hist)
-# find the maximum
-
-
-# could try with phase
-
-yes = np.where( (Ob.R>0.004) & (Ob.R<0.009) )[0]
-aval = np.sum(np.cos(2.*np.arctan2(Ob.ypos[yes],Ob.xpos[yes])))
-bval = np.sum(np.sin(2.*np.arctan2(Ob.ypos[yes],Ob.xpos[yes])))
-
-print np.arctan2(bval,aval)/2.
-# see if this works in time?
-
-f = open('/scratch/mpetersen/Disk013/run013pfiles_max.dat','w')
-for i in range(900,910):
-     print '/scratch/mpetersen/Disk013/OUT.run013p.%05i'%i
-     print >>f,'/scratch/mpetersen/Disk013/OUT.run013p.%05i'%i
-
-f.close()
 
 EK = potential.EnergyKappa(Od)
 
@@ -203,8 +148,9 @@ class BarDetermine():
     def bar_fourier_compute(self,posx,posy):
 
         #
-        # use x and y aps positions?
+        # use x and y positions tom compute the m=2 power, and find phase angle
         #
+        
         aval = np.sum( np.cos( 2.*np.arctan2(posy,posx) ) )
         bval = np.sum( np.sin( 2.*np.arctan2(posy,posx) ) )
 
@@ -213,7 +159,7 @@ class BarDetermine():
     def print_bar(self,outfile):
 
         #
-        # print the barfile.
+        # print the barfile to file
         #
 
         f = open(outfile,'w')
@@ -251,8 +197,10 @@ class BarDetermine():
 
     def find_barangle(self,time,bartime,barpos):
 
-        # helper class to find
-
+        #
+        # helper class to find the position of the bar at specified times
+        #
+        
         try:
             tmp = self.bar_pos[0]
 
@@ -285,7 +233,7 @@ class Trapping():
 
     >>> A = trapping.Trapping()
     >>> A.accept_files('/scratch/mpetersen/Disk013/run013pfiles_min.dat',verbose=2)
-    >>> A.determine_r_aps(to_file=True,transform=True)
+    >>> A.determine_r_aps(component,to_file=True,transform=False)
 
     if using transform, the bar position is computed from fourier methodology, which should be robust to false transformation at T>0.4
 
@@ -294,7 +242,7 @@ class Trapping():
     >>> A.read_apshold_one(apshold_file)
     >>> A.read_apshold_two(apshold_file)
 
-    Which will make a dictionary of the orbits
+    Which will make a dictionary of the orbits.
 
     '''
 

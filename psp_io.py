@@ -11,22 +11,17 @@ import numpy as np
 
 
 '''
+#
+# various usage examples
+#
+
 import psp_io
+
 O = psp_io.Input('/scratch/mpetersen/Disk008/OUT.run008.00430',comp='star',nout=30000)
-
-
 O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='dark',verbose=2)
-
 O = psp_io.Input('/scratch/mpetersen/Disk006/OUT.run006.01000',comp='star',nout=1000)
-
 O = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00000',comp='star')
-
 O = psp_io.Input('/scratch/mpetersen/Disk074ashuf/OUT.run074ashuf.00000',comp='star',valid=True)
-
-
-,orbit_list='/scratch/mpetersen/Disk064a/testolist.dat',infile_list='/scratch/mpetersen/Disk064a/testlist.dat',verbose=2)
-
-
 O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='dark',orbit_list='test.dat',infile_list='ilist.dat')
 
 
@@ -596,44 +591,5 @@ class Input():
                     print 'Orbit(s) resolved in %3.2f seconds' %(time.time()-res_time_initial)
 
             
-
-
-'''
-
-class PSPView():
-
-    #
-    # class to visualize particle plots
-    #
-    X, Y = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-    positions = np.vstack([X.ravel(), Y.ravel()])
-    values = np.vstack([m1, m2])
-    kernel = stats.gaussian_kde(values)
-    Z = np.reshape(kernel(positions).T, X.shape)
-
-
-X, Y = np.mgrid[-10:10:1, -10:10:1j]
-positions = np.vstack([X.ravel(), Y.ravel()])
-values = np.vstack([m1, m2])
-
-
-import time
-t1 = time.time()
-Od = psp_io.Input('/scratch/mpetersen/Disk004/OUT.run004.01000',comp='star',verbose=2,nout=10000)
-kernel = stats.gaussian_kde(np.vstack([Od.xpos,Od.ypos]))
-
-kernel.set_bandwidth(bw_method=kernel.factor / 3.) # may want to allow some more noise determination in
-
-
-Z = np.reshape(kernel(np.vstack([Od.xpos,Od.ypos])).T, Od.xpos.shape)
-print 'Execution took %3.2f seconds.'%(time.time()-t1)
-# 3.5 minutes per step, not too bad!
-
-
-plt.scatter(Od.xpos,Od.ypos,color=cm.gnuplot((Z/np.max(Z))**0.8,1),s=3.)
-
-
-'''
-
 
 
