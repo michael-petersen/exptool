@@ -16,7 +16,7 @@ import numpy as np
 
 
 Od = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.01000',comp='star',verbose=2)
-EK = potential.EnergyKappa(Od)
+EK = potential.EnergyKappa(O)
 
 Od0 = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00000',comp='star',verbose=2)
 EK0 = potential.EnergyKappa(Od0)
@@ -255,7 +255,7 @@ class EnergyKappa():
     #
     # class to look at energy-kappa mapping
     #
-    def __init__(self,ParticleArray,nbins=200,map_file=None):
+    def __init__(self,ParticleArray,nbins=200,map_file=None,eres=80):
 
 
         self.PA = PArray()
@@ -287,7 +287,7 @@ class EnergyKappa():
 
         
 
-        EnergyKappa.map_ekappa(self)
+        EnergyKappa.map_ekappa(self,eres=eres)
 
         if map_file:
             EnergyKappa.output_map(self,map_file)
@@ -323,7 +323,7 @@ class EnergyKappa():
         R = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS + self.PA.ZPOS*self.PA.ZPOS)**0.5
 
         # partition particles into E bins
-        self.ebins = np.linspace(0.999*np.min(self.E),1.001*np.max(self.E),eres)
+        self.ebins = np.linspace(0.999*np.min(self.E),np.min([-2.5,1.001*np.max(self.E)]),eres)
         eindx = np.digitize(self.E,self.ebins)
 
         # allocate arrays

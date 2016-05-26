@@ -4,11 +4,11 @@
 #
 #    MSP 10.25.14
 #    Added to exptool 12.3.15
-#    niatr/ndatr accepted 3.7.16
+#    Constructed to theoretically handle niatr/ndatr 3.7.16
+#    niatr/ndatr tested ???
 #
 import time
 import numpy as np
-
 
 '''
 #
@@ -51,13 +51,14 @@ class Input():
     #! VERBOSITY FLAGS:
     #!  0: Silent
     #!  1: Report Component data
-    #!  2: Report Timing data     (in progress)
+    #!  2: Report Timing data     
     #!  4: Report Debug data      (in progress)
 
     #! WISHLIST:
     #!     
     #!     return N components, if desired
-    #!     do a timing analysis to figure out what is slow, or just generally optimize
+    #!     continued optimization
+    #!     add ability to pull single orbit timeseries from specified files
     #!    
 
     #! EXAMPLE USAGE
@@ -134,7 +135,7 @@ class Input():
 
                 if not (self.comp):
                     mode = 0
-                    print 'Component must be defined to proceed with orbit resolution.'
+                    print 'psp_io.Input: Component must be defined to proceed with orbit resolution.'
 
             if validate==True:
 
@@ -143,7 +144,7 @@ class Input():
                 Input.psp_read_headers(self)
         
                 if self.verbose>=1:
-                    print 'The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
+                    print 'psp_io.Input: The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
             
             
                 
@@ -355,7 +356,7 @@ class Input():
         self.comp_nbodies[present_comp] = nbodies
 
 
-    def particle_read(self):
+    def create_particle_buffer(self):
         #
         # routine to return the unique data array based on the particle class
         #
@@ -377,59 +378,80 @@ class Input():
     def component_read(self):
 
         #
-        # memmap opens the file itself, so no file open needed here
-        #
-
-        #
-        # check for (a) niatr/ndatr, (b) orbit_resolve flag
-        #
-        if (self.which_comp >= 0):
-            if (self.comp_ndatr[self.which_comp] != 0) | (self.comp_niatr[self.which_comp] != 0):
-                print 'Currently not accepting non-zero attribute fields.'
-
-
-        #
         # define particle data type
         #      which defines self.readtype
         #
 
-        #Input.particle_read(self)
+        Input.create_particle_buffer(self)
 
-    
 
         #
         # gather data field
         #
         if not (self.orbit_list):
 
-            out = np.memmap(self.infile,dtype=self.dyt,shape=(8,int(self.return_bodies)),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
+            out = np.memmap(self.infile,dtype=self.readtype,shape=(1,int(self.return_bodies)),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
 
 
-            self.mass = out[0]
-            self.xpos = out[1]
-            self.ypos = out[2]
-            self.zpos = out[3]
-            self.xvel = out[4]
-            self.yvel = out[5]
-            self.zvel = out[6]
-            self.pote = out[7]
+            #
+            # populate known attributes
+            #
+            self.mass = out['f0'][0]
+            self.xpos = out['f1'][0]
+            self.ypos = out['f2'][0]
+            self.zpos = out['f3'][0]
+            self.xvel = out['f4'][0]
+            self.yvel = out['f5'][0]
+            self.zvel = out['f6'][0]
+            self.pote = out['f7'][0]
+
+            
+            #
+            # treat niatr, ndatr
+            #
+            for int_attr in range(0,self.comp_niatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
+
+                setattr(self, 'i'+string(int_attr), out['f'+string(8+int_attr)][0])
 
 
-        # only looking for a fraction
+            for dbl_attr in range(0,self.comp_ndatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
+
+                setattr(self, 'd'+string(dbl_attr), out['f'+string(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0])
+
+
+        #        
+        # mode in which only specific orbits are returned
+        #
         if (self.orbit_list):
 
+            #
             # read in all orbits, then obtain specific orbits
-            out = np.memmap(self.infile,dtype=self.dyt,shape=(8,int(self.comp_nbodies[self.which_comp])),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
+            #     (okay because low overhead)
+            #
+            out = np.memmap(self.infile,dtype=self.readtype,shape=(1,int(self.comp_nbodies[self.which_comp])),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
 
 
-            self.mass = out[0,self.OLIST]
-            self.xpos = out[1,self.OLIST]
-            self.ypos = out[2,self.OLIST]
-            self.zpos = out[3,self.OLIST]
-            self.xvel = out[4,self.OLIST]
-            self.yvel = out[5,self.OLIST]
-            self.zvel = out[6,self.OLIST]
-            self.pote = out[7,self.OLIST]
+            self.mass = out['f0'][0][self.OLIST]
+            self.xpos = out['f1'][0][self.OLIST]
+            self.ypos = out['f2'][0][self.OLIST]
+            self.zpos = out['f3'][0][self.OLIST]
+            self.xvel = out['f4'][0][self.OLIST]
+            self.yvel = out['f5'][0][self.OLIST]
+            self.zvel = out['f6'][0][self.OLIST]
+            self.pote = out['f7'][0][self.OLIST]
+
+            #
+            # treat niatr, ndatr
+            #
+            for int_attr in range(0,self.comp_niatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
+
+                setattr(self, 'i'+string(int_attr), out['f'+string(8+int_attr)][0][self.OLIST])
+
+
+            for dbl_attr in range(0,self.comp_ndatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
+
+                setattr(self, 'd'+string(dbl_attr), out['f'+string(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0][self.OLIST])
+
 
 
     def break_info_string(self):
@@ -447,8 +469,9 @@ class Input():
         print 'ej info: ',EJinfo
         print 'basis info: ',basisinfo
 
+        #
         # could develop a more user-friendly output for these
-
+        #
 
     def orbit_map(self):
 
@@ -467,11 +490,13 @@ class Input():
 
         self.OLIST = np.array(olist)
 
+        #
         # override number of bodies to return to match orbit list
+        #
         self.return_bodies = len(self.OLIST)
 
         if self.verbose >= 1:
-            print 'Orbit map accepted with %i bodies.' %self.return_bodies
+            print 'psp_io.orbit_map: Orbit map accepted with %i bodies.' %self.return_bodies
 
     def timestep_map(self):
 
@@ -490,7 +515,7 @@ class Input():
         self.ILIST = np.array(ilist)
 
         if self.verbose >= 1:
-            print 'Filename map accepted with %i files (timesteps).' %len(self.ILIST)
+            print 'psp_io.timestep_map: Filename map accepted with %i files (timesteps).' %len(self.ILIST)
 
         
     def orbit_resolve(self):
@@ -508,7 +533,7 @@ class Input():
         self.f.close()
 
         if self.verbose>=1:
-            print 'The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
+            print 'psp_io.orbit_resolve: The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
 
         #
         # select component to output
@@ -588,8 +613,115 @@ class Input():
             del self.pote
 
         if self.verbose >= 2:
-                    print 'Orbit(s) resolved in %3.2f seconds' %(time.time()-res_time_initial)
+                    print 'psp_io.orbit_resolve: Orbit(s) resolved in %3.2f seconds' %(time.time()-res_time_initial)
 
             
+
+
+#
+# Below here are helper functions to subdivide and combine particles.
+#
+
+class particle_holder(object):
+    ctime = None
+    xpos = None
+    ypos = None
+    zpos = None
+    xvel = None
+    yvel = None
+    zvel = None
+    mass = None
+    pote = None
+
+    
+#
+#
+#
+# could do the bar transform by getting just the lowest R A2 position angles
+
+#
+# only want to drop into this is need-be--calculating R is expensive
+def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=np.pi,transform=False):
+    #
+    # if transform=True, requires ParticleInstance.xbar to be defined
+    #
+    R = (ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
+    if transform==False:
+        particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut))[0]
+    if transform==True:
+        # compute the bar lag
+        BL = compute_bar_lag(ParticleInstance,rcut=0.01)
+        # look for particles in the wedge relative to bar angle
+        particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut) & (BL > loT) & (BL < hiT))[0]
+    #
+    # fill a new array with particles that meet this criteria
+    #
+    holder = particle_holder()
+    holder.xpos = ParticleInstance.xpos[particle_roi]
+    holder.ypos = ParticleInstance.ypos[particle_roi]
+    holder.zpos = ParticleInstance.zpos[particle_roi]
+    holder.xvel = ParticleInstance.xvel[particle_roi]
+    holder.yvel = ParticleInstance.yvel[particle_roi]
+    holder.zvel = ParticleInstance.zvel[particle_roi]
+    holder.mass = ParticleInstance.mass[particle_roi]
+    return holder
+
+
+
+def compute_bar_lag(ParticleInstance,rcut=0.01):
+    #
+    # simple fourier method to calculate where the particles are in relation to the bar
+    #
+    R = (ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
+    TH = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
+    loR = np.where( R < rcut)[0]
+    A2 = np.sum(ParticleInstance.mass[loR] * np.cos(2.*TH[loR]))
+    B2 = np.sum(ParticleInstance.mass[loR] * np.sin(2.*TH[loR]))
+    bar_angle = 0.5*np.arctan2(B2,A2)
+    print 'Position angle is %4.3f . . .' %bar_angle
+    #
+    # two steps:
+    #   1. rotate theta so that the bar is aligned at 0,2pi
+    #   2. fold onto 0,pi to compute the lag
+    #
+    tTH = (TH - bar_angle + np.pi/2.) % np.pi  # compute lag with bar at pi/2
+    #
+    # verification plot
+    #plt.scatter( R[0:10000]*np.cos(tTH[0:10000]-np.pi/2.),R[0:10000]*np.sin(tTH[0:10000]-np.pi/2.),color='black',s=0.5)
+    return tTH - np.pi/2. # retransform to bar at 0
+
+
+
+
+def mix_particles(ParticleInstanceArray):
+    n_instances = len(ParticleInstanceArray)
+    n_part = 0
+    for i in range(0,n_instances):
+        n_part += len(ParticleInstanceArray[i].xpos)
+    final_holder = particle_holder()
+    final_holder.xpos = np.zeros(n_part)
+    final_holder.ypos = np.zeros(n_part)
+    final_holder.zpos = np.zeros(n_part)
+    final_holder.xvel = np.zeros(n_part)
+    final_holder.yvel = np.zeros(n_part)
+    final_holder.zvel = np.zeros(n_part)
+    final_holder.mass = np.zeros(n_part)
+    final_holder.pote = np.zeros(n_part)
+    final_holder.ctime = ParticleInstanceArray[0].ctime # only uses first time, should be fine?
+    #
+    #
+    first_part = 0
+    for i in range(0,n_instances):
+        n_instance_part = len(ParticleInstanceArray[i].xpos)
+        final_holder.xpos[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].xpos
+        final_holder.ypos[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].ypos
+        final_holder.zpos[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].zpos
+        final_holder.xvel[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].xvel
+        final_holder.yvel[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].yvel
+        final_holder.zvel[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].zvel
+        final_holder.mass[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].mass
+        final_holder.pote[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].pote
+        first_part += n_instance_part
+    return final_holder
 
 

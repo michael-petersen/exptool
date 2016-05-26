@@ -23,7 +23,15 @@ extent = 0.06
 
 tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(128,128,128), extents=[-extent,extent,-extent,extent,-0.05,0.05], nocorrelation=False, weights=O.mass)
 
-XX,YY = np.meshgrid(np.linspace(-extent,extent,127),np.linspace(-extent,extent,127))
+
+nsamp = 264
+extent = 0.2
+
+tt = kde_3d.fast_kde_two(O.xpos, O.ypos, gridsize=(nsamp,nsamp), extents=[-extent,extent,-extent,extent], nocorrelation=False, weights=None)
+
+
+
+XX,YY = np.meshgrid(np.linspace(-extent,extent,nsamp-1),np.linspace(-extent,extent,nsamp-1))
 
 
 
@@ -140,7 +148,7 @@ import scipy.signal
 def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=False, weights=None):
     """
     Performs a gaussian kernel density estimate over a regular grid using a
-    convolution of the gaussian kernel with a 2D histogram of the data.
+    convolution of the gaussian kernel with a 3D histogram of the data.
 
     This function is typically several orders of magnitude faster than 
     scipy.stats.kde.gaussian_kde for large (>1e7) numbers of points and 
@@ -210,7 +218,7 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
     #for j in range(0,n):
         #grid[xyzi[j][0],xyzi[j][1],xyzi[j][2]] += weights[j]
 
-    grid, edges = np.histogramdd(xyzi,bins=(np.linspace(xmin,xmax,nx),np.linspace(ymin,ymax,ny),np.linspace(zmin,zmax,nz)))
+    grid, edges = np.histogramdd(xyzi,bins=(np.linspace(xmin,xmax,nx),np.linspace(ymin,ymax,ny),np.linspace(zmin,zmax,nz)),weights=weights)
 
 
     if fft_true: fgrid = np.fft.fftn(grid)
@@ -295,7 +303,7 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
 
 
 
-def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None):
+def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None, npower=6.):
     """
     Performs a gaussian kernel density estimate over a regular grid using a
     convolution of the gaussian kernel with a 2D histogram of the data.
@@ -360,6 +368,9 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     # Avoiding np.histogram2d due to excessive memory usage with many points
     grid = sp.sparse.coo_matrix((weights, xyi), shape=(nx, ny)).toarray()
 
+    #grid, edges = np.histogramdd(xyi,bins=(np.linspace(xmin,xmax,nx),np.linspace(ymin,ymax,ny)),weights=weights)
+
+
     # Calculate the covariance matrix (in pixel coords)
     cov = np.cov(xyi)
 
@@ -368,7 +379,7 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
         cov[0,1] = 0
 
     # Scaling factor for bandwidth
-    scotts_factor = np.power(n, -1.0 / 6) # For 2D
+    scotts_factor = np.power(n, -1.0 / npower) # For 2D
 
     #---- Make the gaussian kernel -------------------------------------------
 
