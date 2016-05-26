@@ -150,7 +150,7 @@ class Input():
                 
                     
         except:
-            print 'The master infile is not defined (or does not exist). Master infile required to proceed.'
+            print 'psp_io.Input: The master infile is not defined (or does not exist). Master infile required to proceed.'
             mode = 0
 
 
@@ -177,7 +177,7 @@ class Input():
         if mode == 2:
 
             if self.verbose >= 1:
-                print 'Orbit Resolution Initialized...'
+                print 'psp_io.Input: Orbit Resolution Initialized...'
       
             #
             # drop into orbit retrieval mode
@@ -186,7 +186,7 @@ class Input():
 
 
         if mode == 0:
-            print 'Exiting with error.'
+            print 'psp_io.Input: Exiting with error.'
             # would be great to put some error code handling in here
 
 
@@ -200,7 +200,7 @@ class Input():
         Input.psp_read_headers(self)
         
         if self.verbose>=1:
-            print 'The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
+            print 'psp_io.psp_full_read: The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
 
         #
         # select component to output
@@ -242,7 +242,7 @@ class Input():
 
             
             if self.verbose >= 2:
-                print 'PSP file read in %3.2f seconds' %(time.time()-master_time)
+                print 'psp_io.psp_full_read: PSP file read in %3.2f seconds' %(time.time()-master_time)
 
 
 
@@ -264,7 +264,7 @@ class Input():
         while present_comp < self.ncomp:
             
             if self.verbose >= 4:
-                print 'Examining component %i' %(present_comp)
+                print 'psp_io.psp_read_headers: Examining component %i' %(present_comp)
                 
             # read the component header
             Input.component_header_read(self,present_comp)
@@ -284,11 +284,11 @@ class Input():
             try:
                 self.which_comp = np.where(np.array(self.comp_titles) == self.comp)[0][0]
             except:
-                print 'No matching component!'
+                print 'psp_io.select_component: No matching component!'
                 self.which_comp = None
         else:
             self.which_comp = None
-            print 'Proceeding without selecting component.'
+            print 'psp_io.select_component: Proceeding without selecting component.'
 
 
 
@@ -411,12 +411,12 @@ class Input():
             #
             for int_attr in range(0,self.comp_niatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
 
-                setattr(self, 'i'+string(int_attr), out['f'+string(8+int_attr)][0])
+                setattr(self, 'i'+str(int_attr), out['f'+str(8+int_attr)][0])
 
 
             for dbl_attr in range(0,self.comp_ndatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
 
-                setattr(self, 'd'+string(dbl_attr), out['f'+string(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0])
+                setattr(self, 'd'+str(dbl_attr), out['f'+str(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0])
 
 
         #        
@@ -445,12 +445,12 @@ class Input():
             #
             for int_attr in range(0,self.comp_niatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
 
-                setattr(self, 'i'+string(int_attr), out['f'+string(8+int_attr)][0][self.OLIST])
+                setattr(self, 'i'+str(int_attr), out['f'+str(8+int_attr)][0][self.OLIST])
 
 
             for dbl_attr in range(0,self.comp_ndatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
 
-                setattr(self, 'd'+string(dbl_attr), out['f'+string(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0][self.OLIST])
+                setattr(self, 'd'+str(dbl_attr), out['f'+str(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0][self.OLIST])
 
 
 
