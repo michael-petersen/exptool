@@ -1,10 +1,18 @@
+#############################################
 #
+#  potential.py
+#    An exptool utility to handle energy and kappa calculations
+#
+#    MSP 10.1.2015
 #
 #
 import numpy as np
 import time
+
+# exptool classes
 import helpers
 
+from scipy.interpolate import UnivariateSpline
 
 '''
 import psp_io
@@ -16,7 +24,9 @@ import numpy as np
 
 
 Od = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.01000',comp='star',verbose=2)
-EK = potential.EnergyKappa(O)
+EK = potential.EnergyKappa(Od)
+
+
 
 Od0 = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00000',comp='star',verbose=2)
 EK0 = potential.EnergyKappa(Od0)
@@ -255,7 +265,7 @@ class EnergyKappa():
     #
     # class to look at energy-kappa mapping
     #
-    def __init__(self,ParticleArray,nbins=200,map_file=None,eres=80):
+    def __init__(self,ParticleArray,nbins=200,map_file=None,eres=80,percen=99.5,spline_order=3):
 
 
         self.PA = PArray()
@@ -287,13 +297,13 @@ class EnergyKappa():
 
         
 
-        EnergyKappa.map_ekappa(self,eres=eres)
+        EnergyKappa.map_ekappa(self,percen=percen,eres=eres,spline_order=spline_order)
 
         if map_file:
             EnergyKappa.output_map(self,map_file)
 
 
-    def map_ekappa(self,percen=99.9,eres=80):
+    def map_ekappa(self,percen=99.9,eres=80,twodee=False,spline_order=3,smethod='sg'):
 
         # enables plotting of
         # self.
@@ -319,8 +329,11 @@ class EnergyKappa():
         #
         # should think about 2d vs 3d utility
         #
-        #R2 = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS)**0.5
-        R = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS + self.PA.ZPOS*self.PA.ZPOS)**0.5
+        if twodee:
+            R = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS)**0.5
+                
+        else:
+            R = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS + self.PA.ZPOS*self.PA.ZPOS)**0.5
 
         # partition particles into E bins
         self.ebins = np.linspace(0.999*np.min(self.E),np.min([-2.5,1.001*np.max(self.E)]),eres)
@@ -334,21 +347,21 @@ class EnergyKappa():
 
         
         for i,energy in enumerate(self.ebins):
-            yese = np.where( eindx==i+1)[0]
+            energy_range = np.where( eindx==i+1)[0]
             
-            if len(yese) > 1:
+            if len(energy_range) > 1:
                 # reduce operations for speed
                 #maxLx[i] = np.percentile(LX[yese],percen)
                 #maxLy[i] = np.percentile(LY[yese],percen)
-                self.maxLz[i] = np.percentile(LZ[yese],percen) #np.max(LZ[yese])
+                self.maxLz[i] = np.percentile(LZ[energy_range],percen) #np.max(LZ[yese])
 
                 # take median of top 100 Lz for guiding center radius
                 #   (that is, radius of a circular orbit)
-                lzarg = yese[LZ[yese].argsort()]
+                lzarg = energy_range[LZ[energy_range].argsort()]
                 self.circR[i] = np.median( R[lzarg[-100:-1]] )
                 
-                self.maxR[i] = np.percentile(R[yese],percen)
-                self.maxL[i] = np.percentile(L[yese],percen)
+                self.maxR[i] = np.percentile(R[energy_range],percen)
+                self.maxL[i] = np.percentile(L[energy_range],percen)
                 
             else: # guard for empty bins
                 #maxLx[i] = maxLx[i-1]
@@ -358,14 +371,31 @@ class EnergyKappa():
                 self.maxL[i] = self.maxL[i-1]
                 self.circR[i] = self.circR[i-1]
 
-        # smooth discontinuities from bin choice       
-        smthLz = helpers.savitzky_golay(self.maxLz,7,3) # could figure out an adaptive smooth?
-        smthL = helpers.savitzky_golay(self.maxL,7,3)
+        # smooth discontinuities from bin choice
+        if smethod == 'sg':
+            smthLz = helpers.savitzky_golay(self.maxLz,7,3) # could figure out an adaptive smooth?
+            smthL = helpers.savitzky_golay(self.maxL,7,3)
+            smthR = helpers.savitzky_golay(self.circR,7,3)
+        else:
+            smthLzf = UnivariateSpline(self.ebins,self.maxLz,k=spline_order)
+            smthLf  = UnivariateSpline(self.ebins,self.maxL,k=spline_order)
+            smthRf  = UnivariateSpline(self.ebins,self.circR,k=spline_order)
+            smthLz = smthLzf(self.ebins)
+            smthL  = smthLf(self.ebins)
+            smthR  = smthRf(self.ebins)
 
+        
         # return energy and kappa for all orbits
-        self.K = LZ/smthLz[eindx-1]
-
-
+        if smethod == 'sg':
+            self.K = LZ/smthLz[eindx-1]
+            self.B = L/smthL[eindx-1]
+            self.cR = smthR[eindx-1]
+        else:
+            self.K = LZ/smthLzf(self.E)
+            self.B = L/smthLf(self.E)
+            self.cR = smthRf(self.E)
+        self.LZ = LZ
+        self.L = L
 
     def clear_output_map_file(self):
         return None

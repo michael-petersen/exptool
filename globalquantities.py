@@ -311,3 +311,53 @@ class GQuantities():
                     self.bval[m,i,indx] = np.sum(O.mass[yes] * np.sin(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
 
 
+
+
+
+
+    def compute_z_fourier(self):
+
+        #
+        # output format of the files is:
+        #
+        # Q.aval[rbin_val,time_val]
+        # 
+
+        try:
+            rbins = self.rbins
+            dr = rbins[1] - rbins[0]
+        except:
+            print 'Rbins must be set in order (or have multiple values) to proceed. Appying default...'
+            self.rbins = np.linspace(0.,1.,100)
+            rbins = self.rbins
+
+            
+        try:
+            comp = self.comp
+        except:
+            print 'No component specified...trying star.'
+            comp = 'star'
+            try:
+                O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
+            except:
+                print 'No star...trying dark.'
+                comp = 'dark'
+
+
+        self.azval = np.zeros([len(rbins),len(self.SLIST)])
+        self.bzval = np.zeros([len(rbins),len(self.SLIST)])
+        
+        for i,file in enumerate(self.SLIST):
+
+                
+            O = psp_io.Input(file,comp=comp,verbose=0)
+        
+            r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
+
+            for indx,r in enumerate(rbins):
+                yes = np.where( r_dig-1 == indx)[0]
+                self.azval[indx,i] = np.sum(O.mass[yes] * O.zpos[yes] * np.cos(2.*np.arctan2(O.ypos[yes],O.xpos[yes])))
+                self.bzval[indx,i] = np.sum(O.mass[yes] * O.zpos[yes] * np.sin(2.*np.arctan2(O.ypos[yes],O.xpos[yes])))
+                self.anorm[indx,i] = np.sum(O.mass[yes])
+
+

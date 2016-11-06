@@ -18,26 +18,32 @@ O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',co
 
 O = psp_io.Input('/scratch/mpetersen/Disk013/OUT.run013p.01000',comp='star')
 
+O = psp_io.Input('/scratch/mpetersen/Disk023/OUT.run023.00400',comp='star')
 
-extent = 0.06
 
-tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(128,128,128), extents=[-extent,extent,-extent,extent,-0.05,0.05], nocorrelation=False, weights=O.mass)
+#extent = 0.06
 
+#tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(128,128,128), extents=[-extent,extent,-extent,extent,-0.05,0.05], nocorrelation=False, weights=O.mass)
+
+
+O = psp_io.Input('/scratch/mpetersen/Disk022/OUT.run022.00400',comp='star')
 
 nsamp = 264
-extent = 0.2
-
-tt = kde_3d.fast_kde_two(O.xpos, O.ypos, gridsize=(nsamp,nsamp), extents=[-extent,extent,-extent,extent], nocorrelation=False, weights=None)
-
+extent = 0.06
+w = np.where( ( abs(O.xpos) < extent) & (abs(O.ypos) < extent))[0]
 
 
-XX,YY = np.meshgrid(np.linspace(-extent,extent,nsamp-1),np.linspace(-extent,extent,nsamp-1))
+tt = kde_3d.fast_kde_two(O.xpos[w], O.ypos[w], gridsize=(nsamp,nsamp), extents=[-extent,extent,-extent,extent], nocorrelation=False, weights=O.mass[w])
 
 
 
+XX,YY = np.meshgrid(np.linspace(-extent,extent,nsamp),np.linspace(-extent,extent,nsamp))
 
-plt.figure(0)
-plt.contourf(XX,YY,np.log10(np.sum(tt,axis=1)),32,cmap=cm.gnuplot)
+
+
+
+plt.figure(1)
+plt.contourf(XX,YY,np.log10(tt),32,cmap=cm.gnuplot)
 
 
 plt.axis([-extent,extent,-extent,extent])
@@ -328,13 +334,16 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
         A gridded 2D kernel density estimate of the input points. 
     """
     #---- Setup --------------------------------------------------------------
-    x, y = np.asarray(x), np.asarray(y)
-    x, y = np.squeeze(x), np.squeeze(y)
-    
+
     if x.size != y.size:
         raise ValueError('Input x & y arrays must be the same size!')
 
-    nx, ny = gridsize
+    try:
+        if len(gridsize)==2:
+            nx, ny = gridsize
+    except:
+        nx = ny = gridsize
+        
     n = x.size
 
     if weights is None:
@@ -351,10 +360,30 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
         xmin, xmax = x.min(), x.max()
         ymin, ymax = y.min(), y.max()
     else:
-        xmin, xmax, ymin, ymax = map(float, extents)
+        try:
+            if len(extents) == 4:
+                xmin, xmax, ymin, ymax = map(float, extents)
+        except:
+            xmin = ymin = -1.*extents
+            xmax = ymax = extents
+
+            
     dx = (xmax - xmin) / (nx - 1)
     dy = (ymax - ymin) / (ny - 1)
 
+
+    within_extent = np.where( (x>xmin) & (x<xmax) & (y>ymin) & (y<ymax))[0]
+
+    x = x[within_extent]
+    y = y[within_extent]
+
+    weights = weights[within_extent]
+
+    x, y = np.asarray(x), np.asarray(y)
+    x, y = np.squeeze(x), np.squeeze(y)
+    
+
+    
     #---- Preliminary Calculations -------------------------------------------
 
     # First convert x & y over to pixel coordinates
@@ -418,8 +447,50 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     grid /= norm_factor
 
     return np.flipud(grid)
+
+
+
+def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, weights=None, npower=6.,surfacedensity=False,opt_third=None,opt_third_constraint=None):
+    #
+    # quick wrapper to return x and y grids to go along with the kernel densities
+    #
+
+    # this is used to make an in-plane slice by passing abs(third_dimension)
+    if opt_third != None:
+        w = np.where( opt_third < opt_third_constraint)[0]
+
+        x = x[w]
+        y = y[w]
+
+        if weights != None:
+            weights = weights[w]
+
+    #
+    # only set to return square, evenly space grids currently 08-26-16
+    # 
+    KDEArray = fast_kde_two(x, y, gridsize=gridsize, extents=extents, nocorrelation=nocorrelation, weights=weights, npower=npower)
+
+    try:
+        xbins = np.linspace(-1.*extents,extents,gridsize)
+        xx,yy = np.meshgrid( xbins,xbins)
+
+    except:
+        # if extents tuple is passed
+        xbins = np.linspace(extents[0],extents[1],gridsize)
+        ybins = np.linspace(extents[2],extents[3],gridsize)
+        xx,yy = np.meshgrid(xbins,ybins)
     
+    effvolume = ((xbins[1]-xbins[0])*(xbins[1]-xbins[0]))#*(2.*zlim))
+
+    if surfacedensity:
+        KDEArray /= effvolume
+
+    return xx,yy,KDEArray
     
+
+
+
+      
 '''
 # for that pesky np.sqrt, if desired
     

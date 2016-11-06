@@ -104,7 +104,38 @@ def resample(x,y,new_x,sord=0):
 
 
 
-def quick_contour(ARR1,ARR2,weights=-1,X=0,Y=0,resolution=25):
+
+def normalhist(array,nbins,colorst):
+	bins = np.linspace(np.min(array),np.max(array),nbins)
+	binsind  = bins+(0.5*(bins[1]-bins[0]))
+	array_out = np.zeros(nbins)
+	for i in range(0,len(array)):
+		binn = m.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
+		array_out[binn] += 1
+	array_out /= (sum(array_out))
+	plt.plot(binsind,array_out,color=colorst,linewidth=2.0)
+	plt.draw()
+
+def binnormalhist(array,bins,colorst,weights=None):
+    if weights==None:
+        weights = np.ones(len(array))
+    #
+    print weights
+    binsind = bins+(0.5*(bins[1]-bins[0]))
+    array_out = np.zeros(len(bins))
+    for i in range(0,len(array)):
+	binn = np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
+        #
+        if ((binn >= 0) & (binn < len(bins)) ):
+            array_out[binn] += weights[i]
+    array_out /= (sum(array_out))
+    plt.plot(binsind,array_out,color=colorst,linewidth=2.0)
+    plt.draw()
+
+
+
+
+def quick_contour(ARR1,ARR2,weights=None,X=None,Y=None,resolution=25):
     #
     # Quickly bin data
     #
@@ -122,18 +153,35 @@ def quick_contour(ARR1,ARR2,weights=-1,X=0,Y=0,resolution=25):
     #
     # Plot with matplotlib.pyplot.contour(XX,YY,OUT)
     #
-    if (X==0) | (Y==0):
+    try:
+        truefalse = X[0]
+        truefalse = Y[0]
+    except:
         X = np.linspace(np.min(ARR1),np.max(ARR1),resolution)
         Y = np.linspace(np.min(ARR2),np.max(ARR2),resolution)
-    if weights<0:
+        
+    try:
+        truefalse = weights[0]
+        ARR3 = weights
+        
+    except:
+
         ARR3 = np.ones([len(ARR1)])
-	XX,YY = np.meshgrid(X,Y)
-	OUT = np.zeros([len(X),len(Y)])
-	for i in range(0,len(ARR1)):
-		xind = int(np.floor((ARR1[i]-X[0])/(X[1]-X[0])))
-		yind = int(np.floor((ARR2[i]-Y[0])/(Y[1]-Y[0])))
-		if xind>=0 and xind<len(X) and yind>=0 and yind<len(Y): OUT[yind][xind]+=ARR3[i]
-	return XX,YY,OUT
+
+
+    XX,YY = np.meshgrid(X,Y)
+
+    OUT = np.zeros([len(Y),len(X)])
+
+    for i in range(0,len(ARR1)):
+
+        xind = int(np.floor((ARR1[i]-X[0])/(X[1]-X[0])))
+
+        yind = int(np.floor((ARR2[i]-Y[0])/(Y[1]-Y[0])))
+
+        if xind>=0 and xind<len(X) and yind>=0 and yind<len(Y): OUT[yind][xind]+=ARR3[i]
+
+    return XX,YY,OUT
 
 
 

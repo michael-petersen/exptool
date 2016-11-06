@@ -5,7 +5,9 @@
 #    MSP 10.25.14
 #    Added to exptool 12.3.15
 #    Constructed to theoretically handle niatr/ndatr 3.7.16
-#    niatr/ndatr tested ???
+#    niatr/ndatr verified 5.26.16
+#
+#    08-27-2016 added compatibility for dictionary support, the long-term goal of the reader once I commit to re-engineering everything.
 #
 import time
 import numpy as np
@@ -288,7 +290,9 @@ class Input():
                 self.which_comp = None
         else:
             self.which_comp = None
-            print 'psp_io.select_component: Proceeding without selecting component.'
+
+            if self.verbose > 0:
+                print 'psp_io.select_component: Proceeding without selecting component.'
 
 
 
@@ -409,14 +413,14 @@ class Input():
             #
             # treat niatr, ndatr
             #
-            for int_attr in range(0,self.comp_niatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
+            for int_attr in range(0,self.comp_niatr[self.which_comp]): 
 
                 setattr(self, 'i'+str(int_attr), out['f'+str(8+int_attr)][0])
 
 
-            for dbl_attr in range(0,self.comp_ndatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
+            for dbl_attr in range(0,self.comp_ndatr[self.which_comp]): 
 
-                setattr(self, 'd'+str(dbl_attr), out['f'+str(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0])
+                setattr(self, 'd'+str(dbl_attr), out['f'+str(int(8 + self.comp_niatr[self.which_comp] + dbl_attr))][0])
 
 
         #        
@@ -430,6 +434,8 @@ class Input():
             #
             out = np.memmap(self.infile,dtype=self.readtype,shape=(1,int(self.comp_nbodies[self.which_comp])),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
 
+            #print np.array(out['f0'][0])[self.OLIST]
+            #print out['f0'][0][self.OLIST]
 
             self.mass = out['f0'][0][self.OLIST]
             self.xpos = out['f1'][0][self.OLIST]
@@ -450,7 +456,7 @@ class Input():
 
             for dbl_attr in range(0,self.comp_ndatr[self.which_comp]): # + self.comp_ndatr[self.which_comp]
 
-                setattr(self, 'd'+str(dbl_attr), out['f'+str(8 + self.comp_niatr[self.which_comp] + dbl_attr)][0][self.OLIST])
+                setattr(self, 'd'+str(dbl_attr), out['f'+str(int(8 + self.comp_niatr[self.which_comp] + dbl_attr))][0][self.OLIST])
 
 
 
@@ -633,6 +639,21 @@ class particle_holder(object):
     mass = None
     pote = None
 
+
+
+
+def convert_to_dict(ParticleInstance):
+    ParticleInstanceDict = {}
+    ParticleInstanceDict['xpos'] = ParticleInstance.xpos
+    ParticleInstanceDict['ypos'] = ParticleInstance.ypos
+    ParticleInstanceDict['zpos'] = ParticleInstance.zpos
+    ParticleInstanceDict['xvel'] = ParticleInstance.xvel
+    ParticleInstanceDict['yvel'] = ParticleInstance.yvel
+    ParticleInstanceDict['zvel'] = ParticleInstance.zvel
+    ParticleInstanceDict['pote'] = ParticleInstance.pote
+    ParticleInstanceDict['mass'] = ParticleInstance.mass
+    return convert_to_dict
+
     
 #
 #
@@ -665,6 +686,22 @@ def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=
     holder.zvel = ParticleInstance.zvel[particle_roi]
     holder.mass = ParticleInstance.mass[particle_roi]
     return holder
+
+
+def subdivide_particles_list(ParticleInstance,particle_roi):
+    #
+    # fill a new array with particles that meet this criteria
+    #
+    holder = particle_holder()
+    holder.xpos = ParticleInstance.xpos[particle_roi]
+    holder.ypos = ParticleInstance.ypos[particle_roi]
+    holder.zpos = ParticleInstance.zpos[particle_roi]
+    holder.xvel = ParticleInstance.xvel[particle_roi]
+    holder.yvel = ParticleInstance.yvel[particle_roi]
+    holder.zvel = ParticleInstance.zvel[particle_roi]
+    holder.mass = ParticleInstance.mass[particle_roi]
+    return holder
+
 
 
 

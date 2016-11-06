@@ -267,7 +267,7 @@ class genEllipse:
         if weights=='normalized':
             kde_weights = O.mass/np.median(O.mass)
 
-        if weights=='mass':
+        if (weights=='mass') | (weights=='surfacedensity'):
             kde_weights = O.mass
 
         #resolution = 264
@@ -287,20 +287,20 @@ class genEllipse:
         minx,maxx = np.min(wrows),np.max(wcols)
         miny,maxy = np.min(wcols),np.max(wcols)
 
-        #print minx,maxy,miny,maxy
 
         E.posarr,E.xarr, E.yarr = tmp_posarr[minx:maxx,miny:maxy],tmp_xarr[minx:maxx,miny:maxy],tmp_yarr[minx:maxx,miny:maxy]
-        
-        #plt.contourf(self.E.xarr,self.E.yarr,np.log10(self.E.posarr))
-        #self.E.generate_flat_field_kde(O.xpos,O.ypos,O.zpos,O.mass,xbins=xbins,logvals=loggy)
 
-        # need to verify that posarr was created properly
+        # divide by cell size if doing surface density
+        if weight=='surfacedensity':
+            E.posarr /= (E.xarr[1][1]-E.xarr[1][0])**2.
 
         if loggy:
             pos_vals = E.posarr.reshape(-1,)
             eps = np.min( pos_vals[np.where(pos_vals > 0.)[0]])
             E.posarr = np.log10(E.posarr + eps)
-        
+
+
+        # make the call to generate an ellipse field
         E.add_ellipse_field(check=0,cbins=ncbins,convals=contourlevels)
 
         # not always going to get 50, looks for non-degenerate ellipses
@@ -414,10 +414,6 @@ class genEllipse:
         self.xarr = E.xarr
         self.yarr = E.yarr
         self.posarr = E.posarr
-        self.CONX = E.CONX
-        self.CONY = E.CONY
-        self.FULLX = E.FULLX
-        self.FULLY = E.FULLY
         
         
     def plot_contours(self,ellipses=True,fignum=None):
