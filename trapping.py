@@ -408,7 +408,7 @@ class Trapping():
             print 'Trapping.parse_list: Accepted %i files.' %len(self.SLIST)
 
     
-    def determine_r_aps(self,filelist,comp,nout=10,to_file=1,transform=False,out_directory=''):
+    def determine_r_aps(self,filelist,comp,nout=10,to_file=1,transform=False,out_directory='',threedee=False):
 
         #
         # need to think of the best way to return this data
@@ -444,10 +444,16 @@ class Trapping():
             Oc = psp_io.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
 
             # compute 2d radial positions
-            Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
-            Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
-            Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
-            
+            if threedee:
+                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos + Oa.zpos*Oa.zpos)**0.5
+                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos + Ob.zpos*Ob.zpos)**0.5
+                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos + Oc.zpos*Oc.zpos)**0.5
+
+            else:
+                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
+                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
+                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
+                
             # use logic to find aps
             aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
 
