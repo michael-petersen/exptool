@@ -408,7 +408,7 @@ class Trapping():
             print 'Trapping.parse_list: Accepted %i files.' %len(self.SLIST)
 
     
-    def determine_r_aps(self,filelist,comp,nout=10,to_file=1,transform=False,out_directory='',threedee=False):
+    def determine_r_aps(self,filelist,comp,nout=10,out_directory='',threedee=False):
 
         #
         # need to think of the best way to return this data
@@ -421,9 +421,11 @@ class Trapping():
         self.slist = filelist
 
 
-        if (to_file > 0):
-            tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
-            f = open(out_directory+'apshold'+tstamp+'.dat','wb+')
+        tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
+           
+        f = open(out_directory+'apshold'+tstamp+'.dat','wb+')
+
+        print 'trapping.determin_r_aps: outfile is '+out_directory+'apshold'+tstamp+'.dat'
 
         Trapping.parse_list(self)
 
@@ -457,12 +459,6 @@ class Trapping():
             # use logic to find aps
             aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
 
-            if transform:
-                B = BarDetermine()
-                bpos = B.bar_fourier_compute(Ob.xpos,Ob.ypos)
-                Ob.tX = Ob.xpos*np.cos(bpos) - Ob.ypos*np.sin(bpos)
-                Ob.tY = Ob.xpos*np.sin(bpos) + Ob.ypos*np.cos(bpos)
-
             
             indx = np.array([i for i in range(0,len(Ob.xpos))])
 
@@ -479,59 +475,42 @@ class Trapping():
             norb = len(numi)
 
 
-
-            if (to_file==1):
-                np.array( [Ob.ctime],dtype='f').tofile(f)
-                np.array( [norb],dtype='i').tofile(f)
-                for j in range(0,norb):
-                    q = np.array([numi[j],x[j],y[j],z[j]],dtype='f')
-                    #q = np.array([ [i[j],x[j],y[j],z[j]] for j in range(0,norb)],dtype='f')
-                    q.tofile(f)
-
-            if (to_file==2):
-
-                for j in range(0,norb):
-                    aps_dictionary[numi[j]].append([Ob.ctime,x[j],y[j],z[j]])
+            for j in range(0,norb):
+                aps_dictionary[numi[j]].append([Ob.ctime,x[j],y[j],z[j]])
 
 
-                
-            else:
-
-                print 'Trapping.determine_r_aps: Are you sure you want to dump to memory?'
-
-        if (to_file==1): f.close()
 
         self.napsides = np.zeros([total_orbits,2])
 
-        if (to_file==2):
 
-            np.array([total_orbits],dtype='i').tofile(f)
+        np.array([total_orbits],dtype='i').tofile(f)
 
-            for j in range(0,total_orbits):
+        for j in range(0,total_orbits):
 
-                orbit_aps_array = np.array(aps_dictionary[j])
+            orbit_aps_array = np.array(aps_dictionary[j])
 
-                if (len(orbit_aps_array) > 0):
-                    naps = len(orbit_aps_array[:,0])  # this might be better as shape
+            if (len(orbit_aps_array) > 0):
+                naps = len(orbit_aps_array[:,0])  # this might be better as shape
 
-                    np.array([naps],dtype='i').tofile(f)
+                np.array([naps],dtype='i').tofile(f)
 
-                    self.napsides[j,0] = naps
-                    self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
+                self.napsides[j,0] = naps
+                self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
 
-                    np.array( orbit_aps_array.reshape(-1,),dtype='f').tofile(f)
+                np.array( orbit_aps_array.reshape(-1,),dtype='f').tofile(f)
 
-                else:
-                    #np.array([0],dtype='i').tofile(f)
+            else:
+                #np.array([0],dtype='i').tofile(f)
                     
-                                        # guard against zero length
+                # guard against zero length
 
-                    np.array([1],dtype='i').tofile(f)
+                np.array([1],dtype='i').tofile(f)
 
-                    np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
+                np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
                     
                         
-            f.close()
+        f.close()
+
 
     def read_apshold_two(self,apshold_file):
 
