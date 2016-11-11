@@ -14,11 +14,21 @@ ORBIT.py deals with slices the PSP outputs 'against the grain' to collect the de
 import numpy as np
 import psp_io
 
-def make_orbit_map(outfile,infile_template,time_array,norb,comp='star'):
+def make_orbit_map(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,**kwargs):
     #
     # this writes to file because it is a lot to carry around
     f = open(outfile,'wb')
-    np.array([len(time_array),norb],dtype=np.int).tofile(f)
+    #
+    # check to see if an orbit list has been set
+    if 'orblist' in kwargs:
+        orbvals = kwargs['orblist'] # this needs to be passed as an integer array
+        norb = np.max(orbvals)+1
+        print 'N_orbits accepted: ',len(orbvals)
+    else:
+        orbvals = np.arange(0,norb,1,dtype='i')
+    #
+    # print self-describer to file
+    np.array([len(time_array),len(orbvals)],dtype=np.int).tofile(f)
     #
     times = []
     for indx,val in enumerate(time_array):
@@ -26,18 +36,19 @@ def make_orbit_map(outfile,infile_template,time_array,norb,comp='star'):
         times.append(O.ctime)
     np.array(times,dtype=np.float).tofile(f)
     O = psp_io.Input(infile_template+'00000',nout=norb,comp=comp)
-    np.array(O.mass,dtype=np.float).tofile(f)
+    masses = O.mass[orbvals]
+    np.array(masses,dtype=np.float).tofile(f)
     for indx,val in enumerate(time_array):
         # make this self-describing       
-        O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=norb,comp=comp)
+        O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=norb,comp=comp,verbose=verbose)
         print O.ctime
-        for star in range(0,len(O.xpos)):
+        for star in orbvals:
             np.array([O.xpos[star],O.ypos[star],O.zpos[star],O.xvel[star],O.yvel[star],O.zvel[star]],dtype=np.float).tofile(f)
     f.close()
 
 
 tarr = np.arange(0,1200,1,dtype='int')
-make_orbit_map('/scratch/mpetersen/Disk064a/orbit_map_dark.dat','/scratch/mpetersen/Disk064a/OUT.run064a.',tarr,1000,'star')
+make_orbit_map('/scratch/mpetersen/Disk001/orbit_map_dark.dat','/scratch/mpetersen/Disk001/OUT.run001.',tarr,1,'dark',orblist=bar_members)
 
     
 def read_orbit_map(infile):
@@ -51,7 +62,9 @@ def read_orbit_map(infile):
 
 # format is orb[time,orbit,quantity]
 
-times,mass,orb = read_orbit_map('/scratch/mpetersen/Disk064a/orbit_map_dark.dat')
+times,mass,orb = read_orbit_map('/scratch/mpetersen/Disk001/orbit_map_dark.dat')
+
+
 
 # steps: identify period at two scalelengths, then convolve all over that window
 #
