@@ -65,7 +65,6 @@ def read_orbit_map(infile):
 times,mass,orb = read_orbit_map('/scratch/mpetersen/Disk001/orbit_map_dark.dat')
 
 
-
 # steps: identify period at two scalelengths, then convolve all over that window
 #
 
@@ -74,19 +73,46 @@ times,mass,orb = read_orbit_map('/scratch/mpetersen/Disk001/orbit_map_dark.dat')
 # 
 from scipy.interpolate import UnivariateSpline
 
-def interpo_orbit(T,X,Y,Z,TB,PB,impr=4,sord=0):
+BarFunction = UnivariateSpline(BarInstance.bar_time,-1.*BarInstance.bar_pos,s=0)
+
+
+
+def interpo_orbit(T,X,Y,Z,BarFunction,impr=4,sord=0):
     newT = np.linspace(np.min(T),np.max(T),len(T)*impr)
     sX = UnivariateSpline(T,X,s=sord)
     sY = UnivariateSpline(T,Y,s=sord)
     sZ = UnivariateSpline(T,Z,s=sord)
     # yes do bar transform
-    z = np.polyfit(TB[100:-1],PB[100:-1], 3)
-    barpos = np.poly1d(z)
-    sTX = sX(newT)*np.cos(barpos(newT)) - sY(newT)*np.sin(barpos(newT))
-    sTY = sX(newT)*np.sin(barpos(newT)) + sY(newT)*np.cos(barpos(newT))
+    sTX = sX(newT)*np.cos(BarFunction(newT)) - sY(newT)*np.sin(BarFunction(newT))
+    sTY = sX(newT)*np.sin(BarFunction(newT)) + sY(newT)*np.cos(BarFunction(newT))
     # needs the transformed velocities
     return newT,sX(newT),sY(newT),sZ(newT),sTX,sTY
 
+
+o = 80
+etime=900
+ltime=1100
+T,X,Y,Z,sX,sY = interpo_orbit(times[etime:ltime],orb[etime:ltime,o,0],orb[etime:ltime,o,1],orb[etime:ltime,o,2],BarFunction,impr=4,sord=0)
+
+R = (X*X + Y*Y)**0.5
+raps = argrelextrema(R, np.greater)
+
+fig = plt.figure(0)
+ax = fig.add_subplot(121)
+ax.plot(sX,sY,lw=1.)
+ax.scatter(sX[raps],sY[raps],color='red',s=20.)
+
+ax2 = fig.add_subplot(122)
+ax2.plot(sX,Z,lw=1.)
+
+
+
+# orbit 2 scatters off the bar potential; doesn't seem to be trapped, how can it be discriminated?
+# try to use r clustering, or variance in x_bar values of the points
+
+# get rid of orbits more massive than a disk particle?
+#  use 1.e-8 as a low threshold and look at just massive particles
+# 2   35   55   58   60   65   68   79   80   96   97   99  100  110  113
 
 def interpo_orbit_vel(T,X,Y,Z,VX,VY,VZ,TB,PB,impr=4,sord=0):
     newT = np.linspace(np.min(T),np.max(T),len(T)*impr)
