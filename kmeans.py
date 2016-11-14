@@ -1,11 +1,14 @@
-
-# robust implementation of kmeans from
+#
+# kmeans.py
+#
+# robust implementation of kmeans based on
 # https://datasciencelab.wordpress.com
 
 import random
 import numpy as np
 
 class KMeans():
+    
     def __init__(self, K, X=None, N=0):
         self.K = K
         if X == None:

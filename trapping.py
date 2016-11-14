@@ -67,9 +67,9 @@ def find_barangle(time,BarInstance):
     try:
         indx_barpos = np.zeros([len(time)])
         for indx,timeval in enumerate(time):
-            indx_barpos[indx] = -BarInstance.bar_pos[ abs(timeval-BarInstance.bar_time).argmin()]
+            indx_barpos[indx] = -BarInstance.pos[ abs(timeval-BarInstance.time).argmin()]
     except:
-        indx_barpos = -BarInstance.bar_pos[ abs(time-BarInstance.bar_time).argmin()]
+        indx_barpos = -BarInstance.pos[ abs(time-BarInstance.time).argmin()]
     return indx_barpos
 
 
@@ -172,13 +172,13 @@ class BarDetermine():
 
         BarDetermine.parse_list(self)
 
-        self.bar_time = np.zeros(len(self.SLIST))
-        self.bar_pos = np.zeros(len(self.SLIST))
+        self.time = np.zeros(len(self.SLIST))
+        self.pos = np.zeros(len(self.SLIST))
 
         for i in range(0,len(self.SLIST)):
                 O = psp_io.Input(self.SLIST[i],comp='star',verbose=self.verbose)
-                self.bar_time[i] = O.ctime
-                self.bar_pos[i] = BarDetermine.bar_fourier_compute(self,O.xpos,O.ypos,maxr=self.maxr)
+                self.time[i] = O.ctime
+                self.pos[i] = BarDetermine.bar_fourier_compute(self,O.xpos,O.ypos,maxr=self.maxr)
 
 
         if self.verbose >= 2:
@@ -205,21 +205,23 @@ class BarDetermine():
         # modify the bar position to smooth and unwrap
         #
         jnum = 0
-        jset = np.zeros_like(self.bar_pos)
+        jset = np.zeros_like(self.pos)
         
-        for i in range(1,len(self.bar_pos)):
+        for i in range(1,len(self.pos)):
             
-            if (self.bar_pos[i]-self.bar_pos[i-1]) < jbuffer:   jnum += 1
+            if (self.pos[i]-self.pos[i-1]) < jbuffer:   jnum += 1
 
             jset[i] = jnum
 
-        self.bar_upos = self.bar_pos + jset*np.pi
+        unwrapped_pos = self.pos + jset*np.pi
 
         if (smooth):
-            self.bar_upos = helpers.savitzky_golay(self.bar_upos,7,3)
+            unwrapped_pos = helpers.savitzky_golay(unwrapped_pos,7,3)
 
         # to unwrap on twopi, simply do:
         #B.bar_upos%(2.*np.pi)
+
+        self.pos = unwrapped_pos
 
         #
         # this implementation is not particularly robust, could revisit in future
@@ -231,18 +233,18 @@ class BarDetermine():
         if smth_order or fft_order:
             print 'Cannot assure proper functionality of both order smoothing and low pass filtering.'
 
-        self.bar_deriv = np.zeros_like(self.bar_upos)
-        for i in range(1,len(self.bar_upos)):
-            self.bar_deriv[i] = (self.bar_upos[i]-self.bar_upos[i-1])/(self.bar_time[i]-self.bar_time[i-1])
+        self.deriv = np.zeros_like(self.pos)
+        for i in range(1,len(self.pos)):
+            self.deriv[i] = (self.pos[i]-self.pos[i-1])/(self.time[i]-self.time[i-1])
 
             
         if (smth_order):
-            smth_params = np.polyfit(self.bar_time, self.bar_deriv, smth_order)
-            bar_pos_func = np.poly1d(smth_params)
-            self.bar_deriv = bar_pos_func(self.bar_time)
+            smth_params = np.polyfit(self.time, self.deriv, smth_order)
+            pos_func = np.poly1d(smth_params)
+            self.deriv = pos_func(self.time)
 
         if (fft_order):
-            self.bar_deriv = self.bar_deriv
+            self.deriv = self.deriv
             
     def bar_fourier_compute(self,posx,posy,maxr=1.):
 
@@ -266,8 +268,8 @@ class BarDetermine():
 
         f = open(outfile,'w')
 
-        for i in range(0,len(self.bar_time)):
-            print >>f,self.bar_time[i],self.bar_upos[i],self.bar_deriv[i]
+        for i in range(0,len(self.time)):
+            print >>f,self.time[i],self.pos[i],self.deriv[i]
 
         f.close()
  
@@ -283,24 +285,23 @@ class BarDetermine():
 
         f = open(infile)
 
-        bar_time = []
-        bar_pos = []
-        bar_deriv = []
+        time = []
+        pos = []
+        deriv = []
         for line in f:
             q = [float(d) for d in line.split()]
-            bar_time.append(q[0])
-            bar_pos.append(q[1])
+            time.append(q[0])
+            pos.append(q[1])
             try:
-                bar_deriv.append(q[2])
+                deriv.append(q[2])
             except:
                 pass
 
-        self.bar_time = np.array(bar_time)
-        self.bar_pos = np.array(bar_pos)
-        self.bar_upos = np.array(bar_pos)
-        self.bar_deriv = np.array(bar_deriv)
+        self.time = np.array(time)
+        self.pos = np.array(pos)
+        self.deriv = np.array(deriv)
 
-        if len(self.bar_deriv < 1):
+        if len(self.deriv < 1):
 
             BarDetermine.frequency_and_derivative(self)
 
@@ -311,14 +312,14 @@ class BarDetermine():
         #
         
         try:
-            tmp = self.bar_pos[0]
+            tmp = self.pos[0]
 
             try:
                 indx_barpos = np.zeros([len(time)])
                 for indx,timeval in enumerate(time):
-                    indx_barpos[indx] = -self.bar_pos[ abs(timeval-self.bar_time).argmin()]
+                    indx_barpos[indx] = -self.pos[ abs(timeval-self.time).argmin()]
             except:
-                indx_barpos = -self.bar_pos[ abs(time-self.bar_time).argmin()]
+                indx_barpos = -self.pos[ abs(time-self.time).argmin()]
 
             return indx_barpos
 
