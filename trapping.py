@@ -512,9 +512,9 @@ class Trapping():
         f.close()
 
 
-    def read_apshold_two(self,apshold_file):
+    def read_aps_file(self,aps_file):
 
-        f = open(apshold_file,'rb')
+        f = open(aps_file,'rb')
 
         [norb] = np.fromfile(f,dtype='i',count=1)
 
@@ -533,56 +533,50 @@ class Trapping():
 
         f.close()
 
+
+    
+#
+# some definitions--these are probably not the final resting place for these.
+#
         
-
-    def read_apshold_one(self,apshold_file,comp):
-
-        # read in the apshold to a dictionary
-
-        self.aps = {}
-
-        Oa = psp_io.Input(self.SLIST[0],comp=comp,verbose=self.verbose)
-        norb = len(Oa.xpos)
-
-        for i in range(norb):
-            self.aps[i] = []
-
-
-        f = open(apshold_file,'rb')
-
-        more = 1
-
-        
-        while more == 1:
-
+def get_n_snapshots(simulation_directory):
+    #
+    # find all snapshots
+    #
+    dirs = os.listdir( simulation_directory )
+    n_snapshots = 0
+    for file in dirs:
+        if file[0:4] == 'OUT.':
             try:
-                [ct] = np.fromfile(f,dtype='f',count=1)
-                print 'Read succesful line at %4.3f' %ct
-                [naps] = np.fromfile(f,dtype='i',count=1)
-
-                for n in range(0,naps):
-                    [tmpi,tmpx,tmpy,tmpz] = np.fromfile(f,dtype='f',count=4)
-                    self.aps[tmpi].append([ct,tmpx,tmpy,tmpz])
-
+                if int(file[-5:]) > n_snapshots:
+                    n_snapshots = int(file[-5:])
             except:
+                n_snapshots = n_snapshots
+    return n_snapshots
 
-                more = 0
 
-        # would also be cool to print a per orbit self-describing format
+
+def find_barangle(time,bartime,barpos):
+    try:
+        indx_barpos = np.zeros([len(time)])
+        for indx,timeval in enumerate(time):
+            indx_barpos[indx] = -barpos[ abs(timeval-bartime).argmin()]
+    except:
+        indx_barpos = -barpos[ abs(time-bartime).argmin()]
+    return indx_barpos
+
 
         
-    def find_bar_coherance(self,BarDetermineInstance,N=20):
 
-        #
-        # two paths to go--trapping for all orbits as a function of time
-        #   or individual time, is the orbit trapped. but want a faster way to handle the aps file in this case
-        '''
-        bposes = find_barangle(A.aps[indx][:,0],B.bar_time,B.bar_pos)
-        txa = A.aps[indx][:,1]*np.cos(bposes) - A.aps[indx][:,2]*np.sin(bposes)
-        tya = -A.aps[indx][:,1]*np.sin(bposes) - A.aps[indx][:,2]*np.cos(bposes)
+class ComputeTrapping:
 
-        relpos2 = np.arctan(tya/txa)
-        '''
-            
+    '''
+    Class to be filled out with the trapping dictionary solver once it is out of prototyping.
+
+    '''
+    def __init__(self):
+
+        pass
 
 
+    
