@@ -5,26 +5,50 @@
 #
 #    11.12.16 formalized class structure, provided example usage.
 #    11.19.16 documented definitions; considered for generic upgrade.
+#    11.20.16 do generic upgrade to make a single utility
+#                 TODO? consider adding a utility conditioned on memory mapping for individual orbits to speed up process.
+#                    not clear if needed, reading back in is very fast.
 #
 
 import numpy as np
 import psp_io
-import helpers
 
 '''
-#USAGE DEMO:
+# Quick Start Demo:
 
 # which exp-numbered files to read in
 tarr = np.arange(0,12,1,dtype='int')
-Orbits = orbit.make_orbit_map('/path/to/outfile.dat','/path/to/exp/files',tarr,comp='dark',dictionary=True, norb=10)
 
-# Orbits is a dictionary with several quantities
+# read in from files and return a dictionary
+Orbits = orbit.map_orbits('/path/to/outfile.dat','/path/to/exp/files',tarr,comp='dark',dictionary=True, norb=10)
+
+# Orbits is a dictionary with several quantities (see initialize_orbit_dictionary below)
 
 '''
 
+def initialize_orbit_dictionary():
+    '''
+    make the dictionary that handles orbits
+    '''
+
+    OrbitDictionary = {}
+    OrbitDictionary['T'] = None
+    OrbitDictionary['X'] = None
+    OrbitDictionary['Y'] = None
+    OrbitDictionary['Z'] = None
+    OrbitDictionary['VX'] = None
+    OrbitDictionary['VY'] = None
+    OrbitDictionary['VZ'] = None
+    OrbitDictionary['P'] = None
+    OrbitDictionary['M'] = None
+
+    return OrbitDictionary
+    
+    
 
 
-def make_orbit_map(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,**kwargs):
+
+def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,**kwargs):
     '''
     make_orbit_map
 
@@ -171,26 +195,6 @@ def read_orbit_map(infile):
     return Orbits
 
 
-
-def initialize_orbit_dictionary():
-    '''
-    class to handle orbits
-    '''
-
-    OrbitDictionary = {}
-    OrbitDictionary['T'] = None
-    OrbitDictionary['X'] = None
-    OrbitDictionary['Y'] = None
-    OrbitDictionary['Z'] = None
-    OrbitDictionary['VX'] = None
-    OrbitDictionary['VY'] = None
-    OrbitDictionary['VZ'] = None
-    OrbitDictionary['P'] = None
-    OrbitDictionary['M'] = None
-
-    return OrbitDictionary
-    
-    
 
 def make_orbit_density(infile):
     '''

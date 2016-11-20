@@ -309,6 +309,7 @@ class GQuantities():
 
         self.aval = np.zeros([mmax,len(self.SLIST),len(rbins)])
         self.bval = np.zeros([mmax,len(self.SLIST),len(rbins)])
+        self.time = np.zeros([len(self.SLIST)])
         
         for i,file in enumerate(self.SLIST):
 
@@ -324,7 +325,7 @@ class GQuantities():
                     self.aval[m,i,indx] = np.sum(O.mass[yes] * np.cos(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
                     self.bval[m,i,indx] = np.sum(O.mass[yes] * np.sin(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
 
-
+            self.time[i] = O.ctime
 
 
 
