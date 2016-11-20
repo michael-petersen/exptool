@@ -1,5 +1,9 @@
 #
-# extract global quantities from simulations
+# globalquantities.py
+#
+#    part of exptool: extract global quantities from simulations
+#
+#    11.20.16 formalize Fourier analysis steps
 #
 
 import time
@@ -9,7 +13,6 @@ import psp_io
 
 
 '''
-#from analysis_headers import *   # MSP convenience class (not needed)
 import globalquantities
 
 #Q = globalquantities.GQuantities('/scratch/mpetersen/Disk064a/testlist.dat',comp='star',track_diff_lz=True,verbose=2,rbins=np.linspace(0.,0.08,200))
@@ -78,6 +81,15 @@ pmax = pmax[0:k]
 #
 # and some fraction of the max power
 def frac_power(Q,frac=0.5):
+    '''
+    given a
+
+    inputs
+    ------
+    Q: numpy array, [m_order,
+    
+    
+    '''
     a2power = (Q.aval[2,0,:]**2. + Q.bval[2,0,:]**2.)/Q.aval[0,0,:]**2.
     k = a2power.argmax()
     blen = 0.
@@ -131,6 +143,8 @@ class OQuantities():
         # do we have a bar pattern to plug in?
         #
         #O.EJ = O.E - pattern*O.Lz
+
+
 
 
 class GQuantities():

@@ -1,17 +1,11 @@
 #
 # orbit.py
 #
-#    part of exptool
+#    part of exptool: orbit input/output from simulations, pure data processing convenience.
 #
 #    11.12.16 formalized class structure, provided example usage.
+#    11.19.16 documented definitions; considered for generic upgrade.
 #
-'''
-ORBIT.py deals with slices the PSP outputs 'against the grain' to collect the details on individual orbits.
-
-
-
-'''
-
 
 import numpy as np
 import psp_io
@@ -20,27 +14,61 @@ import helpers
 '''
 #USAGE DEMO:
 
-
+# which exp-numbered files to read in
 tarr = np.arange(0,12,1,dtype='int')
-orbit.make_orbit_map('/path/to/outfile.dat','/path/to/exp/files',tarr,comp='dark')
+Orbits = orbit.make_orbit_map('/path/to/outfile.dat','/path/to/exp/files',tarr,comp='dark',dictionary=True, norb=10)
 
-times,mass,orb = orbit.read_orbit_map('/path/to/outfile.dat')
-
-'''
+# Orbits is a dictionary with several quantities
 
 '''
-class TrackOrbits(object):
 
-    #
-    # do I really want this to be a class structure? this might make the definitions too clunky
-    #
 
-    def __init__(self):
-
-        pass 
-'''
 
 def make_orbit_map(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,**kwargs):
+    '''
+    make_orbit_map
+
+    : slice across the grain for PSPDumps to track individual particles
+
+    Parameters:
+    ----------
+    outfile: string, filename
+        where to save the mapping to a file, even if just a temporary filename
+
+    infile_template: string, filename
+        leading directory structure and simulation name, point at EXP outputs
+
+    time_array:  integer array
+        array of integers that correspond to simulation files to be queried
+
+    norb: integer
+        number of orbits to return
+
+    comp: string, component name
+        name of simulation component to retrieve orbits from
+
+
+    verbose: integer
+        verbose keyword to be passed to psp_io
+
+    **kwargs:
+        'orblist' : integer array of orbit indices to be returned
+        'dictionary' : boolean True/False to return a dictionary
+
+    Returns:
+    --------
+    None
+
+    -or-
+
+    Orbits : OrbitDictionary-like instance
+        see class OrbitDictionary below.
+    
+
+    '''
+
+    if 'dictionary' in kwargs:
+        return_dictionary = kwargs['dictionary'] # this needs to be passed as an integer array
 
     #
     # this writes to file because it is a lot to carry around
@@ -71,6 +99,7 @@ def make_orbit_map(outfile,infile_template,time_array,norb=1,comp='star',verbose
     np.array(times,dtype=np.float).tofile(f)
 
     # get mass array from snapshot
+    #    only accepts a 0 file to get masses, could eventually be problematic.
     O = psp_io.Input(infile_template+'00000',nout=norb,comp=comp)
     masses = O.mass[orbvals]
 
@@ -89,10 +118,29 @@ def make_orbit_map(outfile,infile_template,time_array,norb=1,comp='star',verbose
 
     f.close()
 
+    if return_dictionary:
+        Orbits = read_orbit_map(outfile)
 
+        return Orbits
     
 
+
 def read_orbit_map(infile):
+    '''
+    Reads in orbit map file.
+
+    inputs
+    ------
+    infile: string
+        name of the file printed above
+
+
+    outputs
+    ------
+    Orbits: dictionary, OrbitDictionary class
+        returns an OrbitDictionary class object
+        
+    '''
 
     # open file
     f = open(infile,'rb')
@@ -108,6 +156,52 @@ def read_orbit_map(infile):
 
     orb = np.memmap(infile,offset=(16 + 8*ntimes + 8*norb),dtype=np.float,shape=(ntimes,norb,6))
 
-    return times,mass,orb
+    Orbits = initialize_orbit_dictionary()
+
+    Orbits['T'] = times
+    Orbits['M'] = mass
+
+    Orbits['X'] = orb[:,:,0]
+    Orbits['Y'] = orb[:,:,1]
+    Orbits['Z'] = orb[:,:,2]
+    Orbits['VX'] = orb[:,:,3]
+    Orbits['VY'] = orb[:,:,4]
+    Orbits['VZ'] = orb[:,:,5]
+
+    return Orbits
 
 
+
+def initialize_orbit_dictionary():
+    '''
+    class to handle orbits
+    '''
+
+    OrbitDictionary = {}
+    OrbitDictionary['T'] = None
+    OrbitDictionary['X'] = None
+    OrbitDictionary['Y'] = None
+    OrbitDictionary['Z'] = None
+    OrbitDictionary['VX'] = None
+    OrbitDictionary['VY'] = None
+    OrbitDictionary['VZ'] = None
+    OrbitDictionary['P'] = None
+    OrbitDictionary['M'] = None
+
+    return OrbitDictionary
+    
+    
+
+def make_orbit_density(infile):
+    '''
+    Makes density plot of a single orbit
+
+    Parameters
+    -----------
+    infile: string
+
+
+    '''
+
+    pass
+    
