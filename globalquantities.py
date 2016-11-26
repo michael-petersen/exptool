@@ -277,6 +277,62 @@ class GQuantities():
                 
 
 
+    def compute_discrete_frequency_fourier(self,mmax=6,window='gaussian'):
+        '''
+        following Roskar+12 (and Press+92 therein), use a fourier discrete time series to attempt to find multiple frequencies
+
+        '''
+        
+        #
+        # output format of the files is:
+        #
+        # Q.aval[m_val,time_val,rbin_val]
+        # 
+
+        try:
+            x = self.aval[0,0,0]
+        except:
+            print 'globalquantities.compute_discrete_frequency_fourier : globalquantities.fourier has not yet been called.'
+
+
+        frequency_sampling = (2.*np.pi * k * m )/ ( S * dT )
+
+            
+        try:
+            comp = self.comp
+        except:
+            print 'globalquantities.compute_fourier: No component specified...trying star.'
+            comp = 'star'
+            try:
+                O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
+            except:
+                print 'globalquantities.compute_fourier: No star...trying dark.'
+                comp = 'dark'
+
+
+        self.aval = np.zeros([mmax,len(self.SLIST),len(rbins)])
+        self.bval = np.zeros([mmax,len(self.SLIST),len(rbins)])
+        self.time = np.zeros([len(self.SLIST)])
+        
+        for i,file in enumerate(self.SLIST):
+
+                
+            O = psp_io.Input(file,comp=comp,verbose=0)
+        
+            r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
+
+            for indx,r in enumerate(rbins):
+                yes = np.where( r_dig-1 == indx)[0]
+                self.aval[0,i,indx] = np.sum(O.mass[yes])
+                for m in range(1,mmax):
+                    self.aval[m,i,indx] = np.sum(O.mass[yes] * np.cos(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
+                    self.bval[m,i,indx] = np.sum(O.mass[yes] * np.sin(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
+
+            self.time[i] = O.ctime
+
+
+
+
 
     def compute_fourier(self,mmax=6):
 
@@ -298,12 +354,12 @@ class GQuantities():
         try:
             comp = self.comp
         except:
-            print 'No component specified...trying star.'
+            print 'globalquantities.compute_fourier: No component specified...trying star.'
             comp = 'star'
             try:
                 O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
             except:
-                print 'No star...trying dark.'
+                print 'globalquantities.compute_fourier: No star...trying dark.'
                 comp = 'dark'
 
 

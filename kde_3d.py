@@ -1,4 +1,10 @@
 """
+#
+# kde_3d: gaussian kernel density estimation in two or three dimensions
+#
+
+#    makes use os sparse matrices
+
 A faster gaussian kernel density estimate (KDE).
 Intended for computing the KDE on a regular grid (different use case than 
 scipy's original scipy.stats.kde.gaussian_kde()).
@@ -8,139 +14,7 @@ scipy's original scipy.stats.kde.gaussian_kde()).
 ( from http://pastebin.com/LNdYCZgw
 and http://stackoverflow.com/questions/18921419/implementing-a-2d-fft-based-kernel-density-estimator-in-python-and-comparing-i )
 
-import psp_io
-import kde_3d
 
-O = psp_io.Input('/scratch/mpetersen/Disk014/OUT.run014e.00089',comp='star')
-
-
-O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='star')
-
-O = psp_io.Input('/scratch/mpetersen/Disk013/OUT.run013p.01000',comp='star')
-
-O = psp_io.Input('/scratch/mpetersen/Disk023/OUT.run023.00400',comp='star')
-
-
-#extent = 0.06
-
-#tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(128,128,128), extents=[-extent,extent,-extent,extent,-0.05,0.05], nocorrelation=False, weights=O.mass)
-
-
-O = psp_io.Input('/scratch/mpetersen/Disk022/OUT.run022.00400',comp='star')
-
-nsamp = 264
-extent = 0.06
-w = np.where( ( abs(O.xpos) < extent) & (abs(O.ypos) < extent))[0]
-
-
-tt = kde_3d.fast_kde_two(O.xpos[w], O.ypos[w], gridsize=(nsamp,nsamp), extents=[-extent,extent,-extent,extent], nocorrelation=False, weights=O.mass[w])
-
-
-
-XX,YY = np.meshgrid(np.linspace(-extent,extent,nsamp),np.linspace(-extent,extent,nsamp))
-
-
-
-
-plt.figure(1)
-plt.contourf(XX,YY,np.log10(tt),32,cmap=cm.gnuplot)
-
-
-plt.axis([-extent,extent,-extent,extent])
-plt.text(-0.03,0.03,'Fiducial, T=2.0')
-plt.xticks([-0.03,0.0,0.03])
-plt.yticks([-0.03,0.0,0.03])
-
-
-
-#
-# try going back to the beginning with self-consistency of.
-#
-
-#
-# also try building the potential reconstructions with eof_reader
-#
-
-
-
-plt.savefig('/Users/mpetersen/Desktop/041916_2.png')
-
-
-O = psp_io.Input('/scratch/mpetersen/Disk013/OUT.run013p.01000',comp='star',nout=100000)
-plt.scatter(O.xpos,O.ypos,color='black',s=.1)
-
-
-plt.figure(1)
-O = psp_io.Input('/Users/mpetersen/Research/NBody/OUT.run013p.01000',comp='star')
-
-tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
-
-plt.contourf(XX,YY,np.log10(np.sum(tt,axis=0)),36)
-plt.axis([-0.04,0.04,-0.04,0.04])
-plt.text(-0.03,0.03,'StellarDisk, T=2.0')
-plt.xticks([-0.03,0.0,0.03])
-plt.yticks([-0.03,0.0,0.03])
-plt.savefig('/Users/mpetersen/Desktop/041916_2.png')
-
-
-
-
-plt.figure(2)
-O = psp_io.Input('/Users/mpetersen/Research/NBody/OUT.run013p.01000',comp='darkdisk')
-
-tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
-
-plt.contourf(XX,YY,np.log10(np.sum(tt,axis=0)),36)
-plt.axis([-0.04,0.04,-0.04,0.04])
-plt.text(-0.03,0.03,'DarkDisk, T=2.0')
-plt.xticks([-0.03,0.0,0.03])
-plt.yticks([-0.03,0.0,0.03])
-plt.savefig('/Users/mpetersen/Desktop/041916_3.png')
-
-
-
-
-plt.figure(3)
-O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.00300',comp='star')
-
-tt = kde_3d.fast_kde(O.xpos,O.ypos,O.zpos, gridsize=(64,64,64), extents=[-0.05,0.05,-0.05,0.05,-0.005,0.005], nocorrelation=False, weights=None)
-
-plt.contourf(XX,YY,np.log10(np.sum(tt,axis=0)),36)
-plt.axis([-0.04,0.04,-0.04,0.04])
-plt.text(-0.03,0.03,'Fiducial, T=0.6')
-plt.xticks([-0.03,0.0,0.03])
-plt.yticks([-0.03,0.0,0.03])
-plt.savefig('/Users/mpetersen/Desktop/041916_4.png')
-
-
-
-
-plt.contourf(np.sum(tt,axis=2))
-
-xmin,xmax = np.min(O.xpos),np.max(O.xpos)
-ymin,ymax = np.min(O.ypos),np.max(O.ypos)
-zmin,zmax = np.min(O.zpos),np.max(O.zpos)
-
-nx,ny,nz = (128, 128, 128)
-
-dx = (xmax - xmin) / (nx - 1)
-dy = (ymax - ymin) / (ny - 1)
-dz = (zmax - zmin) / (nz - 1)
-
-xyzi = np.vstack((O.xpos,O.ypos,O.zpos)).T
-#xyzi -= [xmin, ymin, zmin]
-#xyzi /= [dx, dy, dz]
-#xyzi = np.floor(xyzi)
-
-
-H, edges = np.histogramdd(xyzi,bins=(np.linspace(-0.05,0.05,64),np.linspace(-0.05,0.05,64),np.linspace(-0.005,0.005,64)))
-
-
-def onclick(event):
-    print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-        event.button, event.x, event.y, event.xdata, event.ydata)
-
-cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
 """
 __license__ = 'MIT License <http://www.opensource.org/licenses/mit-license.php>'
@@ -224,7 +98,7 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
     #for j in range(0,n):
         #grid[xyzi[j][0],xyzi[j][1],xyzi[j][2]] += weights[j]
 
-    grid, edges = np.histogramdd(xyzi,bins=(np.linspace(xmin,xmax,nx),np.linspace(ymin,ymax,ny),np.linspace(zmin,zmax,nz)),weights=weights)
+    #grid, edges = np.histogramdd(xyzi,bins=(np.linspace(xmin,xmax,nx),np.linspace(ymin,ymax,ny),np.linspace(zmin,zmax,nz)),weights=weights)
 
 
     if fft_true: fgrid = np.fft.fftn(grid)
@@ -334,7 +208,9 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
         A gridded 2D kernel density estimate of the input points. 
     """
     #---- Setup --------------------------------------------------------------
-
+    x, y = np.asarray(x), np.asarray(y)
+    x, y = np.squeeze(x), np.squeeze(y)
+   
     if x.size != y.size:
         raise ValueError('Input x & y arrays must be the same size!')
 
