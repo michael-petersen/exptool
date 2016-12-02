@@ -918,6 +918,34 @@ def radial_slice(rvals,a_cos, a_sin,eof_file,z=0.0,phi=0.0):
     return p,fr,fp,fz,d
 
 
+
+
+def save_eof_coefficients(outfile,cosine_terms,sine_terms):
+    # check corresponding sizes
+    if cosine_terms.shape != sine_terms.shape:
+        print 'eof.save_eof_coefficients: cosine and sine arrays are not equal shape.'
+    
+    f = open(outfile,'wb')
+
+    np.array([cosine_terms.shape[0],cosine_terms.shape[1]],dtype='i').tofile(f)
+    np.array(cosine_terms.reshape(-1,),dtype='f').tofile(f)
+    np.array(sine_terms.reshape(-1,),dtype='f').tofile(f)
+    f.close()
+
+    
+def restore_eof_coefficients(infile):
+
+    f = open(infile,'rb')
+
+    [mmax,nmax] = np.fromfile(f,dtype='i',count=2)
+    cosine_flat = np.fromfile(f,dtype='f',count=mmax*nmax)
+    sine_flat = np.fromfile(f,dtype='f',count=mmax*nmax)
+    f.close()
+
+    return cosine_flat.reshape([mmax,nmax]),sine_flat.reshape([mmax,nmax])
+
+
+
 '''
 # p,fr,fp,fz,d = eof.radial_slice(rvals,a_cos, a_sin,eof_file,z=0.0,phi=0.0)
 
