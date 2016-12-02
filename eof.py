@@ -980,7 +980,7 @@ def restore_eof_coefficients(infile):
     EOF_Object.cos = cosine_flat.reshape([(EOF_Object.mmax+1),EOF_Object.nmax])
     EOF_Object.sin = sine_flat.reshape([(EOF_Object.mmax+1),EOF_Object.nmax])
     
-    return 
+    return EOF_Object
 
 
 
