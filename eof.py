@@ -645,8 +645,27 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, z
 #
 ############################################################################################
 
+# make an eof object to carry around interesting bits of data
+class EOF_Object(object):
+    time = None
+    dump = None
+    comp = None
+    mmax = None
+    nmax = None
+    eof_file = None
+    cos  = None  # the cosine coefficient array
+    sin  = None  # the sine coefficient array
+
+
 
 def compute_coefficients(PSPInput,eof_file,verbose=1):
+
+    EOF_Out = EOF_Object()
+    EOF_Out.time = PSPInput.time
+    EOF_Out.dump = PSPInput.infile
+    EOF_Out.comp = PSPInput.comp
+    EOF_Out.eof_file = eof_file
+    
     nprocs = multiprocessing.cpu_count()
     
     if verbose > 1:
@@ -656,16 +675,22 @@ def compute_coefficients(PSPInput,eof_file,verbose=1):
     rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
+    EOF_Out.mmax = mmax # don't forget +1 for array size
+    EOF_Out.nmax = norder
     
     if nprocs > 1:
         a_cos,a_sin = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose)
         
     else:
-        # do the accumulation call
+        # do the accumulation call, not implemented yet
+        print 'eof.compute_coefficients: This definition has not yet been generalized to take a single processor.'
         a_cos = 0
         a_sin = 0
-    
-    return a_cos,a_sin
+
+    EOF_Out.cos = a_cos
+    EOF_Out.sin = a_sin
+        
+    return EOF_Out
 
 
 def compute_forces(PSPInput,eof_file,a_cos,a_sin,verbose=1,nprocs=-1,m1=0,m2=1000):
@@ -920,29 +945,42 @@ def radial_slice(rvals,a_cos, a_sin,eof_file,z=0.0,phi=0.0):
 
 
 
-def save_eof_coefficients(outfile,cosine_terms,sine_terms):
-    # check corresponding sizes
-    if cosine_terms.shape != sine_terms.shape:
-        print 'eof.save_eof_coefficients: cosine and sine arrays are not equal shape.'
-    
+def save_eof_coefficients(outfile,EOF_Object):
+        
     f = open(outfile,'wb')
-
-    np.array([cosine_terms.shape[0],cosine_terms.shape[1]],dtype='i').tofile(f)
-    np.array(cosine_terms.reshape(-1,),dtype='f').tofile(f)
-    np.array(sine_terms.reshape(-1,),dtype='f').tofile(f)
+    
+    np.array([EOF_Object.time],dtype='f').tofile(f)
+    np.array([EOF_Object.dump],dtype='S20').tofile(f)
+    np.array([EOF_Object.comp],dtype='S8').tofile(f)
+    np.array([EOF_Object.eof_file],dtype='S20').tofile(f)
+    
+    np.array([EOF_Object.mmax,EOF_Object.nmax],dtype='i').tofile(f)
+    np.array(EOF_Object.cos.reshape(-1,),dtype='f').tofile(f)
+    np.array(EOF_Object.sin.reshape(-1,),dtype='f').tofile(f)
+    
     f.close()
 
     
 def restore_eof_coefficients(infile):
+    EOF_Out = EOF_Object()
 
+    
     f = open(infile,'rb')
 
-    [mmax,nmax] = np.fromfile(f,dtype='i',count=2)
-    cosine_flat = np.fromfile(f,dtype='f',count=mmax*nmax)
-    sine_flat = np.fromfile(f,dtype='f',count=mmax*nmax)
+    EOF_Object.time = np.fromfile(f,dtype='f',count=1)
+    EOF_Object.dump = np.fromfile(f,dtype='S20',count=1)
+    EOF_Object.comp = np.fromfile(f,dtype='S8',count=1)
+    EOF_Object.eof_file = np.fromfile(f,dtype='S20',count=1)
+    
+    [EOF_Object.mmax,EOF_Object.nmax] = np.fromfile(f,dtype='i',count=2)
+    cosine_flat = np.fromfile(f,dtype='f',count=(EOF_Object.mmax+1)*EOF_Object.nmax)
+    sine_flat = np.fromfile(f,dtype='f',count=(EOF_Object.mmax+1)*EOF_Object.nmax)
     f.close()
 
-    return cosine_flat.reshape([mmax,nmax]),sine_flat.reshape([mmax,nmax])
+    EOF_Object.cos = cosine_flat.reshape([(EOF_Object.mmax+1),EOF_Object.nmax])
+    EOF_Object.sin = sine_flat.reshape([(EOF_Object.mmax+1),EOF_Object.nmax])
+    
+    return 
 
 
 

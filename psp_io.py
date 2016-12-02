@@ -146,7 +146,7 @@ class Input():
                 Input.psp_read_headers(self)
         
                 if self.verbose>=1:
-                    print 'psp_io.Input: The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
+                    print 'psp_io.Input: The time is %3.3f, with %i components and %i total bodies.' %(self.time,self.ncomp,self.ntot)
             
             
                 
@@ -202,7 +202,7 @@ class Input():
         Input.psp_read_headers(self)
         
         if self.verbose>=1:
-            print 'psp_io.psp_full_read: The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
+            print 'psp_io.psp_full_read: The time is %3.3f, with %i components and %i total bodies.' %(self.time,self.ncomp,self.ntot)
 
         #
         # select component to output
@@ -318,7 +318,7 @@ class Input():
             
         # reset to beginning and proceed
         self.f.seek(0)
-        [self.ctime] = np.fromfile(self.f, dtype='<f8',count=1)
+        [self.time] = np.fromfile(self.f, dtype='<f8',count=1)
         [self.ntot,self.ncomp] = np.fromfile(self.f, dtype=np.uint32,count=2)
 
         self.comp_pos = np.zeros(self.ncomp,dtype=np.uint64)                  # byte position of COMPONENT HEADER for returning easily
@@ -539,7 +539,7 @@ class Input():
         self.f.close()
 
         if self.verbose>=1:
-            print 'psp_io.orbit_resolve: The time is %3.3f, with %i components and %i total bodies.' %(self.ctime,self.ncomp,self.ntot)
+            print 'psp_io.orbit_resolve: The time is %3.3f, with %i components and %i total bodies.' %(self.time,self.ncomp,self.ntot)
 
         #
         # select component to output
@@ -576,10 +576,10 @@ class Input():
             #
             self.f = open(file,'rb')
 
-            [ctime] = np.fromfile(self.f, dtype='<f8',count=1)
+            [time] = np.fromfile(self.f, dtype='<f8',count=1)
 
             if self.verbose>=4:
-                print 'Time: %3.3f' %(ctime)
+                print 'Time: %3.3f' %(time)
 
             #
             # read and stuff arrays
@@ -591,7 +591,7 @@ class Input():
             if i==0: self.MASS = self.mass
 
             
-            self.TIME[i] = ctime
+            self.TIME[i] = time
             #self.MASS[:,i] = self.mass
             self.XPOS[:,i] = self.xpos
             self.YPOS[:,i] = self.ypos
@@ -629,7 +629,7 @@ class Input():
 #
 
 class particle_holder(object):
-    ctime = None
+    time = None
     xpos = None
     ypos = None
     zpos = None
@@ -744,7 +744,7 @@ def mix_particles(ParticleInstanceArray):
     final_holder.zvel = np.zeros(n_part)
     final_holder.mass = np.zeros(n_part)
     final_holder.pote = np.zeros(n_part)
-    final_holder.ctime = ParticleInstanceArray[0].ctime # only uses first time, should be fine?
+    final_holder.time = ParticleInstanceArray[0].time # only uses first time, should be fine?
     #
     #
     first_part = 0
