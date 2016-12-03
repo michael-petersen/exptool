@@ -658,6 +658,11 @@ class EOF_Object(object):
 
 
 
+# and a dictionary for storing multiple EOF_Objects?
+#    based on times
+    
+
+
 def compute_coefficients(PSPInput,eof_file,verbose=1):
 
     EOF_Out = EOF_Object()
@@ -945,42 +950,103 @@ def radial_slice(rvals,a_cos, a_sin,eof_file,z=0.0,phi=0.0):
 
 
 
-def save_eof_coefficients(outfile,EOF_Object):
-        
-    f = open(outfile,'wb')
-    
-    np.array([EOF_Object.time],dtype='f').tofile(f)
-    np.array([EOF_Object.dump],dtype='S20').tofile(f)
+#
+# the tools to save eof coefficient files
+#
+
+
+def eof_coefficients_to_file(f,EOF_Object):
+
+    np.array([EOF_Object.time],dtype='f4').tofile(f)
+    np.array([EOF_Object.dump],dtype='S100').tofile(f)
     np.array([EOF_Object.comp],dtype='S8').tofile(f)
-    np.array([EOF_Object.eof_file],dtype='S20').tofile(f)
+    np.array([EOF_Object.eof_file],dtype='S100').tofile(f)
+    # 4+100+8+100 = 212 bytes to here
     
-    np.array([EOF_Object.mmax,EOF_Object.nmax],dtype='i').tofile(f)
-    np.array(EOF_Object.cos.reshape(-1,),dtype='f').tofile(f)
-    np.array(EOF_Object.sin.reshape(-1,),dtype='f').tofile(f)
+    np.array([EOF_Object.mmax,EOF_Object.nmax],dtype='i4').tofile(f)
+    # 4x2 = 8 bytes
     
+    np.array(EOF_Object.cos.reshape(-1,),dtype='f8').tofile(f)
+    np.array(EOF_Object.sin.reshape(-1,),dtype='f8').tofile(f)
+    # 8 bytes X 2 arrays x (m+1) x n = 16(m+1)n bytes to end of array
+    
+
+# wrap the coefficients to file
+def save_eof_coefficients(outfile,EOF_Object,verbose=0):
+
+    # check to see if file exists
+    try:
+        f = open(outfile,'rb+')
+        f.close()
+        
+    except:
+        f = open(outfile,'wb')
+        np.array([0],dtype='i4').tofile(f)
+        f.close()
+        
+    
+    f = open(outfile,'rb+')
+
+    ndumps = np.memmap(outfile,dtype='i4',shape=(1))
+    ndumps += 1
+    ndumps.flush() # update the lead value
+
+    if verbose: print 'eof.save_eof_coefficients: coefficient file currently has %i dumps.' %ndumps
+
+    # seek to the correct position
+    # EOF_Object must have the same size as previous dumps...
+    f.seek(4 + (ndumps-1)*(16*(EOF_Object.mmax+1)*(EOF_Object.nmax)+220) )
+
+    eof_coefficients_to_file(f,EOF_Object)
+
     f.close()
 
-    
+
 def restore_eof_coefficients(infile):
-    EOF_Out = EOF_Object()
 
-    
-    f = open(infile,'rb')
+    try:
+        f = open(infile,'rb')
+    except:
+        print 'eof.restore_eof_coefficients: no infile of that name exists.'
 
-    EOF_Object.time = np.fromfile(f,dtype='f',count=1)
-    EOF_Object.dump = np.fromfile(f,dtype='S20',count=1)
-    EOF_Object.comp = np.fromfile(f,dtype='S8',count=1)
-    EOF_Object.eof_file = np.fromfile(f,dtype='S20',count=1)
+    f.seek(0)
+    [ndumps] = np.fromfile(f,dtype='i4',count=1)
     
-    [EOF_Object.mmax,EOF_Object.nmax] = np.fromfile(f,dtype='i',count=2)
-    cosine_flat = np.fromfile(f,dtype='f',count=(EOF_Object.mmax+1)*EOF_Object.nmax)
-    sine_flat = np.fromfile(f,dtype='f',count=(EOF_Object.mmax+1)*EOF_Object.nmax)
+    f.seek(4)
+
+    EOF_Dict = {}
+
+    for step in range(0,ndumps):
+        print f.tell()
+        EOF_Out = extract_eof_coefficients(f)
+
+        EOF_Dict[EOF_Out.time] = EOF_Out
+
+
     f.close()
 
-    EOF_Object.cos = cosine_flat.reshape([(EOF_Object.mmax+1),EOF_Object.nmax])
-    EOF_Object.sin = sine_flat.reshape([(EOF_Object.mmax+1),EOF_Object.nmax])
+    return EOF_Out,EOF_Dict
+
+
     
-    return EOF_Object
+def extract_eof_coefficients(f):
+    # operates on an open file
+    EOF_Obj = EOF_Object()
+
+
+    [EOF_Obj.time] = np.fromfile(f,dtype='f4',count=1)
+    [EOF_Obj.dump] = np.fromfile(f,dtype='S100',count=1)
+    [EOF_Obj.comp] = np.fromfile(f,dtype='S8',count=1)
+    [EOF_Obj.eof_file] = np.fromfile(f,dtype='S100',count=1)
+    
+    [EOF_Obj.mmax,EOF_Obj.nmax] = np.fromfile(f,dtype='i4',count=2)
+    cosine_flat = np.fromfile(f,dtype='f8',count=(EOF_Obj.mmax+1)*EOF_Obj.nmax)
+    sine_flat = np.fromfile(f,dtype='f8',count=(EOF_Obj.mmax+1)*EOF_Obj.nmax)
+
+    EOF_Obj.cos = cosine_flat.reshape([(EOF_Obj.mmax+1),EOF_Obj.nmax])
+    EOF_Obj.sin = sine_flat.reshape([(EOF_Obj.mmax+1),EOF_Obj.nmax])
+    
+    return EOF_Obj
 
 
 
