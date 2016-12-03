@@ -408,7 +408,7 @@ def accumulate_single_m(ParticleInstance,potC,potS,MORDER,NMAX,XMIN,dX,YMIN,dY,N
 
 
 
-def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, M1=0,M2=-1):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
+def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, m1=0,m2=1000):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
     rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
@@ -435,7 +435,7 @@ def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, M1=0,M2=-1
     c11 = delx1*dely1;
     #
     for mm in range(0,MMAX+1):
-        if (mm > M2) | (mm < M1): continue
+        if (mm > m2) | (mm < m1): continue
         ccos = np.cos(phi*mm);
         ssin = np.sin(phi*mm);
         #
@@ -577,7 +577,7 @@ def accumulated_eval_contributions(r, z, phi, accum_cos, accum_sin, potC, rforce
 
 #(Particles 1 , accum_cos2 , accum_sin 3, potC 4, rforceC 5, zforceC 6, potS 7, rforceS 8 , zforceS 9,rmin=0 10,dR=0 11,zmin=0 12,dZ=0 13,numx=0 14,numy=0 15,MMAX=6 16,NMAX=18)
 
-def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,verbose=0,M1=0,M2=1000):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
+def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=0):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
     #
     #
     #
@@ -610,7 +610,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, z
         #
         #double ccos, ssin=0.0, fac;
         for mm in range(0,MMAX+1): #(int mm=0; mm<=MMAX; mm++) {
-            if (mm > M2) | (mm < M1): continue
+            if (mm > m2) | (mm < m1): continue
             ccos = np.cos(phi*mm);
             ssin = np.sin(phi*mm);
             #
@@ -645,23 +645,6 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, z
 #
 ############################################################################################
 
-# make an eof object to carry around interesting bits of data
-class EOF_Object(object):
-    time = None
-    dump = None
-    comp = None
-    mmax = None
-    nmax = None
-    eof_file = None
-    cos  = None  # the cosine coefficient array
-    sin  = None  # the sine coefficient array
-
-
-
-# and a dictionary for storing multiple EOF_Objects?
-#    based on times
-    
-
 
 def compute_coefficients(PSPInput,eof_file,verbose=1):
 
@@ -669,6 +652,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1):
     EOF_Out.time = PSPInput.time
     EOF_Out.dump = PSPInput.infile
     EOF_Out.comp = PSPInput.comp
+    EOF_Out.nbodies = PSPInput.mass.size
     EOF_Out.eof_file = eof_file
     
     nprocs = multiprocessing.cpu_count()
@@ -698,22 +682,22 @@ def compute_coefficients(PSPInput,eof_file,verbose=1):
     return EOF_Out
 
 
-def compute_forces(PSPInput,eof_file,a_cos,a_sin,verbose=1,nprocs=-1,m1=0,m2=1000):
+def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
     if nprocs == -1:
         nprocs = multiprocessing.cpu_count()
     
     if verbose > 1:
-        eof_quickread(eof_file)
+        eof_quickread(EOF_Object.eof_file)
 
-    potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(eof_file)
+    potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(EOF_Object.eof_file)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(EOF_Object.eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
     if nprocs > 1:
-        p0,p,fr,fp,fz,r = find_forces_multi(PSPInput,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,verbose=verbose)
+        p0,p,fr,fp,fz,r = find_forces_multi(PSPInput,nprocs,EOF_Object.cos,EOF_Object.sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=m1,m2=m2,verbose=verbose)
 
     else:
-        p0,p,fr,fp,fz,r = accumulated_eval_particles(PSPInput, a_cos, a_sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=numx,numy=numy,MMAX=mmax,NMAX=norder,ASCALE=ascale,HSCALE=hscale,CMAP=cmap,verbose=verbose,M1=m1,M2=m2)
+        p0,p,fr,fp,fz,r = accumulated_eval_particles(PSPInput, EOF_Object.cos, EOF_Object.sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=numx,numy=numy,MMAX=mmax,NMAX=norder,ASCALE=ascale,HSCALE=hscale,CMAP=cmap,m1=m1,m2=m2,verbose=verbose)
          
 
     return p0,p,fr,fp,fz,r
@@ -818,7 +802,7 @@ def accumulated_eval_particles_star(a_b):
     return accumulated_eval_particles(*a_b)
 
 
-def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,verbose=0):
+def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1,m2,verbose=0):
     pool = multiprocessing.Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = a_cos
@@ -840,8 +824,10 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
     eighteenth_arg = ascale
     nineteenth_arg = hscale
     twentieth_arg = cmap
-    twentyfirst_arg = [0 for i in range(0,nprocs)]
-    twentyfirst_arg[0] = verbose
+    twentyfirst_arg = m1
+    twentysecond_arg = m2
+    twentythird_arg = [0 for i in range(0,nprocs)]
+    twentythird_arg[0] = verbose
     a_vals = pool.map(accumulated_eval_particles_star,\
                          itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                          itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
@@ -849,18 +835,19 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
                          itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
                          itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),itertools.repeat(fifteenth_arg),\
                          itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg),itertools.repeat(eighteenth_arg),\
-                         itertools.repeat(nineteenth_arg),itertools.repeat(twentieth_arg),twentyfirst_arg))
+                         itertools.repeat(nineteenth_arg),itertools.repeat(twentieth_arg),itertools.repeat(twentyfirst_arg),itertools.repeat(twentysecond_arg),\
+                         twentythird_arg))
     pool.close()
     pool.join()
     return a_vals 
 
 
 
-def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,verbose=0):
+def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0):
     holding = redistribute_particles(ParticleInstance,nprocs)
     t1 = time.time()
     multiprocessing.freeze_support()
-    a_vals = multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,verbose=verbose)
+    a_vals = multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=verbose)
     if (verbose): print 'eof.find_forces_multi: Force Evaluation took %3.2f seconds, or %4.2f microseconds per orbit.' %(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass))
     # accumulate over processes
     p0,p,fr,fp,fz,r = mix_outputs(np.array(a_vals))
@@ -949,10 +936,29 @@ def radial_slice(rvals,a_cos, a_sin,eof_file,z=0.0,phi=0.0):
 
 
 
-
+########################################################################################
 #
 # the tools to save eof coefficient files
 #
+
+# make an eof object to carry around interesting bits of data
+class EOF_Object(object):
+    time = None
+    dump = None
+    comp = None
+    nbodies = None
+    mmax = None
+    nmax = None
+    eof_file = None
+    cos  = None  # the cosine coefficient array
+    sin  = None  # the sine coefficient array
+
+
+
+# and a dictionary for storing multiple EOF_Objects?
+#    based on times
+    
+
 
 
 def eof_coefficients_to_file(f,EOF_Object):
@@ -960,8 +966,9 @@ def eof_coefficients_to_file(f,EOF_Object):
     np.array([EOF_Object.time],dtype='f4').tofile(f)
     np.array([EOF_Object.dump],dtype='S100').tofile(f)
     np.array([EOF_Object.comp],dtype='S8').tofile(f)
+    np.array([EOF_Object.nbodies],dtype='i4').tofile(f)
     np.array([EOF_Object.eof_file],dtype='S100').tofile(f)
-    # 4+100+8+100 = 212 bytes to here
+    # 4+100+8+100 = 216 bytes to here
     
     np.array([EOF_Object.mmax,EOF_Object.nmax],dtype='i4').tofile(f)
     # 4x2 = 8 bytes
@@ -995,7 +1002,7 @@ def save_eof_coefficients(outfile,EOF_Object,verbose=0):
 
     # seek to the correct position
     # EOF_Object must have the same size as previous dumps...
-    f.seek(4 + (ndumps-1)*(16*(EOF_Object.mmax+1)*(EOF_Object.nmax)+220) )
+    f.seek(4 + (ndumps-1)*(16*(EOF_Object.mmax+1)*(EOF_Object.nmax)+224) )
 
     eof_coefficients_to_file(f,EOF_Object)
 
@@ -1014,10 +1021,13 @@ def restore_eof_coefficients(infile):
     
     f.seek(4)
 
+    #
+    # this is a little sloppy right now, but it works
+    #
     EOF_Dict = {}
 
     for step in range(0,ndumps):
-        print f.tell()
+        
         EOF_Out = extract_eof_coefficients(f)
 
         EOF_Dict[EOF_Out.time] = EOF_Out
@@ -1037,6 +1047,7 @@ def extract_eof_coefficients(f):
     [EOF_Obj.time] = np.fromfile(f,dtype='f4',count=1)
     [EOF_Obj.dump] = np.fromfile(f,dtype='S100',count=1)
     [EOF_Obj.comp] = np.fromfile(f,dtype='S8',count=1)
+    [EOF_Obj.nbodies] = np.fromfile(f,dtype='i4',count=1)
     [EOF_Obj.eof_file] = np.fromfile(f,dtype='S100',count=1)
     
     [EOF_Obj.mmax,EOF_Obj.nmax] = np.fromfile(f,dtype='i4',count=2)
