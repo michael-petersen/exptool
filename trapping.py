@@ -51,7 +51,7 @@ EK = potential.EnergyKappa(Od)
 '''
 
 class particle_holder(object):
-    ctime = None
+    time = None
     xpos = None
     ypos = None
     zpos = None
@@ -177,7 +177,7 @@ class BarDetermine():
 
         for i in range(0,len(self.SLIST)):
                 O = psp_io.Input(self.SLIST[i],comp='star',verbose=self.verbose)
-                self.time[i] = O.ctime
+                self.time[i] = O.time
                 self.pos[i] = BarDetermine.bar_fourier_compute(self,O.xpos,O.ypos,maxr=self.maxr)
 
 
@@ -477,7 +477,7 @@ class Trapping():
 
 
             for j in range(0,norb):
-                aps_dictionary[numi[j]].append([Ob.ctime,x[j],y[j],z[j]])
+                aps_dictionary[numi[j]].append([Ob.time,x[j],y[j],z[j]])
 
 
 
