@@ -218,9 +218,9 @@ class Input():
             # how many bodies to return? (overridden if orbit_list)
             #
             if (self.nout):
-                self.return_bodies = self.nout
+                self.nbodies = self.nout
             else:
-                self.return_bodies = self.comp_nbodies[self.which_comp]
+                self.nbodies = self.comp_nbodies[self.which_comp]
                 
 
             #
@@ -228,7 +228,7 @@ class Input():
             #          
             if (self.orbit_list):
                 Input.orbit_map(self)
-                self.return_bodies = len(self.OLIST)
+                self.nbodies = len(self.OLIST)
 
 
             #
@@ -394,7 +394,7 @@ class Input():
         #
         if not (self.orbit_list):
 
-            out = np.memmap(self.infile,dtype=self.readtype,shape=(1,int(self.return_bodies)),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
+            out = np.memmap(self.infile,dtype=self.readtype,shape=(1,int(self.nbodies)),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
 
 
             #
@@ -499,10 +499,10 @@ class Input():
         #
         # override number of bodies to return to match orbit list
         #
-        self.return_bodies = len(self.OLIST)
+        self.nbodies = len(self.OLIST)
 
         if self.verbose >= 1:
-            print 'psp_io.orbit_map: Orbit map accepted with %i bodies.' %self.return_bodies
+            print 'psp_io.orbit_map: Orbit map accepted with %i bodies.' %self.nbodies
 
     def timestep_map(self):
 
@@ -558,13 +558,13 @@ class Input():
         self.ntimesteps = len(self.ILIST)
         
         self.TIME = np.zeros([self.ntimesteps])
-        self.XPOS = np.zeros([self.return_bodies,self.ntimesteps])
-        self.YPOS = np.zeros([self.return_bodies,self.ntimesteps])
-        self.ZPOS = np.zeros([self.return_bodies,self.ntimesteps])
-        self.XVEL = np.zeros([self.return_bodies,self.ntimesteps])
-        self.YVEL = np.zeros([self.return_bodies,self.ntimesteps])
-        self.ZVEL = np.zeros([self.return_bodies,self.ntimesteps])
-        self.POTE = np.zeros([self.return_bodies,self.ntimesteps])
+        self.XPOS = np.zeros([self.nbodies,self.ntimesteps])
+        self.YPOS = np.zeros([self.nbodies,self.ntimesteps])
+        self.ZPOS = np.zeros([self.nbodies,self.ntimesteps])
+        self.XVEL = np.zeros([self.nbodies,self.ntimesteps])
+        self.YVEL = np.zeros([self.nbodies,self.ntimesteps])
+        self.ZVEL = np.zeros([self.nbodies,self.ntimesteps])
+        self.POTE = np.zeros([self.nbodies,self.ntimesteps])
 
         #
         # cycle through files
@@ -629,6 +629,12 @@ class Input():
 #
 
 class particle_holder(object):
+    #
+    # all the quantities you could ever want to fill in your own dump.
+    #
+    infile = None
+    comp = None
+    nbodies = None
     time = None
     xpos = None
     ypos = None
@@ -685,6 +691,9 @@ def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=
     holder.yvel = ParticleInstance.yvel[particle_roi]
     holder.zvel = ParticleInstance.zvel[particle_roi]
     holder.mass = ParticleInstance.mass[particle_roi]
+    holder.infile = ParticleInstance.infile
+    holder.comp = ParticleInstance.comp
+    holder.nbodies = ParticleInstance.nbodies
     return holder
 
 
@@ -700,6 +709,10 @@ def subdivide_particles_list(ParticleInstance,particle_roi):
     holder.yvel = ParticleInstance.yvel[particle_roi]
     holder.zvel = ParticleInstance.zvel[particle_roi]
     holder.mass = ParticleInstance.mass[particle_roi]
+    holder.infile = ParticleInstance.infile
+    holder.comp = ParticleInstance.comp
+    holder.nbodies = ParticleInstance.nbodies
+    holder.time = ParticleInstance.time
     return holder
 
 
@@ -729,7 +742,9 @@ def compute_bar_lag(ParticleInstance,rcut=0.01):
 
 
 
-
+#
+# can this get infile, etc?
+#
 def mix_particles(ParticleInstanceArray):
     n_instances = len(ParticleInstanceArray)
     n_part = 0
@@ -744,6 +759,9 @@ def mix_particles(ParticleInstanceArray):
     final_holder.zvel = np.zeros(n_part)
     final_holder.mass = np.zeros(n_part)
     final_holder.pote = np.zeros(n_part)
+    #holder.infile = ParticleInstance.infile
+    #holder.comp = ParticleInstance.comp
+    #holder.nbodies = ParticleInstance.nbodies
     final_holder.time = ParticleInstanceArray[0].time # only uses first time, should be fine?
     #
     #

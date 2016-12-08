@@ -854,6 +854,7 @@ def restore_sl_coefficients(infile):
 
     SL_Dict = {}
 
+
     for step in range(0,ndumps):
         
         SL_Out = extract_sl_coefficients(f)
