@@ -15,7 +15,7 @@
 
 import time
 import numpy as np
-
+import os
 
 
 class Input():
@@ -745,4 +745,55 @@ def mix_particles(ParticleInstanceArray):
         first_part += n_instance_part
     return final_holder
 
+
+
+###############################################################################
+
+# manipulate file lists
+
+def get_n_snapshots(simulation_directory):
+    #
+    # find all snapshots
+    #
+    dirs = os.listdir( simulation_directory )
+    n_snapshots = 0
+    for file in dirs:
+        if file[0:4] == 'OUT.':
+            try:
+                if int(file[-5:]) > n_snapshots:
+                    n_snapshots = int(file[-5:])
+            except:
+                n_snapshots = n_snapshots
+    return n_snapshots
+
+
+
+
+
+
+def map_simulation_files(outfile,simulation_directory,simulation_name):
+    #
+    # simple definition to sort through a directory and make a list of all the dumps, guarding for bad files
+    #
+    if not os.path.isfile(outfile): # check to see if map already exists before making
+        #
+        f = open(outfile,'w')
+        #
+        n_snapshots = get_n_snapshots(simulation_directory)
+        current_time = -1.
+        for i in range(0,n_snapshots):
+            try:
+                PSPDump = psp_io.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %i)
+                if PSPDump.time > current_time:
+                    print >>f,simulation_directory+'OUT.'+simulation_name+'.%05i' %i
+                    current_time = PSPDump.time
+                    print current_time
+                del PSPDump
+            except:
+                print 'Bad file: ',simulation_directory+'OUT.'+simulation_name+'.%05i' %i
+        #
+        f.close()
+    #
+    else:
+        print('psp_io.map_simulation_files: file already exists.')
 
