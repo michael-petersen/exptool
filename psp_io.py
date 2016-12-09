@@ -9,25 +9,14 @@
 #
 #    08-27-2016 added compatibility for dictionary support, the long-term goal of the reader once I commit to re-engineering everything.
 #
+#    12-08-2016 cleaned up subdividing inputs. needs much more cleaning, particularly eliminating many 'self' items from the Input class.
+#                  should also set up dictionary dump by default, could just engineer in at the end?
+
+
 import time
 import numpy as np
 
-'''
-#
-# various usage examples
-#
 
-import psp_io
-
-O = psp_io.Input('/scratch/mpetersen/Disk008/OUT.run008.00430',comp='star',nout=30000)
-O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='dark',verbose=2)
-O = psp_io.Input('/scratch/mpetersen/Disk006/OUT.run006.01000',comp='star',nout=1000)
-O = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00000',comp='star')
-O = psp_io.Input('/scratch/mpetersen/Disk074ashuf/OUT.run074ashuf.00000',comp='star',valid=True)
-O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='dark',orbit_list='test.dat',infile_list='ilist.dat')
-
-
-'''
 
 class Input():
 
@@ -668,6 +657,8 @@ def convert_to_dict(ParticleInstance):
 
 #
 # only want to drop into this is need-be--calculating R is expensive
+#
+# this really shouldn't even be an option anymore.
 def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=np.pi,transform=False):
     #
     # if transform=True, requires ParticleInstance.xbar to be defined
@@ -677,7 +668,7 @@ def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=
         particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut))[0]
     if transform==True:
         # compute the bar lag
-        BL = compute_bar_lag(ParticleInstance,rcut=0.01)
+        BL = trapping.compute_bar_lag(ParticleInstance,rcut=0.01)
         # look for particles in the wedge relative to bar angle
         particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut) & (BL > loT) & (BL < hiT))[0]
     #
@@ -714,31 +705,6 @@ def subdivide_particles_list(ParticleInstance,particle_roi):
     holder.nbodies = ParticleInstance.nbodies
     holder.time = ParticleInstance.time
     return holder
-
-
-
-
-def compute_bar_lag(ParticleInstance,rcut=0.01):
-    #
-    # simple fourier method to calculate where the particles are in relation to the bar
-    #
-    R = (ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
-    TH = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
-    loR = np.where( R < rcut)[0]
-    A2 = np.sum(ParticleInstance.mass[loR] * np.cos(2.*TH[loR]))
-    B2 = np.sum(ParticleInstance.mass[loR] * np.sin(2.*TH[loR]))
-    bar_angle = 0.5*np.arctan2(B2,A2)
-    print 'Position angle is %4.3f . . .' %bar_angle
-    #
-    # two steps:
-    #   1. rotate theta so that the bar is aligned at 0,2pi
-    #   2. fold onto 0,pi to compute the lag
-    #
-    tTH = (TH - bar_angle + np.pi/2.) % np.pi  # compute lag with bar at pi/2
-    #
-    # verification plot
-    #plt.scatter( R[0:10000]*np.cos(tTH[0:10000]-np.pi/2.),R[0:10000]*np.sin(tTH[0:10000]-np.pi/2.),color='black',s=0.5)
-    return tTH - np.pi/2. # retransform to bar at 0
 
 
 
