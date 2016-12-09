@@ -5,6 +5,7 @@
 #  08-29-16: added maximum radius capabilities to bar_fourier_compute
 
 #  10-25-16: some redundancies noticed (bar_fourier_compute) and should be unified
+#  12-08-16: cleanup. needs to be merged with neutrapping.
 
 import time
 import numpy as np
@@ -13,57 +14,37 @@ import datetime
 import kmeans
 
 
-'''
-# try a quick aps-finding exercise
 
-
-import psp_io
-import potential
-import helpers
-import trapping
-
-B = trapping.BarDetermine()
-B.read_bar('/scratch/mpetersen/disk064abar.dat')
-
-
-
-#B = trapping.BarDetermine('/scratch/mpetersen/Disk007/testfiles3.dat',verbose=2)
-
-
-D = trapping.BarDetermine()
-D.accept_inputs('/scratch/mpetersen/Disk013/run013pfiles.dat',verbose=2)
-D.accept_inputs('/scratch/mpetersen/Disk013/run013pfiles.dat',verbose=2)
-
-
-D.unwrap_bar_position()
-D.frequency_and_derivative(smth_order=0) # go ahead and print the whole thing, can always re-run
-D.print_bar('/scratch/mpetersen/disk013pbar.dat')
+def compute_bar_lag(ParticleInstance,rcut=0.01):
+    #
+    # simple fourier method to calculate where the particles are in relation to the bar
+    #
+    R = (ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
+    TH = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
+    loR = np.where( R < rcut)[0]
+    A2 = np.sum(ParticleInstance.mass[loR] * np.cos(2.*TH[loR]))
+    B2 = np.sum(ParticleInstance.mass[loR] * np.sin(2.*TH[loR]))
+    bar_angle = 0.5*np.arctan2(B2,A2)
+    print 'Position angle is %4.3f . . .' %bar_angle
+    #
+    # two steps:
+    #   1. rotate theta so that the bar is aligned at 0,2pi
+    #   2. fold onto 0,pi to compute the lag
+    #
+    tTH = (TH - bar_angle + np.pi/2.) % np.pi  # compute lag with bar at pi/2
+    #
+    # verification plot
+    #plt.scatter( R[0:10000]*np.cos(tTH[0:10000]-np.pi/2.),R[0:10000]*np.sin(tTH[0:10000]-np.pi/2.),color='black',s=0.5)
+    return tTH - np.pi/2. # retransform to bar at 0
 
 
 
-trapping.BarDetermine.frequency_and_derivative(B,smth_order=2)
-trapping.BarDetermine.frequency_and_derivative(C,smth_order=2)
-
-
-EK = potential.EnergyKappa(Od)
-
-
-'''
-
-class particle_holder(object):
-    time = None
-    xpos = None
-    ypos = None
-    zpos = None
-    xvel = None
-    yvel = None
-    zvel = None
-    mass = None
-    pote = None
-
-
+    
 
 def find_barangle(time,BarInstance):
+    #
+    # use a bar instance to match the output time to a bar position
+    #
     try:
         indx_barpos = np.zeros([len(time)])
         for indx,timeval in enumerate(time):
@@ -557,19 +538,12 @@ def get_n_snapshots(simulation_directory):
 
 
 
-def find_barangle(time,bartime,barpos):
-    try:
-        indx_barpos = np.zeros([len(time)])
-        for indx,timeval in enumerate(time):
-            indx_barpos[indx] = -barpos[ abs(timeval-bartime).argmin()]
-    except:
-        indx_barpos = -barpos[ abs(time-bartime).argmin()]
-    return indx_barpos
-
-
-
 
 def process_kmeans(ApsArray,k=2):
+    #
+    # wrapper to compute k-means on an aps array.
+    #    please write down the documentation for an ApsArray.
+    #
     kmeans_plus_flag = 0
     K = kmeans.KMeans(k,X=ApsArray)
     K.find_centers()
@@ -621,6 +595,7 @@ class ComputeTrapping:
 
 
 '''
+# this is all work material that needs to be formalized into exptool structure.
 
 def do_kmeans_multi(TrappingInstance,nprocs,BarInstance,opening_angle=np.pi/8.,rfreqlim=22.5,sbuffer=20,zlimit=0.001):
 
