@@ -767,3 +767,27 @@ def re_form_trapping_arrays(array,array_number):
 
 
 '''
+
+
+#
+# how to read and write arrays
+#
+
+def write_trapping_file(array,times,filename,tdtype='i1'):
+    f = open(filename,'wb')
+    np.array([array.shape[0],array.shape[1]],dtype=tdtype).tofile(f)
+    np.array(times,dtype='f').tofile(f)
+    np.array(array.reshape(-1,),dtype='i1').tofile(f)
+    f.close()
+
+
+def read_trapping_file(t_file,tdtype='i1'):
+    f = open(t_file,'rb')
+    [norb,ntime] = np.fromfile(f,dtype='i',count=2)
+    bar_times = np.fromfile(f,dtype='f',count=ntime)
+    trap_tmp = np.fromfile(f,dtype=tdtype,count=norb*ntime)
+    trap_array = trap_tmp.reshape([norb,ntime])
+    return bar_times,trap_array
+
+
+
