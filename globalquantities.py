@@ -4,77 +4,12 @@
 #    part of exptool: extract global quantities from simulations
 #
 #    11.20.16 formalize Fourier analysis steps
-#
+#    12.11.16 cleanup and provide restart support
 
 import time
 import os
 import numpy as np
 import psp_io
-
-
-'''
-import globalquantities
-
-#Q = globalquantities.GQuantities('/scratch/mpetersen/Disk064a/testlist.dat',comp='star',track_diff_lz=True,verbose=2,rbins=np.linspace(0.,0.08,200))
-
-
-rbins=np.linspace(0.,0.08,200)
-Q = globalquantities.GQuantities('/scratch/mpetersen/Disk074a/filelist.dat',comp='star',rbins=rbins,verbose=2)
-
-# Remember (in the original version) that the infile in the call below is a data file that is a list of files.
-# That is, a text file where the first (only) line is the file you want to open.
-#Q = globalquantities.GQuantities('/Users/mpetersen/Research/NBody/Disk064a/filelist.dat',comp='star',rbins=rbins,verbose=2)
-
-# This is the revised handler, which will take single files.
-Q = globalquantities.GQuantities('/Volumes/SIMSET/OUT.run064a.00800',comp='star',rbins=rbins,verbose=2)
-
-Q = globalquantities.GQuantities('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='star',rbins=rbins,verbose=2)
-
-
-globalquantities.GQuantities.compute_fourier(Q)
-
-# This is one type of plot you could make. What does it show? (see other attached image from Athanassoula2013)
-
-qscale = (Q.aval[2,0,:]**2. + Q.bval[2,0,:]**2.)/Q.aval[0,0,:]**2.
-plt.plot(300.*rbins,qscale/np.max(qscale))
-
-
-#
-#
-# where the fourier phase deviates by 20 degrees
-# compute fourier phase
-Q.ph = np.arctan(-Q.bval[2,0,:]/Q.aval[2,0,:])
-
-blenf = frac_power(Q)
-blenp = phase_change(Q)
-
-
-fourmax = np.zeros(1000)
-blenf = np.zeros(1000)
-blenp = np.zeros(1000)
-pmax = np.zeros(1000)
-k = 0
-for j in range(210,1000,20):
-     filename = '/scratch/mpetersen/Disk074a/OUT.run074a.%05i' %j
-     print filename
-     rbins=np.linspace(0.,0.04,100)
-     Q = globalquantities.GQuantities(filename,comp='star',rbins=rbins,verbose=2,multi=False)
-     globalquantities.GQuantities.compute_fourier(Q)
-     barst = (Q.aval[2,0,:]**2. + Q.bval[2,0,:]**2.)**0.5/Q.aval[0,0,:]
-     fourmax[k] = rbins[barst.argmax()]
-     pmax[k] = np.max(barst)
-     blenf[k] = globalquantities.frac_power(Q)
-     blenp[k] = globalquantities.phase_change(Q)
-     k+=1
-
-
-fourmax = fourmax[0:k]
-blenf = blenf[0:k]
-blenp = blenp[0:k]
-pmax = pmax[0:k]
-
-
-'''
 
 
 #
@@ -86,13 +21,20 @@ def frac_power(Q,frac=0.5):
 
     inputs
     ------
-    Q: numpy array, [m_order,
-    
+    Q: numpy array, [m_order,time index, r index]
+
+
+    returns
+    ------
+    the length of the bar as measured by the fractional power
     
     '''
-    a2power = (Q.aval[2,0,:]**2. + Q.bval[2,0,:]**2.)/Q.aval[0,0,:]**2.
+    a2power = (Q.aval[2,:,:]**2. + Q.bval[2,0,:]**2.)/Q.aval[0,:,:]**2.
+
+    #for t in range(0,Q.time.shape[0])
     k = a2power.argmax()
     blen = 0.
+    
     while a2power[k] > frac*np.max(a2power):
         blen = Q.rbins[k]
         k+=1
@@ -162,14 +104,22 @@ class GQuantities():
     #     total and differential (the latter being very slow)
 
     
-    def __init__(self,simfile,track_lz=False,track_diff_lz=False,comp=None,verbose=0,rbins=None,multi=False):
+    def __init__(self,simfile=None,track_lz=False,track_diff_lz=False,track_fourier=False,comp=None,verbose=0,rbins=None,multi=False,resample=0):
 
+        #
+        # ability to instantiate and exit
+        if simfile == None:
+            print 'globalquantities.__init__: beginning...'
+            return None
+
+    
         self.slist = simfile
         self.verbose = verbose
+        self.zfourier = False
 
         # add an option to make a single file readable (3.5.16 MSP)
         if (multi==True):
-            GQuantities.parse_list(self)
+            GQuantities.parse_list(self,resample=resample)
             
         else:
             # this is the single file input case
@@ -198,18 +148,37 @@ class GQuantities():
             if self.verbose >= 1:
                 print 'Tracking Radial Differential Angular momentum...'
             GQuantities.track_diff_angular_momentum(self,comp,rbins)
-        
-            
 
-    def parse_list(self):
+        if (track_fourier) and (comp):
+            if self.verbose >= 1:
+                print('globalquantities.__init__: tracking fourier decompositions...')
+            GQuantities.compute_fourier(self,mmax=6)
+
+    def parse_list(self,resample=0):
+        #
+        # make the list of files to operate on. if reample is >1, will select every (resample) files.
+        #
 
         
         f = open(self.slist)
         s_list = []
-        for line in f:
-            d = [q for q in line.split()]
-            s_list.append(d[0])
 
+        filenum = 0
+        
+        for line in f:
+            
+            if resample:
+                if (filenum % resample) == 0:
+                    d = [q for q in line.split()]
+                    s_list.append(d[0])
+                    
+            else: # not resampling        
+                d = [q for q in line.split()]
+                s_list.append(d[0])
+
+            filenum += 1
+
+            
         f.close()
 
         self.SLIST = np.array(s_list)
@@ -228,6 +197,9 @@ class GQuantities():
         
 
     def track_angular_momentum(self,comp,dfreq=50):
+        #
+        # follow the total angular momentum in a component
+        #
 
         tinit = time.time()
         self.TLZ = np.zeros(len(self.SLIST))
@@ -369,6 +341,7 @@ class GQuantities():
         
         for i,file in enumerate(self.SLIST):
 
+            if self.verbose > 1: print 'globalquantities.compute_fourier: working on ',file
                 
             O = psp_io.Input(file,comp=comp,verbose=0)
         
@@ -384,6 +357,55 @@ class GQuantities():
             self.time[i] = O.time
 
 
+    def write_fourier(self,outfile):
+
+        f = open(outfile,'wb')
+
+        np.array([self.aval.shape[0],self.aval.shape[1],self.aval.shape[2]],dtype='i4').tofile(f)
+
+        if self.zfourier:
+            np.array(1.,dtype='i4').tofile(f)
+        else:
+            np.array(0.,dtype='i4').tofile(f)
+        
+        np.array(self.comp,dtype='S12').tofile(f)
+        np.array(self.time,dtype='f4').tofile(f)
+        np.array(self.rbins,dtype='f4').tofile(f)
+        np.array(self.aval.reshape(-1,),dtype='f4').tofile(f)
+        np.array(self.bval.reshape(-1,),dtype='f4').tofile(f)
+        
+
+        if self.zfourier:
+            np.array(self.azval.reshape(-1,),dtype='f4').tofile(f)
+            np.array(self.bzval.reshape(-1,),dtype='f4').tofile(f)
+            np.array(self.anorm.reshape(-1,),dtype='f4').tofile(f)
+
+        f.close()
+
+    def read_fourier(self,infile):
+
+        f = open(infile,'rb')
+
+        [mmax,tnum,rnum] = np.fromfile(f,dtype='i4',count=3)
+        [self.zfourier] = np.fromfile(f,dtype='i4',count=1)
+        [self.comp] = np.fromfile(f,dtype='S12',count=1)
+        self.time = np.fromfile(f,dtype='f4',count=tnum)
+        self.rbins = np.fromfile(f,dtype='f4',count=rnum)
+        atmp = np.fromfile(f,dtype='f4',count=mmax*tnum*rnum)
+        btmp = np.fromfile(f,dtype='f4',count=mmax*tnum*rnum)
+
+        self.aval = atmp.reshape([mmax,tnum,rnum])
+        self.bval = btmp.reshape([mmax,tnum,rnum])
+
+        if self.zfourier:
+            aztmp = np.fromfile(f,dtype='f4',count=tnum*rnum)
+            bztmp = np.fromfile(f,dtype='f4',count=tnum*rnum)
+            anormtmp = np.fromfile(f,dtype='f4',count=tnum*rnum)
+            self.azval = aztmp.reshape(tnum,rnum)
+            self.bzval = bztmp.reshape(tnum,rnum)
+            self.anorm = anormtmp.reshape(tnum,rnum)
+        
+        f.close()
 
 
     def compute_z_fourier(self):
@@ -391,8 +413,9 @@ class GQuantities():
         #
         # output format of the files is:
         #
-        # Q.aval[rbin_val,time_val]
-        # 
+        # Q.azval[rbin_val,time_val]
+        #
+        # no m order because it is only considering the m=2 case
 
         try:
             rbins = self.rbins
@@ -415,11 +438,13 @@ class GQuantities():
                 comp = 'dark'
 
 
-        self.azval = np.zeros([len(rbins),len(self.SLIST)])
-        self.bzval = np.zeros([len(rbins),len(self.SLIST)])
+        self.azval = np.zeros([len(self.SLIST),len(rbins)])
+        self.bzval = np.zeros([len(self.SLIST),len(rbins)])
+        self.anorm = np.zeros([len(self.SLIST),len(rbins)])
         
         for i,file in enumerate(self.SLIST):
 
+            if self.verbose > 1: print 'globalquantities.compute_z_fourier: working on ',file
                 
             O = psp_io.Input(file,comp=comp,verbose=0)
         
@@ -427,8 +452,12 @@ class GQuantities():
 
             for indx,r in enumerate(rbins):
                 yes = np.where( r_dig-1 == indx)[0]
-                self.azval[indx,i] = np.sum(O.mass[yes] * O.zpos[yes] * np.cos(2.*np.arctan2(O.ypos[yes],O.xpos[yes])))
-                self.bzval[indx,i] = np.sum(O.mass[yes] * O.zpos[yes] * np.sin(2.*np.arctan2(O.ypos[yes],O.xpos[yes])))
-                self.anorm[indx,i] = np.sum(O.mass[yes])
+                self.azval[i,indx] = np.sum(O.mass[yes] * O.zpos[yes] * np.cos(2.*np.arctan2(O.ypos[yes],O.xpos[yes])))
+                self.bzval[i,indx] = np.sum(O.mass[yes] * O.zpos[yes] * np.sin(2.*np.arctan2(O.ypos[yes],O.xpos[yes])))
+                self.anorm[i,indx] = np.sum(O.mass[yes])
+
+        self.zfourier = True
 
 
+
+        
