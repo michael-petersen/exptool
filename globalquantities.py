@@ -328,7 +328,7 @@ class GQuantities():
                     self.aval[m,i,indx] = np.sum(O.mass[yes] * np.cos(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
                     self.bval[m,i,indx] = np.sum(O.mass[yes] * np.sin(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
 
-            self.time[i] = O.ctime
+            self.time[i] = O.time
 
 
 
@@ -381,7 +381,7 @@ class GQuantities():
                     self.aval[m,i,indx] = np.sum(O.mass[yes] * np.cos(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
                     self.bval[m,i,indx] = np.sum(O.mass[yes] * np.sin(float(m)*np.arctan2(O.ypos[yes],O.xpos[yes])))
 
-            self.time[i] = O.ctime
+            self.time[i] = O.time
 
 
 
