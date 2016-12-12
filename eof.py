@@ -26,7 +26,7 @@ import time
 import sys
 import itertools
 import multiprocessing
-
+from collections import OrderedDict
 
 
 
@@ -1024,7 +1024,7 @@ def restore_eof_coefficients(infile):
     #
     # this is a little sloppy right now, but it works
     #
-    EOF_Dict = {}
+    EOF_Dict = OrderedDict()
 
     for step in range(0,ndumps):
         
