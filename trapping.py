@@ -411,13 +411,11 @@ class Trapping():
 
         Trapping.parse_list(self)
 
-        if (to_file==2):
-            
-            Oa = psp_io.Input(self.SLIST[0],comp=comp,verbose=0,nout=nout)
-            total_orbits = len(Oa.xpos)
+        Oa = psp_io.Input(self.SLIST[0],comp=comp,verbose=0,nout=nout)
+        total_orbits = len(Oa.xpos)
         
-            aps_dictionary = {} # make a dictionary for the aps
-            for i in range(0,total_orbits): aps_dictionary[i] = []
+        aps_dictionary = {} # make a dictionary for the aps
+        for i in range(0,total_orbits): aps_dictionary[i] = []
             
 
         for i in range(1,len(self.SLIST)-1):
@@ -444,13 +442,8 @@ class Trapping():
             
             indx = np.array([i for i in range(0,len(Ob.xpos))])
 
-            if transform:
-                x = Ob.tX[aps]
-                y = Ob.tY[aps]
-            else:
-                x = Ob.xpos[aps]
-                y = Ob.ypos[aps]
-                
+            x = Ob.xpos[aps]
+            y = Ob.ypos[aps]
             z = Ob.zpos[aps]
             numi = indx[aps]
 
