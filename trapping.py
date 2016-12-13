@@ -336,7 +336,7 @@ def read_trapping_file(t_file):
             
 
 
-class Trapping():
+class ApsFinding():
 
     #
     # class to compute trapping
@@ -373,7 +373,7 @@ class Trapping():
         self.slist = filelist
         self.verbose = verbose
         
-        Trapping.parse_list(self)
+        ApsFinding.parse_list(self)
         
 
     def parse_list(self):
@@ -387,17 +387,16 @@ class Trapping():
         self.SLIST = np.array(s_list)
 
         if self.verbose >= 1:
-            print 'Trapping.parse_list: Accepted %i files.' %len(self.SLIST)
+            print 'ApsFinding.parse_list: Accepted %i files.' %len(self.SLIST)
 
     
-    def determine_r_aps(self,filelist,comp,nout=10,out_directory='',threedee=False):
+    def determine_r_aps(self,filelist,comp,nout=10,out_directory='',threedee=False,return_aps=False):
 
         #
         # need to think of the best way to return this data
         #
 
         #
-        # two separate modes, to_file=1,2
         #
 
         self.slist = filelist
@@ -407,9 +406,15 @@ class Trapping():
            
         f = open(out_directory+'apshold'+tstamp+'.dat','wb+')
 
-        print 'trapping.determin_r_aps: outfile is '+out_directory+'apshold'+tstamp+'.dat'
+        ApsFinding.parse_list(self)
+        # returns
 
-        Trapping.parse_list(self)
+
+        #
+        # print descriptor string
+        #
+        desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(nout)+', threedee='+str(threedee)+', using '+filelist
+        np.array([desc],dtype='S200').tofile(f)
 
         Oa = psp_io.Input(self.SLIST[0],comp=comp,verbose=0,nout=nout)
         total_orbits = len(Oa.xpos)
@@ -487,15 +492,24 @@ class Trapping():
         f.close()
 
 
+        print 'trapping.ApsFinding.determine_r_aps: savefile is '+out_directory+'apshold'+tstamp+'.dat'
+
+        if (return_aps):
+            ApsDict = ApsFinding.read_aps_file(self,out_directory+'apshold'+tstamp+'.dat')
+            return ApsDict
+
+
     def read_aps_file(self,aps_file):
 
         f = open(aps_file,'rb')
 
-        [norb] = np.fromfile(f,dtype='i',count=1)
+        [self.desc] = np.fromfile(f,dtype='S200',count=1)
+
+        [self.norb] = np.fromfile(f,dtype='i',count=1)
 
         self.aps = {}
 
-        for i in range(norb):
+        for i in range(self.norb):
             
             [naps] = np.fromfile(f,dtype='i',count=1)
             
@@ -508,7 +522,24 @@ class Trapping():
 
         f.close()
 
+        ApsDict = ApsFinding.convert_to_dict(self)
+        ApsDict['desc'] = self.desc
+        ApsDict['norb'] = self.norb
 
+        return ApsDict
+
+
+    def convert_to_dict(self):
+            
+        # remake Aps File as a dictionary
+        ApsDict = {}
+        
+        for indx in range(0,self.norb):
+            ApsDict[indx] = self.aps[indx]
+
+        return ApsDict
+
+        
     
 #
 # some definitions--these are probably not the final resting place for these.

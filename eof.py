@@ -19,6 +19,7 @@ USAGE EXAMPLE
 
 '''
 
+# general definitions
 import struct
 import numpy as np
 import os
@@ -28,6 +29,8 @@ import itertools
 import multiprocessing
 from collections import OrderedDict
 
+# exptool definitions
+import utils
 
 
 #
@@ -594,7 +597,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, z
     #
     # cycle particles
     for part in range(0,norb):
-        if (verbose > 0) & ( ((float(part)+1.) % 1000. == 0.0) | (part==0)): print_progress(part,norb,'eof.accumulated_eval_particles')
+        if (verbose > 0) & ( ((float(part)+1.) % 1000. == 0.0) | (part==0)): utils.print_progress(part,norb,'eof.accumulated_eval_particles')
         phi = PHI[part]
         X,Y,ix,iy = return_bins(R[part],Particles.zpos[part],rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
         #
