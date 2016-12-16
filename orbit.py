@@ -12,6 +12,7 @@
 
 import numpy as np
 import psp_io
+import trapping
 
 '''
 # Quick Start Demo:
@@ -194,6 +195,29 @@ def read_orbit_map(infile):
     Orbits['VZ'] = orb[:,:,5]
 
     return Orbits
+
+
+
+
+def transform_orbit_map(OrbitDictionary,BarInstance):
+    '''
+    inputs
+    ------
+    OrbitDictionary, from the defined orbit.initialize_orbit_dictionary
+    BarInstance, from trapping.BarDetermine()
+
+    '''
+    bar_positions = trapping.find_barangle(OrbitDictionary['T'],BarInstance)
+
+    # make a tiled version for fast computation
+    manybar = np.tile(bar_positions,(OrbitDictionary['T'].shape[0],1)).T
+    
+    Orbits['TX'] = Orbits['X']*np.cos(manybar) - Orbits['Y']*np.sin(manybar)
+    Orbits['TY'] = -Orbits['X']*np.sin(manybar) - Orbits['Y']*np.cos(manybar)
+
+    return Orbits
+
+
 
 
 
