@@ -22,6 +22,7 @@ tarr = np.arange(0,12,1,dtype='int')
 # read in from files and return a dictionary
 Orbits = orbit.map_orbits('/path/to/outfile.dat','/path/to/exp/files',tarr,comp='dark',dictionary=True, norb=10)
 
+
 # Orbits is a dictionary with several quantities (see initialize_orbit_dictionary below)
 
 '''
@@ -117,7 +118,7 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
     times = []
     for indx,val in enumerate(time_array):
         O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=1,comp=comp)
-        times.append(O.ctime)
+        times.append(O.time)
 
     # print to file
     np.array(times,dtype=np.float).tofile(f)
@@ -135,7 +136,7 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
 
         O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=norb,comp=comp,verbose=verbose)
 
-        if verbose > 0: print O.ctime
+        if verbose > 0: print O.time
 
         for star in orbvals:
             np.array([O.xpos[star],O.ypos[star],O.zpos[star],O.xvel[star],O.yvel[star],O.zvel[star]],dtype=np.float).tofile(f)
@@ -208,4 +209,4 @@ def make_orbit_density(infile):
     '''
 
     pass
-    
+
