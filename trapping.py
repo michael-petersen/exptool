@@ -313,26 +313,6 @@ class BarDetermine():
 
 
 
-
-
-#
-# reading in arrays also possible!
-#
-def read_trapping_file(t_file):
-    f = open(t_file,'rb')
-    [norb,ntime] = np.fromfile(f,dtype='i',count=2)
-    bar_times = np.fromfile(f,dtype='f',count=ntime)
-    #tarr = np.arange(tbegin,tend,dt)
-    #
-    trap_tmp = np.fromfile(f,dtype='i2',count=norb*ntime)
-    trap_array = trap_tmp.reshape([norb,ntime])
-    return bar_times,trap_array
-
-
-
-
-
-
             
 
 
@@ -580,9 +560,9 @@ class ComputeTrapping:
 
 def write_trapping_file(array,times,filename,tdtype='i1'):
     f = open(filename,'wb')
-    np.array([array.shape[0],array.shape[1]],dtype=tdtype).tofile(f)
+    np.array([array.shape[0],array.shape[1]],dtype='i').tofile(f)
     np.array(times,dtype='f').tofile(f)
-    np.array(array.reshape(-1,),dtype='i1').tofile(f)
+    np.array(array.reshape(-1,),dtype=tdtype).tofile(f)
     f.close()
 
 
