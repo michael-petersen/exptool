@@ -576,3 +576,252 @@ def read_trapping_file(t_file,tdtype='i1'):
 
 
 
+
+
+
+
+def process_kmeans(ApsArray,indx=-1,k=2):
+    #
+    # very robust kmeans implementation
+    #
+    #    -can be edited for speed
+    #    -confined to two dimensions
+    kmeans_plus_flag = 0
+    K = kmeans.KMeans(k,X=ApsArray)
+    K.find_centers()
+    
+    # find the standard deviation of clusters
+    try:
+        
+        # these may be better served as maxima
+        clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+        clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+        
+        # mean cluster center in the x dimension. could also do largest, or smallest
+        clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+    except:
+        K = kmeans.KPlusPlus(2,X=ApsArray)
+        K.init_centers()
+        K.find_centers(method='++')
+        kmeans_plus_flag = 1
+        try:
+            clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+            clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+            clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+        except:
+            #
+            # would like a more intelligent way to diagnose
+            #if indx >= 0:
+            #    print 'Orbit %i even failed in Kmeans++!!' %indx
+            clusterstd_x = -1.
+            clusterstd_y = -1.
+            clustermean = -1.
+            kmeans_plus_flag = 2
+            # if this fails, it will return 1s in the standard deviation arrays
+    
+    theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+             
+    
+    return theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag
+    
+
+def transform_aps(ApsArray,BarInstance):
+    bar_positions = trapping.find_barangle(ApsArray[:,0],BarInstance)
+    X = np.zeros([len(ApsArray[:,1]),2])
+    X[:,0] = ApsArray[:,1]*np.cos(bar_positions) - ApsArray[:,2]*np.sin(bar_positions)
+    X[:,1] = -ApsArray[:,1]*np.sin(bar_positions) - ApsArray[:,2]*np.cos(bar_positions)
+    return X
+
+
+
+
+def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
+                   sbuffer=20,\
+                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
+                   sigmax_limit=0.001,t_thresh=1.5,\
+                   verbose=0):
+    #
+    norb = TrappingInstanceDict['norb']
+    # this needs to be adaptable
+    trapping_array_x1 = np.zeros([norb,len(BarInstance.time)],dtype='i1')
+    trapping_array_x2 = np.zeros([norb,len(BarInstance.time)],dtype='i1')
+    # could dictionary this!
+    #
+    t1 = time.time()
+    if (verbose > 0): print 'trapping.do_kmeans_dict: opening angle=%3.2f, OmegaR=%3.2f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sbuffer)
+    #
+    for indx in range(0,norb):
+        if ((indx % (norb/10)) == 0) & (verbose > 0):  utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
+        time_sequence = np.array(TrappingInstanceDict[indx])[:,0]
+        #
+        # guard against total aps range being too small (very important for halo!)
+        if time_sequence.size < sbuffer:
+            continue
+        #
+        # transform to bar frame
+        X = transform_aps(TrappingInstanceDict[indx],BarInstance)
+        #
+        orbit_dist = []
+        for midpoint in range(0,len(X)):
+            relative_aps_time = time_sequence - time_sequence[midpoint]
+            closest_aps = (abs(relative_aps_time)).argsort()[0:sbuffer] # fixed this to include closest aps
+            #
+            #
+            # guard against aps with too large of a timespan (some number of bar periods, preferably)
+            if relative_aps_time[closest_aps[-1]] > t_thresh:
+                orbit_dist.append([0.0,1.0,1.0])
+                orbit_dist.append([np.max(BarInstance.time),1.0,1.0])
+                continue
+            #
+            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx)
+            #
+            if midpoint==0:
+                #
+                orbit_dist.append([0.0,theta_n,clusterstd_x])
+            #
+            # default action
+            orbit_dist.append([time_sequence[midpoint],theta_n,clusterstd_x])
+            #
+            if midpoint==(len(X)-1):
+                orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x])
+            #
+            #
+        DD = np.array(orbit_dist)
+        #nDD = abs(np.ediff1d(DD[:,1],to_begin=1.0))
+        #
+        tDD = 1./(abs(np.ediff1d(DD[:,0],to_begin=100.0))+1.e-8)
+        # make interpolated functions:
+        #     1. theta_n vs time
+        #     2. r_frequency vs time
+        #     3. sigma_x vs time
+        #     4. delta(theta_n) vs time (volitility)
+        theta_func = interpolate.interp1d(DD[:,0],DD[:,1], kind='nearest',fill_value=1.4)
+        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)
+        frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.4)
+        sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.4)
+        #
+        #
+        # look for satisfactory places
+        #
+        # set up nyquist frequency limit
+        nyquist = 1./(4.*(BarInstance.time[1]-BarInstance.time[0]))
+        #
+        x1 = np.where(   (theta_func(BarInstance.time) < opening_angle) \
+                       & (frequency_func(BarInstance.time) < nyquist) \
+                       & (sigmax_func(BarInstance.time) < sigmax_limit) )[0]
+        #
+        x2 = np.where(   (frequency_func(BarInstance.time) > nyquist) )[0]
+        #
+        # set trapped time regions to true
+        trapping_array_x1[indx,x1] = np.ones(len(x1))
+        trapping_array_x2[indx,x2] = np.ones(len(x2))
+    t2 = time.time()-t1
+    if (verbose > 1): print 'K-means took %3.2f seconds (%3.2f ms per orbit)' %(t2, t2/norb*1000)
+    return np.array([trapping_array_x1,trapping_array_x2])
+
+
+
+
+#
+# interesting strategy with dictionaries here
+def redistribute_aps(TrappingInstanceDict,divisions):
+    #TrappingInstanceDict = {}
+    #for indx in range(0,len(TrappingInstance.aps)):
+    #    TrappingInstanceDict[indx] = TrappingInstance.aps[indx]
+    npart = np.zeros(divisions,dtype=object)
+    holders = [{} for x in range(0,divisions)]
+    average_part = int(np.floor(TrappingInstanceDict['norb'])/divisions)
+    first_partition = TrappingInstanceDict['norb'] - average_part*(divisions-1)
+    print 'Each processor has %i particles.' %(average_part)#, first_partition
+    low_particle = 0
+    for i in range(0,divisions):
+        end_particle = low_particle+average_part
+        if i==0: end_particle = low_particle+first_partition
+        #print low_particle,end_particle
+        for j in range(low_particle,end_particle):
+            (holders[i])[j-low_particle] = TrappingInstanceDict[j]
+        low_particle = end_particle
+        if (i>0): holders[i]['norb'] = average_part
+        else: holders[i]['norb'] = first_partition
+    return holders
+
+
+
+
+
+
+#hh = redistribute_aps(TrappingInstanceDict,16)
+
+
+def do_kmeans_dict_star(a_b):
+    """Convert `f([1,2])` to `f(1,2)` call."""
+    return do_kmeans_dict(*a_b)
+
+
+
+def multi_compute_trapping(holding,nprocs,BarInstance,\
+                   sbuffer=20,\
+                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
+                   sigmax_limit=0.001,t_thresh=1.5,\
+                   verbose=0):
+    pool = Pool(nprocs)
+    a_args = [holding[i] for i in range(0,nprocs)]
+    second_arg = BarInstance
+    third_arg = sbuffer
+    fourth_arg = opening_angle
+    fifth_arg = rfreq_limit
+    sixth_arg = sigmax_limit
+    seventh_arg = t_thresh
+    eighth_arg = [0 for i in range(0,nprocs)]
+    eighth_arg[0] = verbose
+    a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),eighth_arg))
+    #
+    # clean up to exit
+    pool.close()
+    pool.join()  
+    return a_vals
+
+
+
+def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
+                   sbuffer=20,\
+                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
+                   sigmax_limit=0.001,t_thresh=1.5,\
+                   verbose=0):
+    #
+    nprocs = multiprocessing.cpu_count()
+    holding = redistribute_aps(TrappingInstance,nprocs)
+    if (verbose > 0):
+        print 'Beginning kmeans, using %i processors.' %nprocs
+    t1 = time.time()
+    freeze_support()
+    #x1_arrays,x2_arrays = multi_compute_trapping(holding,nprocs,BarInstance,opening_angle=opening_angle,rfreqlim=rfreqlim)
+    trapping_arrays = multi_compute_trapping(holding,nprocs,BarInstance,\
+                   sbuffer=20,\
+                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
+                   sigmax_limit=0.001,t_thresh=1.5,\
+                   verbose=verbose)
+    print 'Total trapping calculation took %3.2f seconds, or %3.2f milliseconds per orbit.' %(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstance))
+    x1_master = re_form_trapping_arrays(trapping_arrays,0)
+    x2_master = re_form_trapping_arrays(trapping_arrays,1)
+    return x1_master,x2_master
+
+
+def re_form_trapping_arrays(array,array_number):
+    # the arrays are structured as [processor][x1/x2][norb][ntime]
+    #print array.shape,len(array)
+    #print array[0].shape
+    norb_master = 0.0
+    for processor in range(0,len(array)): norb_master += array[processor].shape[1]
+    #
+    # now initialize new blank array? Or should it dictionary?
+    net_array = np.zeros([norb_master,array[0].shape[2]],dtype='i2')
+    start_index = 0
+    for processor in range(0,len(array)):
+        end_index = start_index + array[processor].shape[1]
+        #print processor,start_index,end_index
+        net_array[start_index:end_index] = array[processor][array_number]
+        start_index = end_index
+    return net_array
+
+
