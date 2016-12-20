@@ -624,7 +624,7 @@ def all_eval(r, costh, phi, expcoef,xi,rarr,p0,d0,lmax,nmax,numr,cmap,rmin,rmax,
   # use the basis to get the density,potential,force arrays
   #
   # these three need to be stuffed together into one call to save loops
-  dend,potd,dpot = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=cmap, scale=scale)
+  dend,dpot,potd = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=cmap, scale=scale)
   #
   #
   legs,dlegs = dlegendre_R(lmax,costh)
@@ -679,7 +679,7 @@ def all_eval(r, costh, phi, expcoef,xi,rarr,p0,d0,lmax,nmax,numr,cmap,rmin,rmax,
 
 
 
-def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=0,L2=1000):
+def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L2=1000):
   lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
   xi,rarr,p0,d0 = halo_methods.init_table(mod_file,numr,rmin,rmax,cmap=cmap,scale=scale)
   # compute factorial array
@@ -760,7 +760,6 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=0,L2=10
   pott  *= potlfac*sinth;
   potp  *= potlfac;
   return den0,den1,pot0,pot1,potr,pott,potp,rr
-
 
 
 
