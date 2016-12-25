@@ -56,6 +56,7 @@ def eof_params(file,verbose=0):
     ascale  :   (float) scalelength for radial scaling
     hscale  :   (float) scaleheight for vertical scaling
     cmap    :   (bool)  use mapping?
+    dens    :   (bool)  contains density terms?
 
 
     '''
@@ -94,7 +95,7 @@ def eof_params(file,verbose=0):
         print 'CYLMASS=%5.4f' %cylmass
         print 'TNOW=%5.4f' %tnow
         
-    return rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap
+    return rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens
 
 
 
@@ -103,7 +104,7 @@ def parse_eof(file):
     f = open(file,'rb')
     #
     #
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(file,verbose=0)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(file,verbose=0)
     #
     # initialize blank arrays
     #
@@ -117,11 +118,10 @@ def parse_eof(file):
     denss = np.zeros([mmax+1,norder,numx+1,numy+1])
     #
     #
-    for i in range(0,mmax+1): 
+    for i in range(0,mmax+1):
+        
         for j in range(0,norder):
-            #
-            # loops for different levels go here
-            #
+
             for k in range(0,numx+1):
                 potC[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
             for k in range(0,numx+1):
@@ -131,6 +131,7 @@ def parse_eof(file):
             if (dens==1):
                 for k in range(0,numx+1):
                     densc[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                    
     for i in range(1,mmax+1): # no zero order m here
         for j in range(0,norder):
             for k in range(0,numx+1):
@@ -394,7 +395,7 @@ def accumulate_single_m(ParticleInstance,potC,potS,MORDER,NMAX,XMIN,dX,YMIN,dY,N
 
 def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, m1=0,m2=1000):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
-    rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap = eof_params(eof_file)
+    rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
     if M2 == -1: M2 = MMAX+1
     fr = 0.0;
@@ -645,7 +646,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1):
         eof_quickread(eof_file)
 
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(eof_file)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
     EOF_Out.mmax = mmax # don't forget +1 for array size
@@ -674,7 +675,7 @@ def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
         eof_quickread(EOF_Object.eof_file)
 
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(EOF_Object.eof_file)
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(EOF_Object.eof_file)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(EOF_Object.eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
     if nprocs > 1:
@@ -877,7 +878,7 @@ def mix_outputs(MultiOutput):
 
 def radial_slice(rvals,a_cos, a_sin,eof_file,z=0.0,phi=0.0):
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(eof_file)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
     p  = np.zeros_like(rvals)
     fr = np.zeros_like(rvals)
