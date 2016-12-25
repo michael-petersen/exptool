@@ -36,7 +36,29 @@ import utils
 #
 # tools to read in the eof cache and corresponding details
 #
-def eof_params(file):
+def eof_params(file,verbose=0):
+    '''
+    eof_params
+
+    inputs
+    --------
+    file    :   (string) input cache filename
+    verbose :   (bool)   print eof parameters?
+
+    outputs
+    --------
+    rmin    :   (float) minimum radius for eof expansion
+    rmax    :   (float) maximum radius for eof expansion
+    numx    :   (int)   number of points in radial direction
+    numy    :   (int)   number of points in the vertical direction
+    mmax    :   (int)   number of azimuthal orders
+    norder  :   (int)   number of radial orders
+    ascale  :   (float) scalelength for radial scaling
+    hscale  :   (float) scaleheight for vertical scaling
+    cmap    :   (bool)  use mapping?
+
+
+    '''
     f = open(file,'rb')
     #
     # read the header
@@ -59,45 +81,20 @@ def eof_params(file):
     hscale = a[3]
     cylmass = a[4]
     tnow = a[5]
+
+    if (verbose):
+
+        print 'The parameters for this EOF file are:'
+        print 'MMAX=%i' %mmax
+        print 'NORDER=%i' %norder
+        print 'NMAX=%i' %nmax
+        print 'NUMX,NUMY=%i,%i' %(numx,numy)
+        print 'DENS,CMAP=%i,%i' %(dens,cmap)
+        print 'ASCALE,HSCALE=%5.4f,%5.4f' %(ascale,hscale)
+        print 'CYLMASS=%5.4f' %cylmass
+        print 'TNOW=%5.4f' %tnow
+        
     return rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap
-
-
-
-def eof_quickread(file):
-    #
-    # printing diagnostic
-    #
-    f = open(file,'rb')
-    #
-    # read the header
-    #
-    a = np.fromfile(f, dtype=np.uint32,count=7)
-    mmax = a[0]
-    numx = a[1]
-    numy = a[2]
-    nmax = a[3]
-    norder = a[4]
-    dens = a[5]
-    cmap = a[6]
-    #
-    # second header piece
-    #
-    a = np.fromfile(f, dtype='<f8',count=6)
-    rmin = a[0]
-    rmax = a[1]
-    ascale = a[2]
-    hscale = a[3]
-    cylmass = a[4]
-    tnow = a[5]
-    print 'The parameters for this EOF file are:'
-    print 'MMAX=%i' %mmax
-    print 'NORDER=%i' %norder
-    print 'NMAX=%i' %nmax
-    print 'NUMX,NUMY=%i,%i' %(numx,numy)
-    print 'DENS,CMAP=%i,%i' %(dens,cmap)
-    print 'ASCALE,HSCALE=%5.4f,%5.4f' %(ascale,hscale)
-    print 'CYLMASS=%5.4f' %cylmass
-    print 'TNOW=%5.4f' %tnow
 
 
 
@@ -105,28 +102,10 @@ def eof_quickread(file):
 def parse_eof(file):
     f = open(file,'rb')
     #
-    # read the header
     #
-    a = np.fromfile(f, dtype=np.uint32,count=7)
-    mmax = a[0]
-    numx = a[1]
-    numy = a[2]
-    nmax = a[3]
-    norder = a[4]
-    dens = a[5]
-    cmap = a[6]
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap = eof_params(file,verbose=0)
     #
-    # second header piece
-    #
-    a = np.fromfile(f, dtype='<f8',count=6)
-    rmin = a[0]
-    rmax = a[1]
-    ascale = a[2]
-    hscale = a[3]
-    cylmass = a[4]
-    tnow = a[5]
-    #
-    # set up the matrices
+    # initialize blank arrays
     #
     potC = np.zeros([mmax+1,norder,numx+1,numy+1])
     rforcec = np.zeros([mmax+1,norder,numx+1,numy+1])
@@ -136,7 +115,9 @@ def parse_eof(file):
     rforces = np.zeros([mmax+1,norder,numx+1,numy+1])
     zforces = np.zeros([mmax+1,norder,numx+1,numy+1])
     denss = np.zeros([mmax+1,norder,numx+1,numy+1])
-    for i in range(0,mmax+1): # I think the padding needs to be here? test.
+    #
+    #
+    for i in range(0,mmax+1): 
         for j in range(0,norder):
             #
             # loops for different levels go here
@@ -352,7 +333,7 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
     accum_sin = np.zeros([MMAX+1,NMAX])
     #
     for n in range(0,norb):
-        if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): print_progress(n,norb,'eof.accumulate')
+        if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): utils.print_progress(n,norb,'eof.accumulate')
         #
         r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2.)**0.5
         phi = np.arctan2(ParticleInstance.ypos[n],ParticleInstance.xpos[n])
@@ -888,34 +869,9 @@ def mix_outputs(MultiOutput):
 
 
 
-
-# http://stackoverflow.com/questions/13944959/dynamic-refresh-printing-of-multiprocessing-or-multithreading-in-python
-
-
-def print_progress(current_n,total_orb,module):
-    last = 0
-    #print current_n,total_orb
-    if float(current_n+1)==float(total_orb): last = 1
-
-    #print last
-
-    bar = ('=' * int(float(current_n)/total_orb * 20.)).ljust(20)
-    percent = int(float(current_n)/total_orb * 100.)
-
-    if last:
-        bar = ('=' * int(20.)).ljust(20)
-        percent = int(100)
-        print "%s: [%s] %s%%" % (module, bar, percent)
-        
-    else:
-        sys.stdout.write("%s: [%s] %s%%\r" % (module, bar, percent))
-        sys.stdout.flush()
-
-
-
     
 #
-# some little helper functions
+# some little helper functions: to be broken out
 #
 
 
