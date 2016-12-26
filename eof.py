@@ -45,7 +45,7 @@ def eof_params(file,verbose=0):
     file    :   (string) input cache filename
     verbose :   (bool)   print eof parameters?
 
-    outputs
+    returns
     --------
     rmin    :   (float) minimum radius for eof expansion
     rmax    :   (float) maximum radius for eof expansion
@@ -101,6 +101,26 @@ def eof_params(file,verbose=0):
 
 
 def parse_eof(file):
+    '''
+    parse_eof
+
+    inputs
+    --------
+    file    :   (string) input cache filename
+
+    returns
+    --------
+    potC    :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) cosine potential terms
+    rforcec :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) cosine radial force terms
+    zforcec :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) cosine vertical force terms
+    densc   :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) cosine density terms
+    potS    :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) sine potential terms
+    rforces :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) sine radial force terms
+    zforces :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) sine vertical force terms
+    denss   :   (matrix, (mmax+1) x (norder) x (numx+1) x (numy+1) ) sine density terms
+
+
+    '''
     f = open(file,'rb')
     #
     #
@@ -124,41 +144,68 @@ def parse_eof(file):
 
             for k in range(0,numx+1):
                 potC[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             for k in range(0,numx+1):
                 rforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             for k in range(0,numx+1):
                 zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             if (dens==1):
                 for k in range(0,numx+1):
                     densc[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
                     
-    for i in range(1,mmax+1): # no zero order m here
+    for i in range(1,mmax+1): # no zero order m for sine terms
+        
         for j in range(0,norder):
+            
             for k in range(0,numx+1):
                 potS[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             for k in range(0,numx+1):
                 rforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             for k in range(0,numx+1):
                 zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             if (dens==1):
                 for k in range(0,numx+1):
                     denss[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                    
     return potC,rforcec,zforcec,densc,potS,rforces,zforces,denss
 
 
 
-def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY=64,CMAP=0):
-    M_SQRT1_2 = np.sqrt(0.5)
-    Rtable  = M_SQRT1_2 * RMAX
+def set_table_params(rmin=0.001,rmax=1.,ascale=0.01,hscale=0.001,numx=128,numy=64,CMAP=0):
+    '''
+    set_table_params
+        calculate scaled boundary values for the parameter table
+
+    inputs
+    -------
+
+
+    returns
+    -------
+    
+
+    '''
+    Rtable  = np.sqrt(0.5) * rmax
+    
     # check cmap, but if cmap=0, r_to_xi = r
     #
     # otherwise, r = (r/ASCALE - 1.0)/(r/ASCALE + 1.0);
-    XMIN    = r_to_xi(RMIN*ASCALE,ASCALE,CMAP);
-    XMAX    = r_to_xi(Rtable*ASCALE,ascale=ASCALE,cmap=CMAP);
-    dX      = (XMAX - XMIN)/NUMX;    
-    YMIN    = z_to_y(-Rtable*ASCALE,hscale=HSCALE);
-    YMAX    = z_to_y( Rtable*ASCALE,hscale=HSCALE);
-    dY      = (YMAX - YMIN)/NUMY;
+
+    # calculate radial scalings
+    XMIN    = r_to_xi(rmin*ascale,ascale,CMAP);
+    XMAX    = r_to_xi(Rtable*ascale,ascale=ascale,cmap=CMAP);
+    dX      = (XMAX - XMIN)/numx;
+
+    # calculate vertical scalings
+    YMIN    = z_to_y(-Rtable*ascale,hscale=hscale);
+    YMAX    = z_to_y( Rtable*ascale,hscale=hscale);
+    dY      = (YMAX - YMIN)/numy;
+        
     return XMIN,XMAX,dX,YMIN,YMAX,dY
 
 
@@ -166,10 +213,10 @@ def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY
 #
 # mapping definitions
 #
-def z_to_y(z,hscale=0.001):
+def z_to_y(z,hscale):
     return z/(abs(z)+1.e-10)*np.arcsinh(abs(z/hscale))
 
-def r_to_xi(r,ascale=0.001,cmap=0):
+def r_to_xi(r,ascale,cmap=0):
     if (cmap):
         return (r/ascale - 1.0)/(r/ascale + 1.0);
     else:
