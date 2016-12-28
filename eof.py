@@ -85,7 +85,7 @@ def eof_params(file,verbose=0):
 
     if (verbose):
 
-        print 'The parameters for this EOF file are:'
+        print 'eof.eof_params: The parameters for this EOF file are:'
         print 'MMAX=%i' %mmax
         print 'NORDER=%i' %norder
         print 'NMAX=%i' %nmax
@@ -282,9 +282,8 @@ def get_pot(r,z,cos_array,sin_array,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 
     return Vc,Vs
 
 
-
 # BROKEN
-def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18):#Matrix& Vc, Matrix& Vs, double r, double z)
+def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18)
     #
     # returns potential fields for C and S to calculate weightings during accumulation
     #

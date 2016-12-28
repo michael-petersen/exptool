@@ -202,18 +202,31 @@ def read_orbit_map(infile):
 def transform_orbit_map(OrbitDictionary,BarInstance):
     '''
     inputs
-    ------
+    -------
     OrbitDictionary, from the defined orbit.initialize_orbit_dictionary
     BarInstance, from trapping.BarDetermine()
+
+    returns
+    -------
+    OrbitDictionary, with four new attributes:
+    TX  : parallel velocity to bar
+    TY  : perpendicular position to bar
+    VTX : parallel velocity to bar
+    VTY : perpendicular velocity to bar
 
     '''
     bar_positions = trapping.find_barangle(OrbitDictionary['T'],BarInstance)
 
     # make a tiled version for fast computation
     manybar = np.tile(bar_positions,(OrbitDictionary['T'].shape[0],1)).T
-    
+
+    # transform positions
     Orbits['TX'] = Orbits['X']*np.cos(manybar) - Orbits['Y']*np.sin(manybar)
     Orbits['TY'] = -Orbits['X']*np.sin(manybar) - Orbits['Y']*np.cos(manybar)
+
+    # transform velocities
+    Orbits['VTX'] = Orbits['VX']*np.cos(manybar) - Orbits['VY']*np.sin(manybar)
+    Orbits['VTY'] = -Orbits['VX']*np.sin(manybar) - Orbits['VY']*np.cos(manybar)
 
     return Orbits
 
