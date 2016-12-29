@@ -694,7 +694,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         #     1. theta_n vs time
         #     2. r_frequency vs time
         #     3. sigma_x vs time
-        #     4. delta(theta_n) vs time (volitility)
+        #     4. delta(theta_n) vs time (volitility, disabled for speed now)
         theta_func = interpolate.interp1d(DD[:,0],DD[:,1], kind='nearest',fill_value=1.4)
         #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)
         frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.4)

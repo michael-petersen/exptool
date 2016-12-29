@@ -214,9 +214,17 @@ def set_table_params(rmin=0.001,rmax=1.,ascale=0.01,hscale=0.001,numx=128,numy=6
 # mapping definitions
 #
 def z_to_y(z,hscale):
+    '''
+    return mapping of vertical position to Y-dimension table scaling.
+
+    '''
     return z/(abs(z)+1.e-10)*np.arcsinh(abs(z/hscale))
 
 def r_to_xi(r,ascale,cmap=0):
+    '''
+    return mapping of radial position to X-dimension table scaling.
+
+    '''
     if (cmap):
         return (r/ascale - 1.0)/(r/ascale + 1.0);
     else:

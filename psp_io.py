@@ -650,13 +650,7 @@ def convert_to_dict(ParticleInstance):
     return convert_to_dict
 
     
-#
-#
-#
-# could do the bar transform by getting just the lowest R A2 position angles
 
-#
-# only want to drop into this is need-be--calculating R is expensive
 #
 # this really shouldn't even be an option anymore.
 def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=np.pi,transform=False):
