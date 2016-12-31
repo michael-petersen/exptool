@@ -722,6 +722,13 @@ def compute_coefficients(PSPInput,eof_file,verbose=1):
 
 
 def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
+    '''
+    compute_forces
+        main wrapper for computing EOF forces
+
+
+
+    '''
     if nprocs == -1:
         nprocs = multiprocessing.cpu_count()
     

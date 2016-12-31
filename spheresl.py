@@ -255,6 +255,9 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1):
     nprocs = multiprocessing.cpu_count()
 
     holding = redistribute_particles(PSPInput,nprocs)
+
+    if (verbose):
+            print 'sl.compute_coefficients: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
     
     t1 = time.time()
     freeze_support()
@@ -303,7 +306,7 @@ def eval_particles(ParticleInstance,expcoef,sph_file,mod_file,nprocs=-1,verbose=
         freeze_support()
         #
         if (verbose):
-            print 'sl.compute_coefficients_multi: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
+            print 'sl.eval_particles: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
         a_vals = multi_all_eval_particles(holding,nprocs,expcoef,sph_file,mod_file,verbose)
         #
         if (verbose):
