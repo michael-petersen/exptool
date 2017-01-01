@@ -287,15 +287,8 @@ class genEllipse:
         minx,maxx = np.min(wrows),np.max(wcols)
         miny,maxy = np.min(wcols),np.max(wcols)
 
-        #print minx,maxy,miny,maxy
-
         E.posarr,E.xarr, E.yarr = tmp_posarr[minx:maxx,miny:maxy],tmp_xarr[minx:maxx,miny:maxy],tmp_yarr[minx:maxx,miny:maxy]
         
-        #plt.contourf(self.E.xarr,self.E.yarr,np.log10(self.E.posarr))
-        #self.E.generate_flat_field_kde(O.xpos,O.ypos,O.zpos,O.mass,xbins=xbins,logvals=loggy)
-
-        # need to verify that posarr was created properly
-
         if loggy:
             pos_vals = E.posarr.reshape(-1,)
             eps = np.min( pos_vals[np.where(pos_vals > 0.)[0]])
@@ -653,14 +646,25 @@ class EllipseFinder():
 
         
     def determine_contour_levels(self,cbins=50,vertices=30):
+        '''
+        determine_contour_levels
+             intelligently select the surface density values for fitting ellipses
 
-        # cbins is the number of output contours desired
+        inputs
+        ------
+        self     : object
+        cbins    : (int) the number of output contours desired
+        vertices : (int) the number of points in a contour that must exist to fit ellipse
 
+
+        returns
+        -------
+        self.clevels : array of surface density values to fit ellipses
+        
+        '''
 
         # use matplotlib's marching squares contour finder for this. to be improved with a better algorithm later...
         c = cntr.Cntr(self.xarr,self.yarr,self.posarr)
-
-        #thousand_spaced = np.percentile(self.posarr.reshape(-1,),np.linspace(0.1,100,1000))
 
         # how about a smarter way to decide where to lay the contours?
         startval = 0.90*np.max(self.posarr)                  # maximum limit for contours
@@ -669,7 +673,6 @@ class EllipseFinder():
         endval = 1.0*np.min(self.posarr) + eps               # minimum limit for contours
 
         stepsize = (startval-endval)/1000.
-        #print 'The INITIAL Stepsize is ',stepsize,'(',startval,endval,')'
 
         # iterate down and up to find where contours exist       
         conlevels = np.zeros(1001)
@@ -694,7 +697,6 @@ class EllipseFinder():
         startval = np.max(cvals)
         endval = np.min(cvals)
         stepsize = (startval-endval)/float(cbins)
-        #print 'The FINAL Stepsize is ',stepsize,'(',startval,endval,')'
 
         # define the contour levels
         self.clevels = np.array([ (startval - stepsize*x) for x in range(0,cbins)])
