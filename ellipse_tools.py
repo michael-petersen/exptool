@@ -249,11 +249,13 @@ def inside_ellipse(X,Y,A,B,C,rot=0.):
 
 
 class genEllipse:
+    '''
 
     #
     # least-squares (and soon to be Fourier) fitting of generalized ellipses
     #
-    
+
+    '''
     def fitEllipse(self,O,theta_resolution=200,resolution=256,rmax=0.1,loggy=False,generalize=True,weights=None,ncbins=50,contourlevels=[None],SN=1.):
         # here, I have made the input a PSP call...but this could be generalized better.
         
@@ -436,7 +438,12 @@ class genEllipse:
                 _ = plt.plot(self.R[j]*np.cos(self.TH[j]+self.ANG[j])+self.CEN[j,0],self.R[j]*np.sin(self.TH[j]+self.ANG[j])+self.CEN[j,1],color='black',lw=1.)
 
     def plot_ellipse_diagnostics(self,fignum=None):
+        '''
+        plot_ellipse_diagnostics
+            plot the ellipticity versus major axis (left) and phase angle versus major axis (right)
+            
 
+        '''
         if fignum:
             fig = plt.figure(fignum)
         else:
@@ -444,8 +451,8 @@ class genEllipse:
             ax1 = fig.add_subplot(121)
             ax2 = fig.add_subplot(122)
 
-        ax1.plot(self.A,1.-self.B/self.A)
-        ax2.plot(self.A,np.arctan(self.B/self.A))
+        ax1.scatter(self.A,1.-self.B/self.A,color='black',s=10.)
+        ax2.scatter(self.A,np.arctan(self.B/self.A),color='black',s=10.)
 
 
 
