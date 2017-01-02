@@ -775,16 +775,21 @@ def map_simulation_files(outfile,simulation_directory,simulation_name):
         #
         n_snapshots = get_n_snapshots(simulation_directory)
         current_time = -1.
-        for i in range(0,n_snapshots):
+        for i in range(0,n_snapshots+1):
             try:
-                PSPDump = psp_io.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %i)
-                if PSPDump.time > current_time:
-                    print >>f,simulation_directory+'OUT.'+simulation_name+'.%05i' %i
-                    current_time = PSPDump.time
-                    print current_time
+                PSPDump = Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %i)
+                t = PSPDump.time
                 del PSPDump
+
             except:
                 print 'Bad file: ',simulation_directory+'OUT.'+simulation_name+'.%05i' %i
+                t = current_time
+                
+            if t > current_time:
+                print >>f,simulation_directory+'OUT.'+simulation_name+'.%05i' %i
+                current_time = t
+                print current_time
+                
         #
         f.close()
     #

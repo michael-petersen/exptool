@@ -416,7 +416,11 @@ class genEllipse:
         
         
     def plot_contours(self,ellipses=True,fignum=None):
-        # plot the contours again
+        '''
+        plot_contours
+            plot the contours on top of the surface density plot.
+
+        '''
         if fignum:
             plt.figure(fignum)
         else:
@@ -491,12 +495,38 @@ def max_ellip_drop(A,B):
     return A[ np.where(np.min(edrop)==edrop)[0]]
 
         
-
+#
+# MUNOZ13 metrics
+#
 def max_ellip(A,B):
     e = (1.-B/A)
     return A[ np.where(np.max(e)==e)[0]]
 
         
+def ellip_change(A,B,change=0.1):
+    e = (1.-B/A)
+    ellip_index = np.where(np.max(e)==e)[0]
+    max_ellip_value = e[ellip_index]
+    ellip_diff = 0.
+    while (ellip_diff < change):
+        ellip_index += 1
+        ellip_diff = abs(e[ellip_index] - max_ellip_value)
+    return A[ellip_index]
+
+
+def pa_change(A,B,change=10.):
+    # change must be in degrees
+    e = (1.-B/A)
+    pa = np.arctan(B/A)
+    ellip_index = np.where(np.max(e)==e)[0]
+    pa_value = pa[ellip_index]
+    pa_diff = 0.
+    while (pa_diff < change):
+        ellip_index += 1
+        pa_diff = abs(pa[ellip_index] - pa_value)*180./np.pi
+    return A[ellip_index]
+
+
 
 
 
