@@ -16,7 +16,6 @@ fig = visualize.show_dump('/scratch/mpetersen/Disk064a/OUT.run064a.01000','star'
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-plt.ion()
 
 # exptool routines
 import psp_io
@@ -26,7 +25,7 @@ import trapping
 
 def show_dump(infile,comp,type='pos',transform=True,\
               # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.001):
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
 
     # read in file
 
@@ -49,19 +48,14 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
         # XY
         kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
-        dx = (kdeX[1][1]-kdeX[1][0])
-        dz = 2.*slice_width
-
 
         print 'max:',np.max(kdePOSXY)
-        print 'dx:',kdeX[1][1]-kdeX[1][0]
         # make a log guard
-        eps = np.min(PSPDump.mass)/(dx**2. * dz)
+        eps = np.min(PSPDump.mass)
 
         
 
-        # change to surface density
-        kdePOSXY /= (dx**2. * dz)
+        # change to log surface density
         kdePOSXY = np.log10(kdePOSXY+eps)
 
         # XZ
@@ -69,10 +63,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
                                                       gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
                                                       weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
 
-        # change to surface density
-        dy = (kdeXZz[1][0]-kdeXZz[0][0])
-        print 'dy:',dy
-        kdePOSXZ /= (dx * dy * dz)
+        # change to log surface density
         kdePOSXZ = np.log10(kdePOSXZ+eps)
 
         # ZY
@@ -81,39 +72,36 @@ def show_dump(infile,comp,type='pos',transform=True,\
                                                   weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
 
         # change to surface density
-        kdePOSZY /= (dx * dy * dz)
         kdePOSZY = np.log10(kdePOSZY+eps)
 
         # set up the figure
 
         maxlev_edge = np.max([np.max(kdePOSXZ),np.max(kdePOSZY)])
         
-        levels_edge = np.linspace(np.log10(eps),maxlev_edge,cres)
-        levels = np.linspace(np.log10(eps),np.max(kdePOSXY),cres)
+        levels_edge = np.round(np.linspace(np.log10(eps),maxlev_edge,cres),1)
+        levels = np.round(np.linspace(np.log10(eps),np.max(kdePOSXY),cres),1)
 
         print 'Increase factor:',np.max(levels)/np.max(levels_edge)
         
-        fig = plt.figure()
+        fig = plt.figure(figsize=(7.,7.))
 
         left_edge = 0.15
         wfac = 5.
         width_share = 1./wfac
-        right_edge = 0.80
+        right_edge = 0.78
         width_share = (right_edge-left_edge)*width_share
         bottom_edge = 0.15
         ax1 = fig.add_axes([left_edge,bottom_edge,(wfac-1.)*width_share,(wfac-1.)*width_share])
         ax2 = fig.add_axes([left_edge+(wfac-1.)*width_share,bottom_edge,width_share,(wfac-1.)*width_share])
         ax3 = fig.add_axes([left_edge,bottom_edge+(wfac-1.)*width_share,(wfac-1.)*width_share,width_share])
-        ax4 = fig.add_axes([0.85,bottom_edge,0.02,wfac*width_share])
+        ax4 = fig.add_axes([0.82,bottom_edge,0.02,wfac*width_share])
 
         
         # XY
         cbar = ax1.contourf(kdeX,kdeY,kdePOSXY,levels,cmap=cm.gnuplot)
         ax1.axis([-0.05,0.05,-0.05,0.05])
         cbh = fig.colorbar(cbar,cax=ax4)
-        #cbh.set_ticks(())
-        #cbh.set_label()
-        #cbh.set_ticklabels(())
+        
 
         # ZY
         ax2.contourf(kdeZYz,kdeZYy,kdePOSZY,levels_edge,cmap=cm.gnuplot)
