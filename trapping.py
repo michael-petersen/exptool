@@ -582,7 +582,18 @@ def read_trapping_file(t_file,tdtype='i1'):
 
 
 
+def reduce_aps_dictionary(TrappingInstance,norb):
+    '''
+    sometimes you just don't need all those apsides
+    '''
+    TrappingInstanceOut = {}
+    TrappingInstanceOut['norb'] = norb
+    TrappingInstanceOut['desc'] = TrappingInstance['desc']
 
+    for i in range(0,norb):
+        TrappingInstanceOut[i] = TrappingInstance[i]
+
+    return TrappingInstanceOut
 
 
 
@@ -640,6 +651,72 @@ def transform_aps(ApsArray,BarInstance):
 
 
 
+def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
+                          sbuffer=20,\
+                          t_thresh=1.5,\
+                          verbose=1): 
+    '''
+    do_single_kmeans_step: analyze a desired time in the trapping dictionary
+                          
+    '''
+    norb = TrappingInstanceDict['norb']
+
+    theta_20 = np.zeros(norb)
+    r_frequency = np.zeros(norb)
+    x_position = np.zeros(norb)
+    sigma_x = np.zeros(norb)
+    sigma_y = np.zeros(norb)
+    
+    skipped_for_aps = 0
+    skipped_for_res = 0
+    sent_to_kmeans_plus = 0
+
+    
+    for indx in range(0,norb):
+        if ((indx % (norb/10)) == 0) & (verbose > 0):  utils.print_progress(indx,norb,'trapping.do_single_kmeans_step')
+        #
+
+        # block loop completely if too few aps
+        if len(TrappingInstanceDict[indx][:,0]) < sbuffer:
+            skipped_for_aps += 1
+            #cluster_dictionary[indx] = None
+            continue
+
+        # transform to bar frame
+        X = transform_aps(TrappingInstanceDict[indx],BarInstance)
+
+        # find the closest aps
+        relative_aps_time = abs(TrappingInstanceDict[indx][:,0] - desired_time)
+        closest_aps = (relative_aps_time).argsort()[0:sbuffer]
+
+        # block loop if furthest aps is above some time threshold
+        if relative_aps_time[closest_aps[-1]] > t_thresh:
+            skipped_for_res += 1
+            #cluster_dictionary[indx] = None
+            continue
+
+        # do k-means
+        theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps])
+
+        sent_to_kmeans_plus += kmeans_plus_flag
+        # set the values for each orbit
+        theta_20[indx] = theta_n
+
+        r_frequency[indx] =  1./(TrappingInstanceDict[indx][closest_aps[0],0] -\
+                                 TrappingInstanceDict[indx][closest_aps[0]-1,0])
+
+        x_position[indx] = clustermean
+        sigma_x[indx] = clusterstd_x
+        sigma_y[indx] = clusterstd_y
+
+    print 'skipped_for_aps',skipped_for_aps
+    print 'skipped_for_res',skipped_for_res
+    print 'sent_to_kmeans_plus',sent_to_kmeans_plus
+
+    return theta_20,r_frequency,x_position,sigma_x,sigma_y
+
+
+
 
 def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                    sbuffer=20,\
@@ -654,7 +731,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     # could dictionary this!
     #
     t1 = time.time()
-    if (verbose > 0): print 'trapping.do_kmeans_dict: opening angle=%3.2f, OmegaR=%3.2f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sbuffer)
+    if (verbose > 0): print 'trapping.do_kmeans_dict: opening angle=%4.3f, OmegaR=%3.2f, sigma_x limit=%4.3f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sigmax_limit,sbuffer)
     #
     for indx in range(0,norb):
         if ((indx % (norb/10)) == 0) & (verbose > 0):  utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
@@ -755,10 +832,6 @@ def redistribute_aps(TrappingInstanceDict,divisions):
 
 
 
-
-#hh = redistribute_aps(TrappingInstanceDict,16)
-
-
 def do_kmeans_dict_star(a_b):
     """Convert `f([1,2])` to `f(1,2)` call."""
     return do_kmeans_dict(*a_b)
@@ -803,11 +876,11 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     freeze_support()
     #x1_arrays,x2_arrays = multi_compute_trapping(holding,nprocs,BarInstance,opening_angle=opening_angle,rfreqlim=rfreqlim)
     trapping_arrays = multi_compute_trapping(holding,nprocs,BarInstance,\
-                   sbuffer=20,\
-                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
-                   sigmax_limit=0.001,t_thresh=1.5,\
+                   sbuffer=sbuffer,\
+                   opening_angle=opening_angle,rfreq_limit=rfreq_limit,\
+                   sigmax_limit=sigmax_limit,t_thresh=t_thresh,\
                    verbose=verbose)
-    print 'Total trapping calculation took %3.2f seconds, or %3.2f milliseconds per orbit.' %(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstance))
+    print 'Total trapping calculation took %3.2f seconds, or %3.2f milliseconds per orbit.' %(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict))
     x1_master = re_form_trapping_arrays(trapping_arrays,0)
     x2_master = re_form_trapping_arrays(trapping_arrays,1)
     return x1_master,x2_master
