@@ -15,6 +15,10 @@ import kmeans
 
 
 
+import itertools
+from multiprocessing import Pool, freeze_support
+import multiprocessing
+
 def compute_bar_lag(ParticleInstance,rcut=0.01):
     #
     # simple fourier method to calculate where the particles are in relation to the bar
@@ -790,7 +794,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    verbose=0):
     #
     nprocs = multiprocessing.cpu_count()
-    holding = redistribute_aps(TrappingInstance,nprocs)
+    holding = redistribute_aps(TrappingInstanceDict,nprocs)
     if (verbose > 0):
         print 'Beginning kmeans, using %i processors.' %nprocs
     t1 = time.time()
