@@ -12,7 +12,9 @@ import numpy as np
 import psp_io
 import datetime
 import kmeans
-
+import utils
+import os
+from scipy import interpolate
 
 
 import itertools
@@ -630,7 +632,7 @@ def process_kmeans(ApsArray,indx=-1,k=2):
     
 
 def transform_aps(ApsArray,BarInstance):
-    bar_positions = trapping.find_barangle(ApsArray[:,0],BarInstance)
+    bar_positions = find_barangle(ApsArray[:,0],BarInstance)
     X = np.zeros([len(ApsArray[:,1]),2])
     X[:,0] = ApsArray[:,1]*np.cos(bar_positions) - ApsArray[:,2]*np.sin(bar_positions)
     X[:,1] = -ApsArray[:,1]*np.sin(bar_positions) - ApsArray[:,2]*np.cos(bar_positions)
