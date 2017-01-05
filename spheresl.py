@@ -799,9 +799,9 @@ def force_eval(r, costh, phi, expcoef,\
 
     outputs
     -------
-    potr    :   dphi/dr
-    pott    :   dphi/dtheta
-    (skips potp)
+    potr    :   radial force
+    pott    :   theta force
+    potp    :   phi force
 
     '''
 
@@ -822,6 +822,7 @@ def force_eval(r, costh, phi, expcoef,\
     #
     potr = np.sum(fac1 * expcoef[0]*dpot[0]);
     pott = 0.0;
+    potp = 0.0;
     #
     # L loop
     #
@@ -844,6 +845,7 @@ def force_eval(r, costh, phi, expcoef,\
               sinm = np.sin(phi*m);
               potr += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
               pott += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
+              potp += np.sum(fac1*legs[l][m] * m * (-expcoef[loffset+moffset]   * potd[l]*sinm +   expcoef[loffset+moffset+1] * potd[l]*cosm ));
               moffset +=2;
       loffset+=(2*l+1)
     #
@@ -853,8 +855,9 @@ def force_eval(r, costh, phi, expcoef,\
     potlfac = 1.0/scale;
     potr  *= potlfac/scale;
     pott  *= potlfac*sinth;
+    potp  *= potlfac;
     
-    return potr,pott
+    return potr,pott,potp
 
 
 
