@@ -70,141 +70,12 @@ E = ellipse_tools.EllipseFinder()
 E.generate_flat_field_kde(P.xpos,P.ypos,P.zpos,P.mass,xbins=np.linspace(-0.05,0.05,121),normamass=True,logvals=True)
 
 
-# plot the contours
-plt.figure()
-plt.contourf(E.xarr,E.yarr,E.posarr,36,cmap=cm.gnuplot)
-
-
-E.add_ellipse_field(check=1,cbins=120)
-
-print ellipse_tools.ellip_drop(E.AVALS,E.BVALS,drop=0.4)
-print ellipse_tools.max_ellip_drop(E.AVALS,E.BVALS)
-
-
-
-# would like to compare the the bar extent in all simulations with the ellipse fit to see if they are different
-# Look at any orbit that passes into the bar ellipse and take the time average of those, plus time average of angular momentum with some thoughts about what it means
-
-
-TX,TY = insta_transform(O.xpos,O.ypos,np.pi/2.-0.08)
-
-E = ellipse_tools.EllipseFinder()
-
-ellipse_tools.EllipseFinder.generate_flat_field(E,TX,TY,O.zpos,O.mass,xbins=np.linspace(-0.05,0.05,51),normamass=True,logvals=True)
-
-
-F = ellipse_tools.EllipseFinder()
-TX,TY = insta_transform(O.xpos,O.ypos,np.pi/2.-0.08)
-TVX,TVY = insta_transform(O.xvel,O.yvel,np.pi/2.-0.08)
-
 R = (O.xpos**2. + O.ypos**2.)**0.5
 VTAN = (O.xpos*O.yvel - O.ypos*O.xvel)/R
 
 VRAD = (O.xpos*O.xvel + O.ypos*O.yvel)/R
 
 plt.scatter(R[0:20000],abs(VRAD[0:20000]),s=1.,color='black')
-
-
-H = ellipse_tools.EllipseFinder()
-# make a field to fit ellipses to
-ellipse_tools.EllipseFinder.generate_flat_field(H,TX,TY,O.zpos,VRAD,xbins=np.linspace(-0.05,0.05,51),normamass=False,logvals=False)
-
-
-
-ellipse_tools.EllipseFinder.generate_flat_field(F,TX,TY,O.zpos,VTAD,xbins=np.linspace(-0.05,0.05,51),normamass=False,logvals=False)
-
-
-G = ellipse_tools.EllipseFinder()
-
-
-# make a field to fit ellipses to
-ellipse_tools.EllipseFinder.generate_flat_field(G,TX,TY,O.zpos,np.ones(len(O.mass)),xbins=np.linspace(-0.05,0.05,51),normamass=False,logvals=False)
-
-
-plt.contourf(F.xarr,F.yarr,H.posarr/G.posarr,36,cmap=cm.jet)
-
-
-
-plt.figure(2)
-plt.contourf(E.xarr,E.yarr,E.posarr,36)
-
-
-ellipse_tools.EllipseFinder.add_ellipse_field(E,check=0,cbins=80)
-
-
-# plot the bar ellipses
-for j in range(0,len(E.AVALS)):
-     if E.AVALS[j] < ellipse_tools.ellip_drop(E.AVALS,E.BVALS,drop=0.4): # only plot if a bar contour
-              _ = plt.plot(E.CONX[j],E.CONY[j],color='black',lw=1.)
-
-#
-
-
-
-plt.figure(2)
-plt.contourf(E.xarr,E.yarr,E.posarr,36)
-
-j=24
-_ = plt.plot(E.CONX[j],E.CONY[j],color='black',lw=3.)
-
-
-
-for j in [28]: 
-     print j
-     if E.AVALS[j] < ellipse_tools.ellip_drop(E.AVALS,E.BVALS,drop=0.4): # only plot if a bar contour
-
-
-#
-
-
-plt.figure(1)
-
-# plot the ellipticity as a function of semi-major axis. Where this drops significantly is the end of the bar.
-plt.plot(E.AVALS,1.-E.BVALS/E.AVALS)
-
-# ...which can be defined with this tool.
-bar_length_ellipse = ellipse_tools.ellip_drop(E.AVALS,E.BVALS,drop=0.4)
-print 'The length of the bar in ellipse measurements is %4.3f' %bar_length_ellipse
-
-#
-# A more sophisticated approach follows that of Athanassoula (1990) in fitting generalized ellipses
-#
-
-# instantiate a generalized ellipse object
-T = ellipse_tools.genEllipse()
-
-# use the simulation output from above to 
-T.fitEllipse(O,rmax=0.05,generalize=False,resolution=300)
-
-
-j=24
-_ = plt.plot(T.R[j]*np.cos(T.TH[j]+T.ANG[j]-np.pi/2.-0.08)+T.CEN[j,0],T.R[j]*np.sin(T.TH[j]+T.ANG[j]-np.pi/2.-0.08)+T.CEN[j,1],color='black',lw=1.)
-
-
-#
-
-
-     
-#
-# observe that this really only has meaning for the bar region; generalized ellipses are failing at larger radii
-#    (as determined by the overlap in ellipses)
-#
-
-# plot over the ellipse drop of the other formalism
-plt.figure(1)
-plt.plot(T.A,1.-T.B/T.A)
-
-# ...which can be defined with this tool.
-bar_length_ellipse = ellipse_tools.ellip_drop(T.A,T.B,drop=0.4)
-bar_length_ellipse = ellipse_tools.max_ellip_drop(T.A,T.B)
-
-print 'The length of the bar in ellipse measurements is %4.3f' %bar_length_ellipse
-
-
-# also examine the generalized fit parameter, $c$
-plt.figure(3)
-plt.plot(T.A,T.C)
-
 
 '''
 
@@ -511,7 +382,7 @@ def ellip_change(A,B,change=0.1):
     while (ellip_diff < change):
         ellip_index += 1
         ellip_diff = abs(e[ellip_index] - max_ellip_value)
-    return A[ellip_index]
+    return A[ellip_index-1]
 
 
 def pa_change(A,B,change=10.):
@@ -524,7 +395,7 @@ def pa_change(A,B,change=10.):
     while (pa_diff < change):
         ellip_index += 1
         pa_diff = abs(pa[ellip_index] - pa_value)*180./np.pi
-    return A[ellip_index]
+    return A[ellip_index-1]
 
 
 

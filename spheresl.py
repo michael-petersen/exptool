@@ -214,7 +214,7 @@ def redistribute_particles(ParticleInstance,divisions):
     return holders
 
 
-    
+
 
 
 
@@ -613,6 +613,9 @@ def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
 
 
 def all_eval(r, costh, phi, expcoef,xi,rarr,p0,d0,lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable):
+  #
+  # r is 3-dimensional
+  #
   # this version loads everything up first: lots of inputs, but no need to reread anything.
   #
   #lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
