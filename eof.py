@@ -86,6 +86,7 @@ def eof_params(file,verbose=0):
     if (verbose):
 
         print 'eof.eof_params: The parameters for this EOF file are:'
+        print 'RMIN=%5.4f,RMAX=%5.4f' %(rmin,rmax)
         print 'MMAX=%i' %mmax
         print 'NORDER=%i' %norder
         print 'NMAX=%i' %nmax
@@ -94,7 +95,10 @@ def eof_params(file,verbose=0):
         print 'ASCALE,HSCALE=%5.4f,%5.4f' %(ascale,hscale)
         print 'CYLMASS=%5.4f' %cylmass
         print 'TNOW=%5.4f' %tnow
-        
+
+
+    f.close()
+    
     return rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens
 
 
@@ -121,10 +125,15 @@ def parse_eof(file):
 
 
     '''
-    f = open(file,'rb')
-    #
-    #
+
     rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(file,verbose=0)
+    #
+    # open the eof_file
+    f = open(file,'rb')
+
+    # skip past the header info, already grabbed it
+    f.seek(76)
+    
     #
     # initialize blank arrays
     #
@@ -171,12 +180,15 @@ def parse_eof(file):
             if (dens==1):
                 for k in range(0,numx+1):
                     denss[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                    
+
+
+    f.close()
+    
     return potC,rforcec,zforcec,densc,potS,rforces,zforces,denss
 
 
 
-def set_table_params(rmin=0.001,rmax=1.,ascale=0.01,hscale=0.001,numx=128,numy=64,CMAP=0):
+def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY=64,CMAP=0):
     '''
     set_table_params
         calculate scaled boundary values for the parameter table
@@ -190,21 +202,22 @@ def set_table_params(rmin=0.001,rmax=1.,ascale=0.01,hscale=0.001,numx=128,numy=6
     
 
     '''
-    Rtable  = np.sqrt(0.5) * rmax
+    M_SQRT1_2 = np.sqrt(0.5)
+    Rtable  = M_SQRT1_2 * RMAX
     
     # check cmap, but if cmap=0, r_to_xi = r
     #
     # otherwise, r = (r/ASCALE - 1.0)/(r/ASCALE + 1.0);
 
     # calculate radial scalings
-    XMIN    = r_to_xi(rmin*ascale,ascale,CMAP);
-    XMAX    = r_to_xi(Rtable*ascale,ascale=ascale,cmap=CMAP);
-    dX      = (XMAX - XMIN)/numx;
+    XMIN    = r_to_xi(RMIN*ASCALE,ASCALE,cmap=CMAP);
+    XMAX    = r_to_xi(Rtable*ASCALE,ASCALE,cmap=CMAP);
+    dX      = (XMAX - XMIN)/NUMX;
 
     # calculate vertical scalings
-    YMIN    = z_to_y(-Rtable*ascale,hscale=hscale);
-    YMAX    = z_to_y( Rtable*ascale,hscale=hscale);
-    dY      = (YMAX - YMIN)/numy;
+    YMIN    = z_to_y(-Rtable*ASCALE,HSCALE);
+    YMAX    = z_to_y( Rtable*ASCALE,HSCALE);
+    dY      = (YMAX - YMIN)/NUMY;
         
     return XMIN,XMAX,dX,YMIN,YMAX,dY
 
@@ -390,7 +403,7 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
     for n in range(0,norb):
         if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): utils.print_progress(n,norb,'eof.accumulate')
         #
-        r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2.)**0.5
+        r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2. + 1.e-10)**0.5
         phi = np.arctan2(ParticleInstance.ypos[n],ParticleInstance.xpos[n])
         vc,vs = get_pot(r, ParticleInstance.zpos[n], potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP);
         for mm in range(0,MMAX+1):
@@ -761,7 +774,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1):
     nprocs = multiprocessing.cpu_count()
     
     if verbose > 1:
-        eof_quickread(eof_file)
+        rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file,verbose=1)
 
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
     rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
