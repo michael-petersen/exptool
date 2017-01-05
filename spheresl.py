@@ -113,33 +113,96 @@ def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap=0, scale=1.0):#,
 
     
 def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
-    #
-    # needs the potential table to be defined and passed
-    #
-    numr = len(p0)
+    '''
+    get_halo_force
+
+    inputs
+    --------
+
+    returns
+    --------
+    mat     :   (lmax+1,nmax+1) matrix of halo forces
+
+    '''
+    numr = p0.shape[0]
     mat = np.zeros([lmax+1,nmax+1])
-    #if (which || !cmap):
+    
     x = halo_methods.r_to_xi(x,cmap,scale);
-    #print 'X',x
+    
     if (cmap==1):
         if (x<-1.0): x=-1.0;
         if (x>=1.0): x=1.0-1.0e-08;
     if (cmap==2):
         if (x<xmin): x=xmin;
         if (x>xmax): x=xmax;
+            
     dxi = xi[1]-xi[0]
     indx = int(np.floor( (x-np.min(xi))/(dxi) ))
+    
     if (indx < 1): indx = 1;
     if (indx > (numr-2) ): indx = numr - 2;
+        
     p = (x - xi[indx])/dxi;
+        
     fac = halo_methods.d_xi_to_r(x,cmap,scale)/dxi;
-    for l in range(0,lmax+1): 
+    
+    for l in range(0,lmax+1):
+        
         for n in range(1,nmax+1):
-            mat[l,n] = fac * ((p - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*p*eftable[l,n,indx]*p0[indx] + (p + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l,n]);
-            #(p - 0.5)*eftable[l,n,indx-1]*p0[indx-1]
-            #- 2.0*p*eftable[l,n,indx]*p0[indx]
-            #(p + 0.5)*eftable[l,n,indx+1]*p0[indx+1]
+            
+            mat[l][n] = fac * ((p - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*p*eftable[l,n,indx]*p0[indx] + (p + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l,n]);
+
     return mat
+
+
+
+def get_halo_force_pot(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):#, int which):
+    #
+    # needs the potential table to be defined
+    #
+    #if (which || !cmap):
+    numr = p0.shape[0]
+    
+    x = halo_methods.r_to_xi(x,cmap,scale);
+    
+    #print x
+    if (cmap==1):
+        if (x<-1.0): x=-1.0;
+        if (x>=1.0): x=1.0-1.0e-08;
+    if (cmap==2):
+        if (x<xmin): x=xmin;
+        if (x>xmax): x=xmax;
+    
+    dxi = xi[1]-xi[0]
+
+    fac = halo_methods.d_xi_to_r(x,cmap,scale)/dxi;
+
+    indx = int(np.floor( (x-np.min(xi))/(dxi) ))
+    #print indx
+    
+    if (indx<0): indx = 0;
+    if (indx>numr-2): indx = numr - 2;
+        
+    x1 = (xi[indx+1] - x)/(dxi);
+    x2 = (x - xi[indx])/(dxi);
+    
+    pot_mat = np.zeros([lmax+1,nmax+1])
+    force_mat = np.zeros([lmax+1,nmax+1])
+    
+    for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
+        
+        for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
+            
+            pot_mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
+
+            if indx == 0:
+                # do a forced advance of the indx by one if running into the edge
+                force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,0]*p0[0] - 2.0*x2*eftable[l,n,1]*p0[1] + (x2 + 0.5)*eftable[l,n,2]*p0[2]) / np.sqrt(evtable[l][n]);
+            else:
+                force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*x2*eftable[l,n,indx]*p0[indx] + (x2 + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l][n]);
+
+            
+    return pot_mat,force_mat
 
 
 
@@ -718,6 +781,80 @@ def all_eval(r, costh, phi, expcoef,\
     potp  *= potlfac;
     
     return den0,den1,pot0,pot1,potr,pott,potp
+
+
+
+
+def force_eval(r, costh, phi, expcoef,\
+             xi,p0,d0,cmap,scale,\
+             lmax,nmax,\
+             evtable,eftable):
+    '''
+    force_eval: simple workhorse to evaluate the spherical basis forces
+
+    inputs
+    -------
+    r is 3-dimensional
+    
+
+    outputs
+    -------
+    potr    :   dphi/dr
+    pott    :   dphi/dtheta
+    (skips potp)
+
+    '''
+
+    # compute factorial array
+    factorial = factorial_return(lmax)
+    #
+    # begin function
+    sinth = -np.sqrt(np.abs(1.0 - costh*costh));
+    fac1 = factorial[0][0];
+    #
+    # use the basis to get the density,potential,force arrays
+    #
+    # these three need to be stuffed together into one call to save loops
+    potd,dpot = get_halo_force_pot(r, lmax, nmax, evtable, eftable, xi, p0, cmap=cmap, scale=scale)
+    #
+    #
+    legs,dlegs = dlegendre_R(lmax,costh)
+    #
+    potr = np.sum(fac1 * expcoef[0]*dpot[0]);
+    pott = 0.0;
+    #
+    # L loop
+    #
+    loffset = 1
+    for l in range(1,lmax+1):
+        
+      # M loop
+      moffset = 0
+      
+      for m in range(0,l+1):
+        
+        fac1 = factorial[l][m];
+        
+        if (m==0):
+              potr += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
+              pott += np.sum(fac1*dlegs[l][m]* (expcoef[loffset+moffset] * potd[l]));
+              moffset+=1;
+        else:
+              cosm = np.cos(phi*m);
+              sinm = np.sin(phi*m);
+              potr += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
+              pott += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
+              moffset +=2;
+      loffset+=(2*l+1)
+    #
+    #
+    #
+    
+    potlfac = 1.0/scale;
+    potr  *= potlfac/scale;
+    pott  *= potlfac*sinth;
+    
+    return potr,pott
 
 
 
