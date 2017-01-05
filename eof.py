@@ -291,7 +291,7 @@ def get_pot(r,z,cos_array,sin_array,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 
 
 
 # BROKEN
-def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18)
+def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18):
     #
     # returns potential fields for C and S to calculate weightings during accumulation
     #
@@ -507,10 +507,24 @@ def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, m1=0,m2=10
 
 
 
-def accumulated_forces(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, densC, potS, rforceS, zforceS, densS, rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
+def accumulated_forces(r, z, phi, \
+                       accum_cos, accum_sin, \
+                       potC, rforceC, zforceC,\
+                       potS, rforceS, zforceS,\
+                       rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,\
+                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0):
     '''
     accumulated_forces: just like accumulated_eval, except only with forces
 
+    inputs
+    --------
+
+
+    outputs
+    --------
+    fr    :   radial force (two-dimensional)
+    fz    :   vertical force
+    fp    :   azimuthal force
 
     '''
     fr = 0.0;
@@ -536,10 +550,8 @@ def accumulated_forces(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, 
         ssin = np.sin(phi*mm);
         #
         fac = accum_cos[mm] * ccos;
-        p += np.sum(fac * (potC[mm,:,ix,iy]*c00 + potC[mm,:,ix+1,iy  ]*c10 + potC[mm,:,ix,iy+1]*c01 + potC[mm,:,ix+1,iy+1]*c11));
         fr += np.sum(fac * (rforceC[mm,:,ix,iy] * c00 + rforceC[mm,:,ix+1,iy  ] * c10 + rforceC[mm,:,ix,iy+1] * c01 + rforceC[mm,:,ix+1,iy+1] * c11));
         fz += np.sum(fac * ( zforceC[mm,:,ix,iy] * c00 + zforceC[mm,:,ix+1,iy  ] * c10 + zforceC[mm,:,ix,iy+1] * c01 + zforceC[mm,:,ix+1,iy+1] * c11 ));
-        d += np.sum(fac * (densC[mm,:,ix,iy]*c00 + densC[mm,:,ix+1,iy  ]*c10 + densC[mm,:,ix,iy+1]*c01 + densC[mm,:,ix+1,iy+1]*c11));
             #
         fac = accum_cos[mm] * ssin;
             #
@@ -549,15 +561,12 @@ def accumulated_forces(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, 
                 #
             fac = accum_sin[mm] * ssin;
                 #
-            p += np.sum(fac * (potS[mm,:,ix,iy]*c00 + potS[mm,:,ix+1,iy  ]*c10 + potS[mm,:,ix,iy+1]*c01 + potS[mm,:,ix+1,iy+1]*c11));
             fr += np.sum(fac * (rforceS[mm,:,ix,iy] * c00 + rforceS[mm,:,ix+1,iy  ] * c10 + rforceS[mm,:,ix,iy+1] * c01 + rforceS[mm,:,ix+1,iy+1] * c11));
             fz += np.sum(fac * ( zforceS[mm,:,ix,iy] * c00 + zforceS[mm,:,ix+1,iy  ] * c10 + zforceS[mm,:,ix,iy+1] * c01 + zforceS[mm,:,ix+1,iy+1] * c11 ));
-            d += np.sum(fac * ( densS[mm,:,ix,iy] * c00 + densS[mm,:,ix+1,iy  ] * c10 + densS[mm,:,ix,iy+1] * c01 + densS[mm,:,ix+1,iy+1] * c11 ));
             fac = -accum_sin[mm] * ccos;
             fp += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
                 #
-        if (mm==0): p0 = p;
-    return p0,p,fr,fp,fz,d
+    return fr,fp,fz
 
 
 
