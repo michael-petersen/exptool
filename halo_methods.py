@@ -7,23 +7,6 @@
 import numpy as np
 from scipy import interpolate
 
-'''
-
-sph_file = '/Users/mpetersen/Desktop/.slgrid_sph_cache'
-model_file = '/Users/mpetersen/Desktop/barwork/SLGridSph.model'
-
-import _halopotfind
-
-import halo_methods
-lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
-
-xi,d0,m0,p0 = halo_methods.read_sph_model_table(model_file)
-
-_halopotfind.get_halo_pot_matrix(0.1,lmax,nmax,evtable,eftable,xi,p0,0,scale,len(p0))
-
-
-
-'''
 
 def parse_slgrid(file,verbose=0):
     f = open(file,'rb')
@@ -39,6 +22,7 @@ def parse_slgrid(file,verbose=0):
     rmin = b[0]
     rmax = b[1]
     scale = b[2]
+    
     if verbose > 0:
         print 'LMAX=',lmax
         print 'NMAX=',nmax
@@ -47,6 +31,9 @@ def parse_slgrid(file,verbose=0):
         print 'RMIN=',rmin
         print 'RMAX=',rmax
         print 'SCALE=',scale
+
+    f.close()
+    
     return lmax,nmax,numr,cmap,rmin,rmax,scale
 
 
@@ -86,6 +73,9 @@ def read_cached_table(file,verbose=0,retall=True):
             # loops for different levels go here
             #
             eftable[l,n,:] = np.fromfile(f,dtype='f8',count=numr)
+
+    f.close()
+    
     if retall:
         return lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable
     else:
@@ -147,6 +137,9 @@ def read_sph_model_table(file):
             density.append(float(q[1]))
             mass.append(float(q[2]))
             potential.append(float(q[3]))
+
+    f.close()
+    
     return np.array(radius),np.array(density),np.array(mass),np.array(potential)
 
 

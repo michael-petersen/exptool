@@ -180,7 +180,6 @@ class Input():
             print 'psp_io.Input: Exiting with error.'
             # would be great to put some error code handling in here
 
-
             
     def psp_full_read(self):
         master_time = time.time()

@@ -99,7 +99,9 @@ class BarTransform():
         self.mass = self.ParticleInstanceIn.mass
         self.pote = self.ParticleInstanceIn.pote
 
-        
+        self.time = self.ParticleInstanceIn.time
+        self.infile = self.ParticleInstanceIn.infile
+        self.comp = self.ParticleInstanceIn.comp
 
     
     def bar_fourier_compute(self,posx,posy,maxr=1.):
