@@ -82,10 +82,10 @@ class BarTransform():
             self.bar_angle = -1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.xpos,self.ParticleInstanceIn.ypos,maxr=maxr)
         
         transformed_x = self.ParticleInstanceIn.xpos*np.cos(self.bar_angle) - self.ParticleInstanceIn.ypos*np.sin(self.bar_angle)
-        transformed_y = -self.ParticleInstanceIn.xpos*np.sin(self.bar_angle) - self.ParticleInstanceIn.ypos*np.cos(self.bar_angle)
+        transformed_y = self.ParticleInstanceIn.xpos*np.sin(self.bar_angle) + self.ParticleInstanceIn.ypos*np.cos(self.bar_angle)
 
         transformed_vx = self.ParticleInstanceIn.xvel*np.cos(self.bar_angle) - self.ParticleInstanceIn.yvel*np.sin(self.bar_angle)
-        transformed_vy = -self.ParticleInstanceIn.xvel*np.sin(self.bar_angle) - self.ParticleInstanceIn.yvel*np.cos(self.bar_angle)
+        transformed_vy = self.ParticleInstanceIn.xvel*np.sin(self.bar_angle) + self.ParticleInstanceIn.yvel*np.cos(self.bar_angle)
 
 
         self.xpos = transformed_x

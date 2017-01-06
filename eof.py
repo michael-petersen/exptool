@@ -704,9 +704,9 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, z
     p = np.zeros(norb)
     p0 = np.zeros(norb)
     #
-    RR = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos)**0.5
+    RR = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos+1.e-10)**0.5
     PHI = np.arctan2(Particles.ypos,Particles.xpos)
-    R = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos)**0.5
+    R = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + 1.e-10)**0.5
     #
     # cycle particles
     for part in range(0,norb):
