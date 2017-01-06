@@ -609,8 +609,37 @@ class Input():
         if self.verbose >= 2:
                     print 'psp_io.orbit_resolve: Orbit(s) resolved in %3.2f seconds' %(time.time()-res_time_initial)
 
-            
 
+
+
+class PSPDump()
+    '''
+
+    class to wrap the Input class in order to allow for easier manipulation
+
+    '''
+
+    def __init__(self, infile, comp=None, nout=None, verbose=0, orbit_list=None, infile_list=None, validate=False):
+
+
+        DUMP = Input(infile,comp=comp,nout=nout,verbose=verbose)
+
+        self.xpos = DUMP.xpos
+        self.ypos = DUMP.ypos
+        self.zpos = DUMP.zpos
+        self.xvel = DUMP.xvel
+        self.yvel = DUMP.yvel
+        self.zvel = DUMP.zvel
+        self.pote = DUMP.pote
+
+    def add_quantities(self):
+
+        self.rtwo = (self.xpos*self.xpos + self.ypos*self.ypos)**0.5
+        self.rthree = (self.xpos*self.xpos + self.ypos*self.ypos + self.zpos*self.zpos)**0.5
+        self.v2 = (self.xvel*self.xvel + self.yvel*self.yvel + self.zvel*self.zvel)
+        self.E = self.v2 + self.pote
+
+        
 
 #
 # Below here are helper functions to subdivide and combine particles.

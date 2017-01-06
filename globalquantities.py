@@ -5,56 +5,16 @@
 #
 #    11.20.16 formalize Fourier analysis steps
 #    12.11.16 cleanup and provide restart support
+#
+#    TODO:
+#      add global angular momentum counters
+#
+
 
 import time
 import os
 import numpy as np
 import psp_io
-
-
-#
-#
-# and some fraction of the max power
-def frac_power(Q,frac=0.5):
-    '''
-    given a
-
-    inputs
-    ------
-    Q: numpy array, [m_order,time index, r index]
-
-
-    returns
-    ------
-    the length of the bar as measured by the fractional power
-    
-    '''
-    a2power = (Q.aval[2,:,:]**2. + Q.bval[2,0,:]**2.)/Q.aval[0,:,:]**2.
-
-    #for t in range(0,Q.time.shape[0])
-    k = a2power.argmax()
-    blen = 0.
-    
-    while a2power[k] > frac*np.max(a2power):
-        blen = Q.rbins[k]
-        k+=1
-    return blen
-
-
-
-def phase_change(Q,deg=20.):
-    Q.ph = np.arctan(-Q.bval[2,0,:]/Q.aval[2,0,:])
-    lowbin = int(np.floor(0.1*len(Q.ph)))
-    # take average of first 10% of bins
-    pavg = np.mean(Q.ph[0:lowbin])
-    k = 0
-    pval = Q.ph[0]
-    blen = 0.
-    while abs(pval-pavg) < (deg/180.)*np.pi:
-        blen = Q.rbins[k]
-        k+=1
-        pval = Q.ph[k]
-    return blen
 
 
 
@@ -79,8 +39,10 @@ class OQuantities():
        
         O = psp_io.Input(self.infile,self.comp)
 
+        O.R  = (O.xpos*O.xpos + O.ypos*O.ypos)**0.5
+        O.R3 = (O.xpos*O.xpos + O.ypos*O.ypos + O.zpos*O.zpos)**0.5
         O.Lz = O.xpos*O.yvel - O.ypos*O.xpos
-        O.E = 0.5*(O.xvel*O.xvel + O.yvel*O.yvel + O.zvel*O.zvel) + O.pote
+        O.E  = 0.5*(O.xvel*O.xvel + O.yvel*O.yvel + O.zvel*O.zvel) + O.pote
         #
         # do we have a bar pattern to plug in?
         #
@@ -461,3 +423,60 @@ class GQuantities():
 
 
         
+
+
+def frac_power(Q,frac=0.5):
+    '''
+    given a fourier instance, return the radial value where some fraction of the maximum power is realized.
+
+    inputs
+    ------
+    Q    :   numpy array, [m_order,time index, r index]
+    frac :   (optional) float, fraction of the maximum Fourier power to probe.
+
+    returns
+    ------
+    blen :   the length of the bar as measured by the fractional power
+    
+    '''
+    a2power = (Q.aval[2,:,:]**2. + Q.bval[2,0,:]**2.)/Q.aval[0,:,:]**2.
+
+    k = a2power.argmax()
+    blen = 0.
+    
+    while a2power[k] > frac*np.max(a2power):
+        blen = Q.rbins[k]
+        k+=1
+    return blen
+
+
+
+def phase_change(Q,deg=20.):
+    '''
+    using a Fourier instance, find the radius where the phase angle shifts by deg degrees from the phase angle at the maximum
+
+    '''
+    Q.ph = np.arctan(-Q.bval[2,0,:]/Q.aval[2,0,:])
+    lowbin = int(np.floor(0.1*len(Q.ph)))
+    
+    # take average of first 10% of bins
+    pavg = np.mean(Q.ph[0:lowbin])
+    k = 0
+
+
+    # or should this just be the phase angle at the maximum?
+    #k = a2power.argmax()
+    #pavg = Q.ph[k]
+
+    
+    pval = Q.ph[k]
+    blen = 0.
+    
+    while abs(pval-pavg) < (deg/180.)*np.pi:
+        blen = Q.rbins[k]
+        k+=1
+        pval = Q.ph[k]
+        
+    return blen
+
+
