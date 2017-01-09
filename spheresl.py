@@ -797,7 +797,8 @@ def all_eval(r, costh, phi, expcoef,\
 def force_eval(r, costh, phi, expcoef,\
              xi,p0,d0,cmap,scale,\
              lmax,nmax,\
-             evtable,eftable):
+             evtable,eftable,\
+             no_odd=False):
     '''
     force_eval: simple workhorse to evaluate the spherical basis forces
 
@@ -837,30 +838,35 @@ def force_eval(r, costh, phi, expcoef,\
     #
     loffset = 1
     for l in range(1,lmax+1):
-        
-      # M loop
-      moffset = 0
-      
-      for m in range(0,l+1):
-        
-        fac1 = factorial[l][m];
-        
-        if (m==0):
-              potr += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
-              pott += np.sum(fac1*dlegs[l][m]* (expcoef[loffset+moffset] * potd[l]));
-              moffset+=1;
-        else:
-              cosm = np.cos(phi*m);
-              sinm = np.sin(phi*m);
-              potr += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
-              pott += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
-              potp += np.sum(fac1*legs[l][m] * m * (-expcoef[loffset+moffset]   * potd[l]*sinm +   expcoef[loffset+moffset+1] * potd[l]*cosm ));
-              moffset +=2;
-      loffset+=(2*l+1)
-    #
-    #
-    #
-    
+
+          # skip odd terms if desired
+          if ( (l % 2) != 0) & (no_odd):
+                loffset+=(2*l+1)
+                continue
+
+          # M loop
+          moffset = 0
+
+          for m in range(0,l+1):
+
+            fac1 = factorial[l][m];
+
+            if (m==0):
+                  potr += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
+                  pott += np.sum(fac1*dlegs[l][m]* (expcoef[loffset+moffset] * potd[l]));
+                  moffset+=1;
+            else:
+                  cosm = np.cos(phi*m);
+                  sinm = np.sin(phi*m);
+                  potr += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
+                  pott += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
+                  potp += np.sum(fac1*legs[l][m] * m * (-expcoef[loffset+moffset]   * potd[l]*sinm +   expcoef[loffset+moffset+1] * potd[l]*cosm ));
+                  moffset +=2;
+          loffset+=(2*l+1)
+        #
+        #
+        #
+
     potlfac = 1.0/scale;
     potr  *= potlfac/scale;
     pott  *= potlfac*sinth;

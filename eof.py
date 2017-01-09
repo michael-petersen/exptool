@@ -303,45 +303,34 @@ def get_pot(r,z,cos_array,sin_array,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 
     return Vc,Vs
 
 
-# BROKEN
-def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18):
+def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18,ASCALE=0.01,HSCALE=0.001,CMAP=0):
     #
-    # returns potential fields for C and S to calculate weightings during accumulation
-    #
-    #
-    # define boundaries of the interpolation scheme
+    # returns potential fields for single C and S order
     #
     #
     # find the corresponding bins
-    X = (r - rmin)/dR
-    Y = (z_to_y(z) - zmin)/dZ
-    ix = int( np.floor((r - rmin)/dR) )
-    iy = int( np.floor((z_to_y(z) - zmin)/dZ) )
-    #print X,Y
-    #
-    # check the boundaries and set guards
-    if X < 0: X = 0
-    if X > numx: X = numx - 1
-    if Y < 0: Y = 0
-    if Y > numy: Y = numy - 1
-    #
+    X,Y,ix,iy = return_bins(r,z,rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
+    
     delx0 = ix + 1.0 - X;
     dely0 = iy + 1.0 - Y;
     delx1 = X - ix;
     dely1 = Y - iy;
-    #
+    
     c00 = delx0*dely0;
     c10 = delx1*dely0;
     c01 = delx0*dely1;
     c11 = delx1*dely1;
-    #
-    Vc = np.zeros([NMAX])
-    Vs = np.zeros([NMAX])
-    Vc = fac * ( cos_array[MORDER][:][X  ][Y  ] * c00 + cos_array[MORDER][:][X+1][Y  ] * c10 + cos_array[MORDER][:][X  ][Y+1] * c01 + cos_array[MORDER][:][X+1][Y+1] * c11 )
-    if (mm>0):
-        Vs = fac * ( sin_array[MORDER][:][X  ][Y  ] * c00 + sin_array[MORDER][:][X+1][Y] * c10 + sin_array[MORDER][:][X  ][Y+1] * c01 + sin_array[MORDER][:][X+1][Y+1] * c11 );
+    
+    Vc = np.zeros([1,NMAX])
+    Vs = np.zeros([1,NMAX])
+    
+    Vc = fac * ( cos_array[MORDER,:,ix,iy] * c00 + cos_array[MORDER,:,ix+1,iy] * c10 + \
+                         cos_array[MORDER,:,ix,iy+1] * c01 + cos_array[MORDER,:,ix+1,iy+1] * c11 )
+    
+    if (MORDER>0):
+        Vs = fac * ( sin_array[MORDER,:,ix,iy] * c00 + sin_array[MORDER,:,ix+1,iy] * c10 + \
+                             sin_array[MORDER,:,ix,iy+1] * c01 + sin_array[MORDER,:,ix+1,iy+1] * c11 );
     return Vc,Vs
-
 
 
 # BROKEN
@@ -425,40 +414,48 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
 
 
 
-# BROKEN
-def accumulate_single_m(ParticleInstance,potC,potS,MORDER,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY):
+def accumulate_single_m(ParticleInstance,potC,potS,MORDER,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0):
     #
-    # take all the particles and stuff them into the basis
+    # take all the particles and stuff them into the basis, OF A SINGLE AZIMUTHAL HARMONIC
     #
-    nparticles = 0
-    cylmass = 0.0
+    #   this returns a matrix the same size as potC/potS so it can easily be passed
+    #
+    #   also accumulates the monopole so can be integrated as pure potential
+    #   
     norm = -4.*np.pi
-    SELECT=False
     #
     # set up particles
     #
     norb = len(ParticleInstance.mass)
-    accum_cos = np.zeros([NMAX])
-    accum_sin = np.zeros([NMAX])
-    mcos = np.cos(phi*MORDER);
-    msin = np.sin(phi*MORDER);
+    #
+    # set up accumulation arrays
+    #
+    accum_cos = np.zeros_like(potC)
+    accum_sin = np.zeros_like(potS)
     #
     for n in range(0,norb):
-        if (n % 5000)==0: print 'Particle %i/%i' %(n,norb)
-        #rr = sqrt(r*r+z*z);
-        r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2.)**0.5
+        if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): utils.print_progress(n,norb,'eof.accumulate_single_m')
+        #
+        r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2. + 1.e-10)**0.5
         phi = np.arctan2(ParticleInstance.ypos[n],ParticleInstance.xpos[n])
-        #if (rr/ASCALE>Rtable) return;
-        nparticles += 1
-        cylmass += ParticleInstance.mass[n]
-        vc,vs = get_pot_single_m(r, ParticleInstance.zpos[n], potC,potS,MORDER,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,NMAX=NMAX);
-        #
-        #
-        accum_cos += norm * ParticleInstance.mass[n] * mcos * vc[MORDER] # a matrix-oriented accumulation scheme
-        if (MORDER>0):
-            accum_sin += norm * ParticleInstance.mass[n] * msin * vs[MORDER]               
-    return accum_cos,accum_sin
 
+        # accumulate monopole
+        vc0,vs0 = get_pot_single_m(r, ParticleInstance.zpos[n], potC,potS,0,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP);
+        accum_cos[0] += norm * ParticleInstance.mass[n] * vc0
+
+        # accumulate desired order
+        vc,vs = get_pot_single_m(r, ParticleInstance.zpos[n], potC,potS,MORDER,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP);
+
+        #
+        mcos = np.cos(phi*MORDER);
+        accum_cos[MORDER] += norm * ParticleInstance.mass[n] * mcos * vc 
+        #
+        #
+        if (MORDER>0):
+            msin = np.sin(phi*MORDER);
+            accum_sin[MORDER] += norm * ParticleInstance.mass[n] * msin * vs
+                             
+    return accum_cos,accum_sin
 
 
 
@@ -530,7 +527,7 @@ def accumulated_forces(r, z, phi, \
                        potC, rforceC, zforceC,\
                        potS, rforceS, zforceS,\
                        rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,\
-                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,NO_ODD=False):
+                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):
     '''
     accumulated_forces: just like accumulated_eval, except only with forces
 
@@ -566,7 +563,7 @@ def accumulated_forces(r, z, phi, \
     for mm in range(0,MMAX+1):
 
         # skip if not allowing odd terms
-        if ((mm % 2) != 0) & (NO_ODD):
+        if ((mm % 2) != 0) & (no_odd):
             continue
         
         ccos = np.cos(phi*mm);
@@ -917,16 +914,35 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
 
 
 def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False):
+    '''
+    make_coefficients_multi
+
+    master process to distribute particles for accumulation
+
+
+    '''
     holding = redistribute_particles(ParticleInstance,nprocs)
-    if (verbose): print 'eof.make_coefficients_multi: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
+    
+
+    if (verbose):
+        print 'eof.make_coefficients_multi: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
+
+    # start timer    
     t1 = time.time()
     multiprocessing.freeze_support()
+    
     a_coeffs = multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
-    if (verbose): print 'eof.make_coefficients_multi: Accumulation took %3.2f seconds, or %4.2f microseconds per orbit.' %(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass))
+    
+    if (verbose):
+        print 'eof.make_coefficients_multi: Accumulation took %3.2f seconds, or %4.2f microseconds per orbit.' \
+          %(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass))
+
     # sum over processes
     scoefs = np.sum(np.array(a_coeffs),axis=0)
+    
     a_cos = scoefs[0]
     a_sin = scoefs[1]
+    
     return a_cos,a_sin
 
 
