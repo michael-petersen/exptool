@@ -612,7 +612,7 @@ class Input():
 
 
 
-class PSPDump()
+class PSPDump():
     '''
 
     class to wrap the Input class in order to allow for easier manipulation

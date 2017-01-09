@@ -17,40 +17,6 @@ import numpy as np
 import psp_io
 
 
-
-
-class OQuantities():
-
-    #
-    # class to add key orbit quantities
-    #
-
-    def __init__(self,infile,comp):
-
-        self.infile = infile
-        self.comp = comp
-
-        OQuantities.maker(self)
-
-
-
-    def maker(self):
-
-       
-        O = psp_io.Input(self.infile,self.comp)
-
-        O.R  = (O.xpos*O.xpos + O.ypos*O.ypos)**0.5
-        O.R3 = (O.xpos*O.xpos + O.ypos*O.ypos + O.zpos*O.zpos)**0.5
-        O.Lz = O.xpos*O.yvel - O.ypos*O.xpos
-        O.E  = 0.5*(O.xvel*O.xvel + O.yvel*O.yvel + O.zvel*O.zvel) + O.pote
-        #
-        # do we have a bar pattern to plug in?
-        #
-        #O.EJ = O.E - pattern*O.Lz
-
-
-
-
 class GQuantities():
 
     #
@@ -62,7 +28,7 @@ class GQuantities():
     #
 
     # DESIRED QUANTITIES
-    #   tracking LZ through time
+    #   tracking LZ through time: this needs to be cleaned up to make more sense.
     #     total and differential (the latter being very slow)
 
     

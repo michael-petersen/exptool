@@ -385,7 +385,7 @@ def get_pot_single_term(r,z,cos_array,sin_array,mm,nn,rmin=0,dR=0,zmin=0,dZ=0,nu
 
 
 
-def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0):
+def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0,no_odd=False):
     #
     # take all the particles and stuff them into the basis
     #
@@ -407,7 +407,11 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         phi = np.arctan2(ParticleInstance.ypos[n],ParticleInstance.xpos[n])
         vc,vs = get_pot(r, ParticleInstance.zpos[n], potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP);
         for mm in range(0,MMAX+1):
-            #
+
+            # skip odd terms?
+            if ((mm % 2) != 0) & (no_odd):
+                continue
+            
             #
             mcos = np.cos(phi*mm);
             accum_cos[mm] += norm * ParticleInstance.mass[n] * mcos * vc[mm] 
@@ -415,7 +419,8 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
             #
             if (mm>0):
                 msin = np.sin(phi*mm);
-                accum_sin[mm] += norm * ParticleInstance.mass[n] * msin * vs[mm]               
+                accum_sin[mm] += norm * ParticleInstance.mass[n] * msin * vs[mm]
+                             
     return accum_cos,accum_sin
 
 
@@ -525,7 +530,7 @@ def accumulated_forces(r, z, phi, \
                        potC, rforceC, zforceC,\
                        potS, rforceS, zforceS,\
                        rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,\
-                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0):
+                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,NO_ODD=False):
     '''
     accumulated_forces: just like accumulated_eval, except only with forces
 
@@ -559,6 +564,11 @@ def accumulated_forces(r, z, phi, \
     c11 = delx1*dely1;
     #
     for mm in range(0,MMAX+1):
+
+        # skip if not allowing odd terms
+        if ((mm % 2) != 0) & (NO_ODD):
+            continue
+        
         ccos = np.cos(phi*mm);
         ssin = np.sin(phi*mm);
         #
@@ -762,7 +772,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, potC, rforceC, z
 ############################################################################################
 
 
-def compute_coefficients(PSPInput,eof_file,verbose=1):
+def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False):
 
     EOF_Out = EOF_Object()
     EOF_Out.time = PSPInput.time
@@ -784,7 +794,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1):
     EOF_Out.nmax = norder
     
     if nprocs > 1:
-        a_cos,a_sin = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose)
+        a_cos,a_sin = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
         
     else:
         # do the accumulation call, not implemented yet
@@ -874,7 +884,7 @@ def accumulate_star(a_b):
     return accumulate(*a_b)
 
 
-def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0):
+def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False):
     pool = multiprocessing.Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = potC
@@ -892,11 +902,13 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
     fourteenth_arg = cmap
     fifteenth_arg = [ 0 for i in range(0,nprocs)]
     fifteenth_arg[0] = verbose
+    sixteenth_arg = no_odd
     a_coeffs = pool.map(accumulate_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                 itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                                                                 itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
                                                                 itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
-                                                                itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),fifteenth_arg\
+                                                                itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),fifteenth_arg,\
+                                                                itertools.repeat(sixteenth_arg) \
                                                                 ))
     pool.close()
     pool.join()                                                        
@@ -904,12 +916,12 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
 
 
 
-def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0):
+def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False):
     holding = redistribute_particles(ParticleInstance,nprocs)
     if (verbose): print 'eof.make_coefficients_multi: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
     t1 = time.time()
     multiprocessing.freeze_support()
-    a_coeffs = multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose)
+    a_coeffs = multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
     if (verbose): print 'eof.make_coefficients_multi: Accumulation took %3.2f seconds, or %4.2f microseconds per orbit.' %(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass))
     # sum over processes
     scoefs = np.sum(np.array(a_coeffs),axis=0)

@@ -309,21 +309,23 @@ def compute_coefficients_solitary_star(a_b):
     """Convert `f([1,2])` to `f(1,2)` call."""
     return compute_coefficients_solitary(*a_b)
 
-def multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose):
+def multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=0,no_odd=False):
     pool = Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = sph_file
     third_arg = mod_file
     fourth_arg = [0 for i in range(0,nprocs)]
     fourth_arg[0] = verbose
-    a_coeffs = pool.map(compute_coefficients_solitary_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),fourth_arg))
+    fifth_arg = no_odd
+    a_coeffs = pool.map(compute_coefficients_solitary_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+                                                                           fourth_arg,itertools.repeat(fifth_arg)))
     pool.close()
     pool.join()
     return a_coeffs
 
 
 
-def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1):
+def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
 
     SL_Out = SL_Object()
     SL_Out.time = PSPInput.time
@@ -348,7 +350,7 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1):
     t1 = time.time()
     freeze_support()
     
-    a_coeffs = multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose)
+    a_coeffs = multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=verbose,no_odd=no_odd)
     
     if (verbose > 0): print 'spheresl.compute_coefficients: accumulation took %3.2f seconds, or %4.2f microseconds per orbit.' %(time.time()-t1, 1.e6*(time.time()-t1)/len(PSPInput.mass))
 
@@ -444,7 +446,7 @@ def mix_outputs_sph(MultiOutput):
 
 
 
-def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose):
+def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0,no_odd=False):
     #
     # follows compute_coefficients from EXP's SphereSL.cc
     #
@@ -490,9 +492,16 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose):
         
         loffset = 0
         for l in range(0,lmax+1):
+
+            # skip odd azimuthal terms
+            if ( (l % 2) != 0) & (no_odd):
+                loffset += (2*l+1)  # advance expcoef position anyway
+                continue
             
             moffset = 0
             for m in range(0,l+1):
+
+                
                 
                 fac = factorial[l][m] * legs[l][m]
                 
@@ -507,7 +516,7 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose):
                     fac4 = potd[l]*fac*fac0;
                     expcoef[loffset+moffset  ] += fac1 * fac4 * mass
                     expcoef[loffset+moffset+1] += fac2 * fac4 * mass
-                    moffset+=2  # advance expcoef position
+                    moffset += 2  # advance expcoef position
                     
             loffset += (2*l+1)  # advance expcoef position
             
