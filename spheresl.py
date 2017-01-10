@@ -812,6 +812,8 @@ def force_eval(r, costh, phi, expcoef,\
     potr    :   radial force
     pott    :   theta force
     potp    :   phi force
+    pot     :   total potential
+    pot0    :   monopole potential
 
     '''
 
@@ -831,8 +833,10 @@ def force_eval(r, costh, phi, expcoef,\
     legs,dlegs = dlegendre_R(lmax,costh)
     #
     potr = np.sum(fac1 * expcoef[0]*dpot[0]);
+    pot0 = np.sum(fac1 * expcoef[0]*potd[0]);
     pott = 0.0;
     potp = 0.0;
+    pot  = np.sum(fac1 * expcoef[0]*potd[0]);
     #
     # L loop
     #
@@ -852,12 +856,14 @@ def force_eval(r, costh, phi, expcoef,\
             fac1 = factorial[l][m];
 
             if (m==0):
+                  pot += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
                   potr += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
                   pott += np.sum(fac1*dlegs[l][m]* (expcoef[loffset+moffset] * potd[l]));
                   moffset+=1;
             else:
                   cosm = np.cos(phi*m);
                   sinm = np.sin(phi*m);
+                  pot += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
                   potr += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
                   pott += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
                   potp += np.sum(fac1*legs[l][m] * m * (-expcoef[loffset+moffset]   * potd[l]*sinm +   expcoef[loffset+moffset+1] * potd[l]*cosm ));
@@ -871,8 +877,10 @@ def force_eval(r, costh, phi, expcoef,\
     potr  *= potlfac/scale;
     pott  *= potlfac*sinth;
     potp  *= potlfac;
-    
-    return potr,pott,potp
+    pot   *= potlfac;
+    pot0  *= potlfac;
+       
+    return potr,pott,potp,pot,pot0
 
 
 

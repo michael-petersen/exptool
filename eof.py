@@ -540,11 +540,15 @@ def accumulated_forces(r, z, phi, \
     fr    :   radial force (two-dimensional)
     fz    :   vertical force
     fp    :   azimuthal force
-
+    p     :   potential
+    p0    :   monopole potential
+    
     '''
     fr = 0.0;
     fz = 0.0;
     fp = 0.0;
+    p  = 0.0;
+    p0 = 0.0;
     #
     # compute mappings
     #
@@ -570,6 +574,7 @@ def accumulated_forces(r, z, phi, \
         ssin = np.sin(phi*mm);
         #
         fac = accum_cos[mm] * ccos;
+        p += np.sum(fac * (potC[mm,:,ix,iy]*c00 + potC[mm,:,ix+1,iy  ]*c10 + potC[mm,:,ix,iy+1]*c01 + potC[mm,:,ix+1,iy+1]*c11));
         fr += np.sum(fac * (rforceC[mm,:,ix,iy] * c00 + rforceC[mm,:,ix+1,iy  ] * c10 + rforceC[mm,:,ix,iy+1] * c01 + rforceC[mm,:,ix+1,iy+1] * c11));
         fz += np.sum(fac * ( zforceC[mm,:,ix,iy] * c00 + zforceC[mm,:,ix+1,iy  ] * c10 + zforceC[mm,:,ix,iy+1] * c01 + zforceC[mm,:,ix+1,iy+1] * c11 ));
             #
@@ -581,12 +586,14 @@ def accumulated_forces(r, z, phi, \
                 #
             fac = accum_sin[mm] * ssin;
                 #
+            p += np.sum(fac * (potS[mm,:,ix,iy]*c00 + potS[mm,:,ix+1,iy  ]*c10 + potS[mm,:,ix,iy+1]*c01 + potS[mm,:,ix+1,iy+1]*c11));
             fr += np.sum(fac * (rforceS[mm,:,ix,iy] * c00 + rforceS[mm,:,ix+1,iy  ] * c10 + rforceS[mm,:,ix,iy+1] * c01 + rforceS[mm,:,ix+1,iy+1] * c11));
             fz += np.sum(fac * ( zforceS[mm,:,ix,iy] * c00 + zforceS[mm,:,ix+1,iy  ] * c10 + zforceS[mm,:,ix,iy+1] * c01 + zforceS[mm,:,ix+1,iy+1] * c11 ));
             fac = -accum_sin[mm] * ccos;
             fp += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
                 #
-    return fr,fp,fz
+        if (mm == 0): p0 = p
+    return fr,fp,fz,p0,p
 
 
 
