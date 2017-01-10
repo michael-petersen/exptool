@@ -593,7 +593,7 @@ def accumulated_forces(r, z, phi, \
             fp += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
                 #
         if (mm == 0): p0 = p
-    return fr,fp,fz,p0,p
+    return fr,fp,fz,p,p0
 
 
 
