@@ -172,7 +172,7 @@ class Potential():
             self.PA.POTE = ParticleArray.POTE
             self.multitime = True
         except:
-            self.PA.TIME = ParticleArray.ctime
+            self.PA.TIME = ParticleArray.time
             self.PA.MASS = ParticleArray.mass
             self.PA.XPOS = ParticleArray.xpos
             self.PA.YPOS = ParticleArray.ypos
@@ -282,7 +282,7 @@ class EnergyKappa():
             self.PA.POTE = ParticleArray.POTE
             self.multitime = True
         except:
-            self.PA.TIME = ParticleArray.ctime
+            self.PA.TIME = ParticleArray.time
             self.PA.MASS = ParticleArray.mass
             self.PA.XPOS = ParticleArray.xpos
             self.PA.YPOS = ParticleArray.ypos
@@ -324,7 +324,7 @@ class EnergyKappa():
         L = (LX*LX + LY*LY + LZ*LZ)**0.5
 
         # total energy (to be made accessible)
-        self.E = 0.5*V2 + self.PA.POTE
+        self.Energy = 0.5*V2 + self.PA.POTE
 
         #
         # should think about 2d vs 3d utility
@@ -335,18 +335,18 @@ class EnergyKappa():
         else:
             R = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS + self.PA.ZPOS*self.PA.ZPOS)**0.5
 
-        # partition particles into E bins
-        self.ebins = np.linspace(0.999*np.min(self.E),np.min([-2.5,1.001*np.max(self.E)]),eres)
-        eindx = np.digitize(self.E,self.ebins)
+        # partition particles into Energy bins
+        self.Ebins = np.linspace(0.999*np.min(self.Energy),np.min([-2.5,1.001*np.max(self.Energy)]),eres)
+        eindx = np.digitize(self.Energy,self.Ebins)
 
         # allocate arrays
-        self.maxLz = np.zeros_like(self.ebins)
-        self.maxR = np.zeros_like(self.ebins)
-        self.maxL = np.zeros_like(self.ebins)
-        self.circR = np.zeros_like(self.ebins)
+        self.maxLz = np.zeros_like(self.Ebins)
+        self.maxR = np.zeros_like(self.Ebins)
+        self.maxL = np.zeros_like(self.Ebins)
+        self.circR = np.zeros_like(self.Ebins)
 
         
-        for i,energy in enumerate(self.ebins):
+        for i,energy in enumerate(self.Ebins):
             energy_range = np.where( eindx==i+1)[0]
             
             if len(energy_range) > 1:
@@ -377,23 +377,23 @@ class EnergyKappa():
             smthL = helpers.savitzky_golay(self.maxL,7,3)
             smthR = helpers.savitzky_golay(self.circR,7,3)
         else:
-            smthLzf = UnivariateSpline(self.ebins,self.maxLz,k=spline_order)
-            smthLf  = UnivariateSpline(self.ebins,self.maxL,k=spline_order)
-            smthRf  = UnivariateSpline(self.ebins,self.circR,k=spline_order)
-            smthLz = smthLzf(self.ebins)
-            smthL  = smthLf(self.ebins)
-            smthR  = smthRf(self.ebins)
+            smthLzf = UnivariateSpline(self.Ebins,self.maxLz,k=spline_order)
+            smthLf  = UnivariateSpline(self.Ebins,self.maxL,k=spline_order)
+            smthRf  = UnivariateSpline(self.Ebins,self.circR,k=spline_order)
+            smthLz = smthLzf(self.Ebins)
+            smthL  = smthLf(self.Ebins)
+            smthR  = smthRf(self.Ebins)
 
         
         # return energy and kappa for all orbits
         if smethod == 'sg':
-            self.K = LZ/smthLz[eindx-1]
-            self.B = L/smthL[eindx-1]
+            self.Kappa = LZ/smthLz[eindx-1]
+            self.Beta = L/smthL[eindx-1]
             self.cR = smthR[eindx-1]
         else:
-            self.K = LZ/smthLzf(self.E)
-            self.B = L/smthLf(self.E)
-            self.cR = smthRf(self.E)
+            self.Kappa = LZ/smthLzf(self.Energy)
+            self.Beta = L/smthLf(self.Energy)
+            self.cR = smthRf(self.Energy)
         self.LZ = LZ
         self.L = L
 
@@ -406,7 +406,7 @@ class EnergyKappa():
         # helper class to 
         #
         f = open(file,'w+')
-        print >>f,PA.TIME,len(self.ebins),self.ebins,self.maxLz,self.maxL,self.maxR,self.circR
+        print >>f,PA.TIME,len(self.Ebins),self.Ebins,self.maxLz,self.maxL,self.maxR,self.circR
 
         f.close()
 
@@ -414,12 +414,12 @@ class EnergyKappa():
     def ek_grid(self,eres=80,kres=80,set_ebins=True,ebins_in=None):
 
         self.Kbins = np.linspace(-1.,1.,kres)
-        self.Ebins = self.Energy
+        self.Ebins = self.Ebins
 
         if not (set_ebins):
             self.Ebins = ebins_in
 
-        self.Eindx = np.digitize(self.E,self.Ebins)
+        self.Eindx = np.digitize(self.Energy,self.Ebins)
         self.Kindx = np.digitize(self.Kappa,self.Kbins)
 
 
@@ -444,10 +444,11 @@ class EnergyKappa():
         ebmax = len(self.Ebins)
         kbmax = len(self.Kbins)
 
-        ARR = np.zeros([ebmax,kbmax])
+        self.EKarray = np.zeros([ebmax,kbmax])
+        self.Egrid,self.Kgrid = np.meshgrid(self.Ebins,self.Kbins)
 
         for i in range(0,len(self.Eindx)):
             if (self.Eindx[i] < ebmax) and (self.Kindx[i] < kbmax):
-                ARR[self.Eindx[i],self.Kindx[i]] += sumval[i]
+                self.EKarray[self.Eindx[i],self.Kindx[i]] += sumval[i]
 
-        return ARR
+

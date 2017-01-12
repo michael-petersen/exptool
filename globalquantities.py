@@ -84,7 +84,7 @@ class GQuantities():
 
     def parse_list(self,resample=0):
         #
-        # make the list of files to operate on. if reample is >1, will select every (resample) files.
+        # make the list of files to operate on. if resample is >1, will select every (resample) files.
         #
 
         
