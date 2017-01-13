@@ -66,12 +66,17 @@ def find_barangle(time,BarInstance):
 
 
 
-def find_barpattern(time,BarInstance):
+def find_barpattern(time,BarInstance,smth_order=2):
     #
     # use a bar instance to match the output time to a bar pattern speed
     #
     #    simple differencing--may want to be careful with this.
+    #    needs a guard for the end points
     #
+
+    # grab the derivative at whatever smoothing order
+    BarInstance.frequency_and_derivative(smth_order=smth_order)
+    
     try:
         
         barpattern = np.zeros([len(time)])
@@ -80,13 +85,13 @@ def find_barpattern(time,BarInstance):
 
             best_time = abs(timeval-BarInstance.time).argmin()
             
-            barpattern[indx] = abs(BarInstance.pos[best_time] - BarInstance.pos[best_time - 1])/(BarInstance.time[best_time] - BarInstance.time[best_time - 1])
+            barpattern[indx] = BarInstance.deriv[best_time]
             
     except:
 
         best_time = abs(time-BarInstance.time).argmin()
         
-        barpattern = abs(BarInstance.pos[best_time] - BarInstance.pos[best_time - 1])/(BarInstance.time[best_time] - BarInstance.time[best_time - 1])
+        barpattern = BarInstance.deriv[best_time]
         
     return barpattern
 
@@ -247,12 +252,15 @@ class BarDetermine():
         #
         # this implementation is not particularly robust, could revisit in future
 
-    def frequency_and_derivative(self,smth_order=None,fft_order=None):
+    def frequency_and_derivative(self,smth_order=None,fft_order=None,verbose=0):
 
         
 
-        if smth_order or fft_order:
-            print 'Cannot assure proper functionality of both order smoothing and low pass filtering.'
+        if (smth_order or fft_order):
+            
+            if (verbose):
+                
+                print 'Cannot assure proper functionality of both order smoothing and low pass filtering.'
 
         self.deriv = np.zeros_like(self.pos)
         for i in range(1,len(self.pos)):
