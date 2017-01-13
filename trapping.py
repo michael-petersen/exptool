@@ -21,6 +21,7 @@ import itertools
 from multiprocessing import Pool, freeze_support
 import multiprocessing
 
+
 def compute_bar_lag(ParticleInstance,rcut=0.01):
     #
     # simple fourier method to calculate where the particles are in relation to the bar
@@ -51,15 +52,46 @@ def find_barangle(time,BarInstance):
     #
     # use a bar instance to match the output time to a bar position
     #
+    #    can take arrays!
+    #
     try:
         indx_barpos = np.zeros([len(time)])
         for indx,timeval in enumerate(time):
             indx_barpos[indx] = -BarInstance.pos[ abs(timeval-BarInstance.time).argmin()]
+            
     except:
         indx_barpos = -BarInstance.pos[ abs(time-BarInstance.time).argmin()]
+        
     return indx_barpos
 
 
+
+def find_barpattern(time,BarInstance):
+    #
+    # use a bar instance to match the output time to a bar pattern speed
+    #
+    #    simple differencing--may want to be careful with this.
+    #
+    try:
+        
+        barpattern = np.zeros([len(time)])
+        
+        for indx,timeval in enumerate(time):
+
+            best_time = abs(timeval-BarInstance.time).argmin()
+            
+            barpattern[indx] = abs(BarInstance.pos[best_time] - BarInstance.pos[best_time - 1])/(BarInstance.time[best_time] - BarInstance.time[best_time - 1])
+            
+    except:
+
+        best_time = abs(time-BarInstance.time).argmin()
+        
+        barpattern = abs(BarInstance.pos[best_time] - BarInstance.pos[best_time - 1])/(BarInstance.time[best_time] - BarInstance.time[best_time - 1])
+        
+    return barpattern
+
+
+    
     
 
 
@@ -293,31 +325,6 @@ class BarDetermine():
         if len(self.deriv < 1):
 
             BarDetermine.frequency_and_derivative(self)
-
-    def find_barangle(self,time,bartime,barpos):
-
-        #
-        # helper class to find the position of the bar at specified times
-        #
-        
-        try:
-            tmp = self.pos[0]
-
-            try:
-                indx_barpos = np.zeros([len(time)])
-                for indx,timeval in enumerate(time):
-                    indx_barpos[indx] = -self.pos[ abs(timeval-self.time).argmin()]
-            except:
-                indx_barpos = -self.pos[ abs(time-self.time).argmin()]
-
-            return indx_barpos
-
-            
-        except:
-            print 'BarDetermine.find_barangle: Requires BarDetermine.read_bar or BarDetermine.detect_bar to run.'
-        
-
-
 
 
 
