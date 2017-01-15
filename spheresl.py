@@ -235,12 +235,14 @@ def get_halo_pot_matrix(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1
     x2 = (x - xi[indx])/(dxi);
     
     mat = np.zeros([lmax+1,nmax+1])
+
+    mat = (x1*eftable[:,:,indx] + x2*eftable[:,:,indx+1])/np.sqrt(evtable[:,:]) * (x1*p0[indx] + x2*p0[indx+1]);
     
-    for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
+    #for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
         
-        for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
+        #for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
             
-            mat[l,n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
+            #mat[l,n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
             
     return mat
 
