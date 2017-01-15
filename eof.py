@@ -538,7 +538,7 @@ def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, m1=0,m2=10
     
 '''
 
-'''
+
 
 def accumulated_forces(r, z, phi, \
                        accum_cos, accum_sin, \
@@ -573,7 +573,7 @@ def accumulated_forces(r, z, phi, \
 
     # make a mask to only do the even terms
     if (no_odd):
-        mask = np.cos((np.pi/2.)*morder)
+        mask = abs(np.cos((np.pi/2.)*morder))
 
     else:
         mask = np.zeros_like(morder) + 1.
@@ -669,7 +669,7 @@ def accumulated_forces(r, z, phi, \
         if (mm == 0): p0 = p
     return fr,fp,fz,p,p0
 
-
+'''
 
 
 
