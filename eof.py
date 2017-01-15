@@ -294,6 +294,7 @@ def get_pot(r,z,cos_array,sin_array,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 
     #
     Vc = np.zeros([MMAX+1,NMAX])
     Vs = np.zeros([MMAX+1,NMAX])
+    
     Vc = fac * ( cos_array[:,:,ix,iy] * c00 + cos_array[:,:,ix+1,iy] * c10 + cos_array[:,:,ix,iy+1] * c01 + cos_array[:,:,ix+1,iy+1] * c11 )
     #
     Vs = fac * ( sin_array[:,:,ix,iy] * c00 + sin_array[:,:,ix+1,iy] * c10 + sin_array[:,:,ix,iy+1] * c01 + sin_array[:,:,ix+1,iy+1] * c11 );
@@ -336,46 +337,6 @@ def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx
     return Vc,Vs
 
 
-# BROKEN
-def get_pot_single_term(r,z,cos_array,sin_array,mm,nn,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0):#Matrix& Vc, Matrix& Vs, double r, double z)
-    #
-    # returns potential fields for C and S to calculate weightings during accumulation
-    #
-    #
-    # define boundaries of the interpolation scheme
-    #
-    #
-    # find the corresponding bins
-    X = (r - rmin)/dR
-    Y = (z_to_y(z) - zmin)/dZ
-    ix = int( np.floor((r - rmin)/dR) )
-    iy = int( np.floor((z_to_y(z) - zmin)/dZ) )
-    print X,Y
-    #
-    # check the boundaries and set guards
-    if X < 0: X = 0
-    if X > numx: X = numx - 1
-    if Y < 0: Y = 0
-    if Y > numy: Y = numy - 1
-    #
-    delx0 = ix + 1.0 - X;
-    dely0 = iy + 1.0 - Y;
-    delx1 = X - ix;
-    dely1 = Y - iy;
-    #
-    c00 = delx0*dely0;
-    c10 = delx1*dely0;
-    c01 = delx0*dely1;
-    c11 = delx1*dely1;
-    #
-    #print mm,nn
-    Vc = fac * ( cos_array[mm][nn][X  ][Y  ] * c00 + cos_array[mm][nn][X+1][Y  ] * c10 + cos_array[mm][nn][X  ][Y+1] * c01 + cos_array[mm][nn][X+1][Y+1] * c11 )
-    Vs = 0.0
-    if (mm>0):
-        Vs = fac * ( sin_array[mm][nn][X  ][Y  ] * c00 + sin_array[mm][nn][X+1][Y] * c10 + sin_array[mm][nn][X  ][Y+1] * c01 + sin_array[mm][nn][X+1][Y+1] * c11 );
-    return Vc,Vs
-
-
 
 def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0,no_odd=False):
     #
@@ -393,25 +354,34 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
     accum_sin = np.zeros([MMAX+1,NMAX])
     #
     for n in range(0,norb):
+        
         if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): utils.print_progress(n,norb,'eof.accumulate')
-        #
+
+        # calculate cylindrical coordinates
         r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2. + 1.e-10)**0.5
         phi = np.arctan2(ParticleInstance.ypos[n],ParticleInstance.xpos[n])
-        vc,vs = get_pot(r, ParticleInstance.zpos[n], potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP);
-        for mm in range(0,MMAX+1):
-
-            # skip odd terms?
-            if ((mm % 2) != 0) & (no_odd):
-                continue
+        
+        vc,vs = get_pot(r, ParticleInstance.zpos[n], potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
+        
+        # skip odd terms?
+        #if ((mm % 2) != 0) & (no_odd):
+        #    continue
             
             #
-            mcos = np.cos(phi*mm);
-            accum_cos[mm] += norm * ParticleInstance.mass[n] * mcos * vc[mm] 
-            #
-            #
-            if (mm>0):
-                msin = np.sin(phi*mm);
-                accum_sin[mm] += norm * ParticleInstance.mass[n] * msin * vs[mm]
+        morder = np.tile(np.arange(0.,MMAX+1.,1.),(NMAX,1)).T
+        mcos = np.cos(phi*morder)
+        msin = np.sin(phi*morder)
+
+        # make a mask to only do the even terms?
+        if (no_odd):
+            mask = abs(np.cos((np.pi/2.)*morder))
+
+        else:
+            mask = np.zeros_like(morder) + 1.
+
+        accum_cos = np.sum(norm * ParticleInstance.mass[n] * mcos * vc)
+        
+        accum_sin = np.sum(norm * ParticleInstance.mass[n] * msin * vs)
                              
     return accum_cos,accum_sin
 
@@ -521,22 +491,6 @@ def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, m1=0,m2=10
     return p0,p,fr,fp,fz,d
 
 
-'''
-    accumulated_forces: just like accumulated_eval, except only with forces
-
-    inputs
-    --------
-
-
-    outputs
-    --------
-    fr    :   radial force (two-dimensional)
-    fz    :   vertical force
-    fp    :   azimuthal force
-    p     :   potential
-    p0    :   monopole potential
-    
-'''
 
 
 
@@ -546,6 +500,26 @@ def accumulated_forces(r, z, phi, \
                        potS, rforceS, zforceS,\
                        rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,\
                        MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):
+    '''
+    accumulated_forces: just like accumulated_eval, except only with forces
+
+    inputs
+    --------
+    r,z,phi : positions in cylindrical coordinates
+    accum_cos :
+    accum_sin : 
+    potC, rforceC, zforceC : cosine terms for the potential, radial force, and vertical force
+    potS, rforceS, zforceS :   sine terms for the potential, radial force, and vertical force
+
+    outputs
+    --------
+    fr    :   radial force (two-dimensional)
+    fz    :   vertical force
+    fp    :   azimuthal force
+    p     :   potential
+    p0    :   monopole potential
+    
+    '''
 
     fr = 0.0;
     fz = 0.0;
@@ -566,12 +540,13 @@ def accumulated_forces(r, z, phi, \
     c10 = delx1*dely0;
     c01 = delx0*dely1;
     c11 = delx1*dely1;
-    #
+
+    # make numpy array for the sine and cosine terms
     morder = np.tile(np.arange(0.,MMAX+1.,1.),(NMAX,1)).T
     ccos = np.cos(phi*morder)
     ssin = np.sin(phi*morder)
 
-    # make a mask to only do the even terms
+    # make a mask to only do the even terms?
     if (no_odd):
         mask = abs(np.cos((np.pi/2.)*morder))
 
@@ -579,12 +554,12 @@ def accumulated_forces(r, z, phi, \
         mask = np.zeros_like(morder) + 1.
     
     fac = accum_cos * ccos;
-    p0  += np.sum(fac[0] * (   potC[0,:,ix,iy] * c00 +    potC[0,:,ix+1,iy  ] * c10 +    potC[0,:,ix,iy+1] * c01 +    potC[0,:,ix+1,iy+1] * c11 ));
+    p0  += np.sum(   fac[0] *  (   potC[0,:,ix,iy] * c00 +    potC[0,:,ix+1,iy  ] * c10 +    potC[0,:,ix,iy+1] * c01 +    potC[0,:,ix+1,iy+1] * c11 ));
     p   += np.sum(mask * fac * (   potC[:,:,ix,iy] * c00 +    potC[:,:,ix+1,iy  ] * c10 +    potC[:,:,ix,iy+1] * c01 +    potC[:,:,ix+1,iy+1] * c11 ));
     fr  += np.sum(mask * fac * (rforceC[:,:,ix,iy] * c00 + rforceC[:,:,ix+1,iy  ] * c10 + rforceC[:,:,ix,iy+1] * c01 + rforceC[:,:,ix+1,iy+1] * c11 ));
     fz  += np.sum(mask * fac * (zforceC[:,:,ix,iy] * c00 + zforceC[:,:,ix+1,iy  ] * c10 + zforceC[:,:,ix,iy+1] * c01 + zforceC[:,:,ix+1,iy+1] * c11 ));
 
-    # switch factor
+    # switch factor for azimuthal force
     fac = accum_cos * ssin;
             
     fp += np.sum(mask * fac * morder * ( potC[:,:,ix,iy] * c00 + potC[:,:,ix+1,iy] * c10 + potC[:,:,ix,iy+1] * c01 + potC[:,:,ix+1,iy+1] * c11 ));
@@ -596,10 +571,10 @@ def accumulated_forces(r, z, phi, \
     fr += np.sum(mask * fac * (rforceS[:,:,ix,iy] * c00 + rforceS[:,:,ix+1,iy  ] * c10 + rforceS[:,:,ix,iy+1] * c01 + rforceS[:,:,ix+1,iy+1] * c11 ));
     fz += np.sum(mask * fac * (zforceS[:,:,ix,iy] * c00 + zforceS[:,:,ix+1,iy  ] * c10 + zforceS[:,:,ix,iy+1] * c01 + zforceS[:,:,ix+1,iy+1] * c11 ));
 
+    # switch factor for azimuthal force
     fac = -accum_sin * ccos;
     fp += np.sum(mask * fac * morder * ( potS[:,:,ix,iy  ] * c00 + potS[:,:,ix+1,iy  ] * c10 + potS[:,:,ix,iy+1] * c01 + potS[:,:,ix+1,iy+1] * c11 ))
                 
-    
         
     return fr,fp,fz,p,p0
 
@@ -607,7 +582,7 @@ def accumulated_forces(r, z, phi, \
 
 '''
 
-
+# the only problem is that this is faster for monopole calculations for some reason...numpy overhead?
 
 def accumulated_forces(r, z, phi, \
                        accum_cos, accum_sin, \
@@ -1106,11 +1081,11 @@ def mix_outputs(MultiOutput):
     for i in range(0,n_instances):
         n_instance_part = len(MultiOutput[i][0])
         full_p0[first_part:first_part+n_instance_part] = MultiOutput[i][0]
-        full_p[first_part:first_part+n_instance_part] = MultiOutput[i][1]
+        full_p [first_part:first_part+n_instance_part] = MultiOutput[i][1]
         full_fr[first_part:first_part+n_instance_part] = MultiOutput[i][2]
         full_fp[first_part:first_part+n_instance_part] = MultiOutput[i][3]
         full_fz[first_part:first_part+n_instance_part] = MultiOutput[i][4]
-        full_r[first_part:first_part+n_instance_part] = MultiOutput[i][5]
+        full_r [first_part:first_part+n_instance_part] = MultiOutput[i][5]
         first_part += n_instance_part
     return full_p0,full_p,full_fr,full_fp,full_fz,full_r
 
@@ -1268,16 +1243,3 @@ def extract_eof_coefficients(f):
 
 
 
-'''
-# p,fr,fp,fz,d = eof.radial_slice(rvals,a_cos, a_sin,eof_file,z=0.0,phi=0.0)
-
-dfdr = np.ediff1d((fr),to_end=0.0)/(rvals[1]-rvals[0])
-
-omega_r = ( 3.* (fr/rvals) + dfdr)**0.5
-omega_phi = (fr/rvals)**0.5
-
-plt.plot(rvals,omega_phi)
-plt.plot(rvals,omega_phi + 0.5*omega_r)
-
-
-'''
