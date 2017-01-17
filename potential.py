@@ -6,127 +6,20 @@
 #    MSP 10.1.2015
 #
 #
+
+# standard libraries
 import numpy as np
 import time
 
 # exptool classes
-import helpers
+import utils
 
+# for interpolation
 from scipy.interpolate import UnivariateSpline
 
-'''
-import psp_io
-import potential
-import helpers
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 
-Od = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.01000',comp='star',verbose=2)
-EK = potential.EnergyKappa(Od)
-
-
-
-Od0 = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00000',comp='star',verbose=2)
-EK0 = potential.EnergyKappa(Od0)
-
-def kappa_change():
-rbins = np.linspace(0.,0.05,40)
-Od.R = (Od.xpos*Od.xpos + Od.ypos*Od.ypos + Od.zpos*Od.zpos)**0.5
-Rindx = np.digitize(Od.R,rbins)
-
-tenb = np.zeros_like(rbins)
-fiftyb = np.zeros_like(rbins)
-ninetyb = np.zeros_like(rbins)
-for i,val in enumerate(rbins):
-     kapparr = EK.K[np.where(Rindx==i)[0]]
-     if len(kapparr)>0:
-          tenb[i] = np.percentile(kapparr,25)
-          fiftyb[i] = np.percentile(kapparr,50)
-          ninetyb[i] = np.percentile(kapparr,75)
-
-
-Od = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.01000',comp='star',verbose=2)
-
-
-# this whole exercise takes about 30 seconds
-Od = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.01000',comp='dark',verbose=2)
-EK = potential.EnergyKappa(Od)
-
-
-
-LZ = Od.xpos*Od.yvel - Od.ypos*Od.xvel
-A = potential.EnergyKappa.sum_ek_values(EK,np.ones(len(Od.xpos)))
-
-
-B = potential.EnergyKappa.sum_ek_values(EK,LZ)
-print np.max(B/(A+1.))
-
-
-Od = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00800',comp='star',verbose=2)
-EK2 = potential.EnergyKappa(Od)
-
-LZ2 = Od.xpos*Od.yvel - Od.ypos*Od.xvel
-
-potential.EnergyKappa.ek_grid(EK2,set_ebins=False,ebins_in=EK.Energy)
-C = potential.EnergyKappa.sum_ek_values(EK2,np.ones(len(Od.xpos)))
-D = potential.EnergyKappa.sum_ek_values(EK2,LZ2)
-print np.max(D/(C+1.))
-
-
-# make a SN mask?
-SNmask_row,SNmask_cols = np.where( (C>10))
-
-
-
-
-
-O = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00000',comp='dark',verbose=2)
-P = potential.Potential(O)
-
-
-
-Od = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00000',comp='star',verbose=2,nout=10000)
-Pd = potential.Potential(Od)
-
-# resample halo to be on disk terms
-Hv = helpers.resample(P.rbins,P.vcirc,Pd.rbins)
-
-F = np.max(Pd.vcirc)/np.max((Hv**2.+Pd.vcirc**2.)**0.5)
-print 'The submaximality parameter is %3.3f' %F
-
-plt.ion()
-plt.figure(1)
-plt.plot(Pd.rbins,Hv,'-.',color='gray')
-plt.plot(Pd.rbins,Pd.vcirc,'--',color='gray')
-plt.plot(Pd.rbins,(Hv**2.+Pd.vcirc**2.)**0.5,color='black')
-plt.axis([0.0,0.1,0.0,1.7])
-plt.xlabel('Radius',size=20)
-plt.ylabel('V$_{\\rm circ}$',size=20)
-
-
-
-O = psp_io.Input('/Volumes/SIMSET/OUT.run074a.01000',comp='dark',verbose=2)
-P = potential.Potential(O)
-
-Od = psp_io.Input('/Volumes/SIMSET/OUT.run074a.01000',comp='star',verbose=2)
-Pd = potential.Potential(Od)
-
-
-plt.figure(1)
-plt.plot(P.rbins,P.vcirc,color='gray')
-plt.plot(Pd.rbins,Pd.vcirc,color='gray')
-plt.plot(Pd.rbins,(P.vcirc**2.+Pd.vcirc**2.)**0.5,color='black')
-
-xrange = np.linspace(-0.03,0.03,45)
-xx,yy,out = quick_contour(xrange,xrange,Od.xpos,Od.ypos,np.ones(len(Od.xpos)))
-
-
-plt.contourf(xx,yy,np.log10(out),24)
-
-'''
-
+# use psp_io.particle_holder instead (01.17.17)
 class PArray(object):
     TIME = None
     MASS = None

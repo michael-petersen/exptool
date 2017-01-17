@@ -21,6 +21,7 @@ import os
 # exptool imports
 import utils
 import halo_methods
+import psp_io
 
 # special math imports
 from scipy.special import gammaln
@@ -31,6 +32,22 @@ import itertools
 from multiprocessing import Pool, freeze_support
 
 
+###############################################################################
+'''
+
+Table manipulation block
+
+Collection of methods to interface with the tabulated potential-density pairs
+
+get_halo_dens_pot_force
+get_halo_dens
+get_halo_force
+get_halo_force_pot
+get_halo_pot_matrix
+get_halo_pot
+
+'''
+###############################################################################
 
 def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=0, scale=1.0):
     #
@@ -276,19 +293,27 @@ def get_halo_pot(x, l, n, evtable, eftable, xi, p0, cmap=0, scale=1.0):#, int wh
 
 
 
-class particle_holder(object):
-    xpos = None
-    ypos = None
-    zpos = None
-    mass = None
+###############################################################################
+'''
+
+Multiprocessing block
+
+Collection of methods to wrap for multiprocessing
+
+Culminates in
+
+compute_coefficients
+eval_particles
+
+'''
+###############################################################################
 
 
 def redistribute_particles(ParticleInstance,divisions):
     npart = np.zeros(divisions,dtype=object)
-    holders = [particle_holder() for x in range(0,divisions)]
+    holders = [psp_io.particle_holder() for x in range(0,divisions)]
     average_part = int(np.floor(len(ParticleInstance.xpos)/divisions))
     first_partition = len(ParticleInstance.xpos) - average_part*(divisions-1)
-    #print average_part, first_partition
     low_particle = 0
     for i in range(0,divisions):
         end_particle = low_particle+average_part
@@ -300,10 +325,6 @@ def redistribute_particles(ParticleInstance,divisions):
         holders[i].mass = ParticleInstance.mass[low_particle:end_particle]
         low_particle = end_particle
     return holders
-
-
-
-
 
 
 
@@ -491,6 +512,7 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
         # go through loops
         #
         potd = get_halo_pot_matrix(r, lmax, nmax, evtable, eftable, xi, p0, cmap=cmap, scale=scale)
+           # returns potd, (lmax+1,nmax+1)
         
         loffset = 0
         for l in range(0,lmax+1):
@@ -530,35 +552,55 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
 
 
 
-def legendre_R(lmax, x):#, Matrix &p, Matrix &dp)
+def legendre_R(lmax, x):
+    '''
+    return an (lmax+1,lmax+1) element array of the legendre polynomials for the l and m spherical harmonic orders.
+
+
+    '''
     p = np.zeros([lmax+1,lmax+1])
     dp = np.zeros([lmax+1,lmax+1])
     p[0][0] = pll = 1.0;
-    if (lmax > 0):# {
+    
+    if (lmax > 0):
         somx2 = np.sqrt( (1.0 - x)*(1.0 + x) );
         fact = 1.0;
-        for m in range(1,lmax+1):#(m=1; m<=lmax; m++) {
+        
+        for m in range(1,lmax+1):
             pll *= -fact*somx2;
             p[m][m] = pll;
             fact += 2.0;
     #
     #
-    for m in range(0,lmax):#(m=0; m<lmax; m++) {
+    for m in range(0,lmax):
         pl2 = p[m][m];
         p[m+1][m] = pl1 = x*(2*m+1)*pl2;
-        for l in range(m+2,lmax+1):#(l=m+2; l<=lmax; l++) {
+        
+        for l in range(m+2,lmax+1):
             p[l][m] = pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m);
             pl2 = pl1;
             pl1 = pll;
+            
     return p
 
 
 
 
 
-def dlegendre_R(lmax, x):#, Matrix &p, Matrix &dp)
+def dlegendre_R(lmax, x):
+    '''
+    return an (lmax+1,lmax+1) element array of the legendre polynomials for the l and m spherical harmonic orders.
+
+    AND
+
+    return an (lmax+1,lmax+1) element of the legendre derivatives.
+
+    (for use in computing forces)
+
+    '''
     p = np.zeros([lmax+1,lmax+1])
     dp = np.zeros([lmax+1,lmax+1])
+    
     p[0][0] = pll = 1.0;
     if (lmax > 0):# {
         somx2 = np.sqrt( (1.0 - x)*(1.0 + x) );
@@ -595,23 +637,38 @@ def dlegendre_R(lmax, x):#, Matrix &p, Matrix &dp)
 
 
 def factorial_return(lmax):
-  factorial = np.zeros([lmax+1,lmax+1])
-  for l in range(0,lmax+1):#=0; l<=lmax; l++) {
-      for m in range(0,l+1):#(int m=0; m<=l; m++) {
-          factorial[l][m] = np.sqrt( (0.5*l+0.25)/np.pi * np.exp(gammaln(1.0+l-m) - gammaln(1.0+l+m)) );
-          if (m != 0): factorial[l][m] *= np.sqrt(2.)#M_SQRT2;
-  return factorial
+    '''
+    return an (lmax+1,lmax+1) element array of factorial terms for spherical harmonics.
+
+    see functional form of spherical harmonics.
+
+    '''
+    factorial = np.zeros([lmax+1,lmax+1])
+    for l in range(0,lmax+1):
+        
+        for m in range(0,l+1):
+            
+            factorial[l][m] = np.sqrt( (0.5*l+0.25)/np.pi * np.exp(gammaln(1.0+l-m) - gammaln(1.0+l+m)) );
+            
+            if (m != 0):
+                factorial[l][m] *= np.sqrt(2.)#M_SQRT2;
+
+    return factorial
 
 
 
-
+#
+#
+# these definitions may be useful to get the matrix formulation of spheresl running (01.17.17)
 def get_pot_coefs(l, l_coef, l_potd, l_dpot):
     nmax = len(l_coef)
     pp = 0.0
     dpp = 0.0;
-    for n in range(1,nmax+1):#(i=1; i<=NMAX; i++) {
+    for n in range(1,nmax+1):
+        
         pp  += potd[i] * coef[i];
         dpp += dpot[i] * coef[i];
+        
     return -1.*pp, -1.*dpp
 
 
@@ -620,8 +677,10 @@ def get_dens_coefs(l, l_coef, dend):
     # pass this the l array of coefficients
     # and d array of coefficients
     pp = 0.0;
-    for n in range(1,nmax+1):#(i=1; i<=NMAX; i++)
+    for n in range(1,nmax+1):
+        
         pp  += dend[n] * l_coef[n];
+        
     return pp
 
 
@@ -762,19 +821,19 @@ def all_eval(r, costh, phi, expcoef,\
         fac1 = factorial[l][m];
         
         if (m==0):
-              den1 += np.sum(fac1*legs[1][m] * (expcoef[loffset+moffset] * dend[l]));
-              pot1 += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
-              potr += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
-              pott += np.sum(fac1*dlegs[l][m]* (expcoef[loffset+moffset] * potd[l]));
+              den1 += np.sum(fac1* legs[1][m] * (expcoef[loffset+moffset] * dend[l]));
+              pot1 += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
+              potr += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
+              pott += np.sum(fac1*dlegs[l][m] * (expcoef[loffset+moffset] * potd[l]));
               moffset+=1;
         else:
               cosm = np.cos(phi*m);
               sinm = np.sin(phi*m);
-              den1 += np.sum(fac1*legs[l][m]*( expcoef[loffset+moffset]   * dend[l]*cosm + expcoef[loffset+moffset+1] * dend[l]*sinm ));
-              pot1 += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
-              potr += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
-              pott += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
-              potp += np.sum(fac1*legs[l][m] * m * (-expcoef[loffset+moffset]   * potd[l]*sinm +   expcoef[loffset+moffset+1] * potd[l]*cosm ));
+              den1 += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * dend[l]*cosm + expcoef[loffset+moffset+1] * dend[l]*sinm ));
+              pot1 += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
+              potr += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * dpot[l]*cosm + expcoef[loffset+moffset+1] * dpot[l]*sinm ));
+              pott += np.sum(fac1*dlegs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
+              potp += np.sum(fac1* legs[l][m] * m * (-expcoef[loffset+moffset] * potd[l]*sinm + expcoef[loffset+moffset+1] * potd[l]*cosm ));
               moffset +=2;
       loffset+=(2*l+1)
     #
