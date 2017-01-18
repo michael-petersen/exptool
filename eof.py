@@ -31,7 +31,7 @@ from collections import OrderedDict
 
 # exptool definitions
 import utils
-
+import psp_io
 
 #
 # tools to read in the eof cache and corresponding details
@@ -379,9 +379,9 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         else:
             mask = np.zeros_like(morder) + 1.
 
-        accum_cos = np.sum(norm * ParticleInstance.mass[n] * mcos * vc)
+        accum_cos += (norm * ParticleInstance.mass[n] * mcos * vc)
         
-        accum_sin = np.sum(norm * ParticleInstance.mass[n] * msin * vs)
+        accum_sin += (norm * ParticleInstance.mass[n] * msin * vs)
                              
     return accum_cos,accum_sin
 
@@ -898,22 +898,13 @@ def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
 # http://stackoverflow.com/questions/5442910/python-multiprocessing-pool-map-for-multiple-arguments
 
 
-#
-# extremely minimalist particle holder.
-#
-class particle_holder(object):
-    xpos = None
-    ypos = None
-    zpos = None
-    mass = None
-
 
 #
 # set up particle structure for multiprocessing distribution
 #
 def redistribute_particles(ParticleInstance,divisions):
     npart = np.zeros(divisions)
-    holders = [particle_holder() for x in range(0,divisions)]
+    holders = [psp_io.particle_holder() for x in range(0,divisions)]
     average_part = int(np.floor(len(ParticleInstance.xpos)/divisions))
     first_partition = len(ParticleInstance.xpos) - average_part*(divisions-1)
     #print average_part, first_partition
@@ -1209,11 +1200,14 @@ def restore_eof_coefficients(infile):
     EOF_Dict = OrderedDict()
 
     for step in range(0,ndumps):
-        
-        EOF_Out = extract_eof_coefficients(f)
 
-        EOF_Dict[EOF_Out.time] = EOF_Out
+        try:
+            EOF_Out = extract_eof_coefficients(f)
 
+            EOF_Dict[EOF_Out.time] = EOF_Out
+
+        except:
+            pass
 
     f.close()
 
