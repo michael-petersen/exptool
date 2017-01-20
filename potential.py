@@ -211,17 +211,17 @@ class Fields():
         if self.halomonopole:
             use_l = 0
         else:
-            use_l = lmaxhalo
+            use_l = self.lmaxhalo
         #
         if self.diskmonopole:
             use_m = 0
         else:
-            use_m = mmax
+            use_m = self.mmax
         #
-        if self.truncate_disk_n < norder:
-            use_n = truncate_disk_n
+        if self.truncate_disk_n < self.norder:
+            use_n = self.truncate_disk_n
         else:
-            use_n = norder
+            use_n = self.norder
         #
         # disk force call
         diskfr,diskfp,diskfz,diskp,diskp0 = eof.accumulated_forces(r2val, zval, phival-rotpos, \
@@ -238,7 +238,7 @@ class Fields():
                                                    self.halofac*self.SL.expcoef,\
                                                    self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
                                                    #lmaxhalo,nmaxhalo,\
-                                                   use_l,nmaxhalo,\
+                                                   use_l,self.nmaxhalo,\
                                                    self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
         # recommended guards against bizarre phi forces
         if r3val < np.min(self.xihalo):
