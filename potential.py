@@ -13,23 +13,11 @@ import time
 
 # exptool classes
 import utils
+import psp_io
 
 # for interpolation
 from scipy.interpolate import UnivariateSpline
 
-
-
-# use psp_io.particle_holder instead (01.17.17)
-class PArray(object):
-    TIME = None
-    MASS = None
-    XPOS = None
-    YPOS = None
-    ZPOS = None
-    XVEL = None
-    YVEL = None
-    ZVEL = None
-    POTE = None
 
 
 
