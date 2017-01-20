@@ -655,6 +655,7 @@ def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, de
     p = 0.0;
     p0 = 0.0;
     d = 0.0;
+    d0 = 0.0;
     #
     # compute mappings
     #
@@ -695,8 +696,10 @@ def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, de
             fac = -accum_sin[mm] * ccos;
             fp += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
                 #
-        if (mm==0): p0 = p;
-    return p0,p,fr,fp,fz,d
+        if (mm==0):
+            p0 = p;
+            d0 = d;
+    return p0,p,fr,fp,fz,d0,d
 
 
 
