@@ -648,7 +648,7 @@ def accumulated_forces(r, z, phi, \
 
 
 
-def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, densC, potS, rforceS, zforceS, densS, rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
+def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, densC, potS, rforceS, zforceS, densS, rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
     fr = 0.0;
     fz = 0.0;
     fp = 0.0;
@@ -672,6 +672,10 @@ def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, de
     c11 = delx1*dely1;
     #
     for mm in range(0,MMAX+1):
+
+        if ((mm % 2) != 0) & (no_odd):
+            continue
+        
         ccos = np.cos(phi*mm);
         ssin = np.sin(phi*mm);
         #
