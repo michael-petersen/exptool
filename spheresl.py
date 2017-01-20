@@ -332,7 +332,7 @@ def compute_coefficients_solitary_star(a_b):
     """Convert `f([1,2])` to `f(1,2)` call."""
     return compute_coefficients_solitary(*a_b)
 
-def multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=0,no_odd=False):
+def multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=1,no_odd=False):
     pool = Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = sph_file
@@ -804,7 +804,9 @@ def all_eval(r, costh, phi, expcoef,\
     den0 = np.sum(fac1 * expcoef[0]*dend[0]);
     pot0 = np.sum(fac1 * expcoef[0]*potd[0]);
     potr = np.sum(fac1 * expcoef[0]*dpot[0]);
-    den1 = 0.0;
+
+    # converted den1 to be the total density (not just perturbing density, NOTE CHANGE!) (01.20.2017)
+    den1 = np.sum(fac1 * expcoef[0]*dend[0]);
     pot1 = 0.0;
     pott = 0.0;
     potp = 0.0;

@@ -29,7 +29,7 @@ class Fields():
     class to accumulate (all) particles from a dump and return the field quantities
 
     '''
-    def __init__(self,infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,verbose=0):
+    def __init__(self,infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,verbose=1):
 
         self.infile = infile
         self.eof_file = eof_file
@@ -50,7 +50,7 @@ class Fields():
         # read in the files
         #
         PSPDumpDisk = psp_io.Input(self.infile,comp='star')
-        if transform:
+        if self.transform:
             PSPDumpDiskTransformed = trapping.BarTransform(PSPDumpDisk)
             
             if self.verbose > 1:
@@ -59,10 +59,14 @@ class Fields():
         else:
             PSPDumpDiskTransformed = PSPDumpDisk
             
-        
+
+        PSPDumpHaloT = psp_io.Input(self.infile,comp='dark')
+
         PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
+
+        self.halofac = float(PSPDumpHalo.nbodies)/float(PSPDumpHaloT.nbodies)
         
-        if transform:
+        if self.transform:
             PSPDumpHaloTransformed = trapping.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
             
         else:
@@ -71,7 +75,7 @@ class Fields():
         #
         # compute coefficients
         #
-        self.EOF = eof.compute_coefficients(PSPDumpDiskTransformed,self.eof_file,no_odd=self.no_odd)
+        self.EOF = eof.compute_coefficients(PSPDumpDiskTransformed,self.eof_file,verbose=self.verbose,no_odd=self.no_odd)
 
         
         self.SL = spheresl.compute_coefficients(PSPDumpHaloTransformed,self.sph_file,self.model_file,verbose=self.verbose,no_odd=self.no_odd)
@@ -102,6 +106,157 @@ class Fields():
           
         self.xihalo,self.rarrhalo,self.p0halo,self.d0halo \
           = halo_methods.init_table(self.SL.model_file,self.numrhalo,self.rminhalo,self.rmaxhalo,cmap=self.cmaphalo,scale=self.scalehalo)  
+
+
+    def return_density(self,xval,yval,zval):
+        '''
+        definition to return the density for the monopole term and total separately, and for the two components
+
+        wrapped elsewhere to some end
+
+        '''
+        
+        try:
+            x = self.EOF.eof_file
+            y = self.potC
+
+        except:
+            print 'potential.Fields.return_density: must first call total_coefficients and prep_tables.'
+
+        r2val = (xval*xval + yval*yval)**0.5  + 1.e-10
+        r3val = (r2val*r2val + zval*zval)**0.5  + 1.e-10
+        costh = zval/r3val
+        phival = np.arctan2(yval,xval)
+
+            
+        # disk evaluation call
+        diskp0,diskp,diskfr,diskfp,diskfz,diskden0,diskden1 = eof.accumulated_eval(r2val, zval, phival,\
+                                              self.EOF.cos, self.EOF.sin,\
+                                              self.potC, self.rforceC, self.zforceC, self.densC,\
+                                              self.potS, self.rforceS, self.zforceS, self.densS,\
+                                              rmin=self.XMIN,dR=self.dX,zmin=self.YMIN,dZ=self.dY,numx=self.numx,numy=self.numy,fac = 1.0,\
+                                              MMAX=self.mmax,NMAX=self.norder,\
+                                              ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd)
+        #
+        # halo evaluation call
+        haloden0,haloden1,halopot0,halopot1,halopotr,halopott,halopotp = spheresl.all_eval(r3val, costh, phival,\
+                                                                                           self.halofac*self.SL.expcoef,\
+                                                                                           self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
+                                                                                           self.lmaxhalo,self.nmaxhalo,\
+                                                                                           self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
+
+        return haloden0,haloden1,diskden0,diskden1
+
+
+    def density_calculate(self,rvals=np.linspace(0.,0.1,100)):
+        '''
+        routine to compute in-plane major axis density values for looking at profile change over time
+
+        '''
+
+        # cheap to just do this here and set everything up as a just-in-case
+        Fields.prep_tables(self)
+
+        if not self.densdisk:
+            print 'Fields.density_calculate: no density terms in basis!'
+            return None
+
+        halodens_mono = np.zeros_like(rvals)
+        diskdens_mono = np.zeros_like(rvals)
+        halodens_total = np.zeros_like(rvals)
+        diskdens_total = np.zeros_like(rvals)
+
+        for indx,rval in enumerate(rvals):
+            halodens_mono[indx],halodens_total[indx],diskdens_mono[indx],diskdens_total[indx] = Fields.return_density(self,rval,0.0,0.0)
+
+        self.rvals = rvals
+        self.halodens_mono = halodens_mono
+        self.diskdens_mono = diskdens_mono
+        self.halodens_total = halodens_total
+        self.diskdens_total = diskdens_total
+
+
+    def set_field_parameters(self,no_odd=False,halomonopole=False,diskmonopole=False,truncate_disk_n=1000):
+        '''
+        in preparation for other definitions, specify
+
+
+        '''
+        
+        self.no_odd = no_odd
+        self.halomonopole = halomonopole
+        self.diskmonopole = diskmonopole
+        self.truncate_disk_n = truncate_disk_n
+
+
+    def return_forces_cart(self,xval,yval,zval,rotpos=0.0):
+        
+        # to be dealt with elsewhere
+        # ,no_odd=False,halomonopole=False,diskmonopole=False,truncate_disk_n=1000
+
+        try:
+            x = self.no_odd
+
+        except:
+            print 'Fields.return_forces_cart: applying default potential parameters.'
+            Fields.set_field_parameters(self)
+
+
+        r2val = (xval*xval + yval*yval)**0.5  + 1.e-10
+        r3val = (r2val*r2val + zval*zval)**0.5  + 1.e-10
+        costh = zval/r3val
+        phival = np.arctan2(yval,xval)
+
+        # use only halo monopole?
+        if self.halomonopole:
+            use_l = 0
+        else:
+            use_l = lmaxhalo
+        #
+        if self.diskmonopole:
+            use_m = 0
+        else:
+            use_m = mmax
+        #
+        if self.truncate_disk_n < norder:
+            use_n = truncate_disk_n
+        else:
+            use_n = norder
+        #
+        # disk force call
+        diskfr,diskfp,diskfz,diskp,diskp0 = eof.accumulated_forces(r2val, zval, phival-rotpos, \
+                                                      self.EOF.cos[:,0:use_n], self.EOF.sin[:,0:use_n], \
+                                                      self.potC[:,0:use_n,:,:], self.rforceC[:,0:use_n,:,:], self.zforceC[:,0:use_n,:,:],\
+                                                      self.potS[:,0:use_n,:,:], self.rforceS[:,0:use_n,:,:], self.zforceS[:,0:use_n,:,:],\
+                                                      rmin=self.XMIN,dR=self.dX,zmin=self.YMIN,dZ=self.dY,numx=self.numx,numy=self.numy,fac = 1.0,\
+                                                      #MMAX=mmax,NMAX=norder,\
+                                                      MMAX=use_m,NMAX=use_n,\
+                                                      ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd)
+        #
+        # halo force call
+        halofr,haloft,halofp,halop,halop0 = spheresl.force_eval(r3val, costh, phival-rotpos, \
+                                                   self.halofac*self.SL.expcoef,\
+                                                   self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
+                                                   #lmaxhalo,nmaxhalo,\
+                                                   use_l,nmaxhalo,\
+                                                   self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
+        # recommended guards against bizarre phi forces
+        if r3val < np.min(self.xihalo):
+            halofp = 0.
+            diskfp = 0.
+        
+        fxdisk = (diskfr*(xval/r2val) - diskfp*(yval/(r2val*r2val)) )
+        fxhalo = -1.* ( halofr*(xval/r3val) - haloft*(xval*zval/(r3val*r3val*r3val))) + halofp*(yval/(r2val*r2val))
+        
+        fydisk = (diskfr*(yval/r2val) + diskfp*(xval/(r2val*r2val)) )
+        fyhalo = -1.* ( halofr*(yval/r3val) - haloft*(yval*zval/(r3val*r3val*r3val))) - halofp*(xval/(r2val*r2val))
+        
+        fzdisk = diskfz
+        fzhalo = -1.* ( halofr*(zval/r3val) + haloft*( (r2val*r2val)/(r3val*r3val*r3val)) )
+
+        
+        return (fxdisk+fxhalo),(fydisk+fyhalo),(fzdisk+fzhalo),(diskp+halop)
+
 
 
 
