@@ -771,7 +771,8 @@ def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
 def all_eval(r, costh, phi, expcoef,\
              xi,p0,d0,cmap,scale,\
              lmax,nmax,\
-             evtable,eftable):
+             evtable,eftable,\
+             no_odd=False):
     '''
     all_eval: simple workhorse to evaluate the spherical basis
         this version loads everything up first: lots of inputs, but no need to reread anything.
@@ -812,6 +813,11 @@ def all_eval(r, costh, phi, expcoef,\
     #
     loffset = 1
     for l in range(1,lmax+1):
+
+      # skip odd terms if desired
+      if ( (l % 2) != 0) & (no_odd):
+                loffset+=(2*l+1)
+                continue
         
       # M loop
       moffset = 0

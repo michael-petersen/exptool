@@ -14,9 +14,95 @@ import time
 # exptool classes
 import utils
 import psp_io
+import trapping
+import eof
+import spheresl
+import halo_methods
 
 # for interpolation
 from scipy.interpolate import UnivariateSpline
+
+
+
+class Fields():
+    '''
+    class to accumulate (all) particles from a dump and return the field quantities
+
+    '''
+    def __init__(self,infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,verbose=0):
+
+        self.infile = infile
+        self.eof_file = eof_file
+        self.sph_file = sph_file
+        self.model_file = model_file
+        self.nhalo = nhalo
+        self.transform = transform
+        self.no_odd = no_odd
+
+        self.verbose = verbose
+
+        # do the total coefficient calculation?
+        #Fields.total_coefficients(self)
+
+    def total_coefficients(self):
+
+
+        # read in the files
+        #
+        PSPDumpDisk = psp_io.Input(self.infile,comp='star')
+        if transform:
+            PSPDumpDiskTransformed = trapping.BarTransform(PSPDumpDisk)
+            
+            if self.verbose > 1:
+                print 'potential.Fields.total_coefficients: Using bar_angle %4.3f' %PSPDumpDiskTransformed.bar_angle
+                
+        else:
+            PSPDumpDiskTransformed = PSPDumpDisk
+            
+        
+        PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
+        
+        if transform:
+            PSPDumpHaloTransformed = trapping.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
+            
+        else:
+            PSPDumpHaloTransformed = PSPDumpHalo
+            
+        #
+        # compute coefficients
+        #
+        self.EOF = eof.compute_coefficients(PSPDumpDiskTransformed,self.eof_file,no_odd=self.no_odd)
+
+        
+        self.SL = spheresl.compute_coefficients(PSPDumpHaloTransformed,self.sph_file,self.model_file,verbose=self.verbose,no_odd=self.no_odd)
+
+    def prep_tables(self):
+
+        try:
+            x = self.EOF.eof_file
+
+        except:
+            print 'potential.Fields.prep_tables: must first call total_coefficients.'
+
+        # build disk tables
+        self.potC,self.rforceC,self.zforceC,self.densC,\
+          self.potS,self.rforceS,self.zforceS,self.densS \
+          = eof.parse_eof(self.EOF.eof_file)
+          
+        self.rmindisk,self.rmaxdisk,self.numx,self.numy,self.mmax,self.norder,self.ascale,self.hscale,self.cmapdisk,self.densdisk \
+          = eof.eof_params(self.EOF.eof_file)
+          
+        self.XMIN,self.XMAX,self.dX,self.YMIN,self.YMAX,self.dY \
+          = eof.set_table_params(RMAX=self.rmaxdisk,RMIN=self.rmindisk,ASCALE=self.ascale,HSCALE=self.hscale,NUMX=self.numx,NUMY=self.numy,CMAP=self.cmapdisk)
+
+        # build halo tables
+        self.lmaxhalo,self.nmaxhalo,self.numrhalo,self.cmaphalo,\
+          self.rminhalo,self.rmaxhalo,self.scalehalo,self.ltablehalo,self.evtablehalo,self.eftablehalo \
+          = halo_methods.read_cached_table(self.SL.sph_file)
+          
+        self.xihalo,self.rarrhalo,self.p0halo,self.d0halo \
+          = halo_methods.init_table(self.SL.model_file,self.numrhalo,self.rminhalo,self.rmaxhalo,cmap=self.cmaphalo,scale=self.scalehalo)  
+
 
 
 
