@@ -64,7 +64,7 @@ class Fields():
 
         PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
 
-        self.halofac = float(PSPDumpHalo.nbodies)/float(PSPDumpHaloT.nbodies)
+        self.halofac = float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
         
         if self.transform:
             PSPDumpHaloTransformed = trapping.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
@@ -255,13 +255,45 @@ class Fields():
         fzhalo = -1.* ( halofr*(zval/r3val) + haloft*( (r2val*r2val)/(r3val*r3val*r3val)) )
 
         
-        return (fxdisk+fxhalo),(fydisk+fyhalo),(fzdisk+fzhalo),(diskp+halop)
+        return fxdisk,fxhalo,fydisk,fyhalo,fzdisk,fzhalo,diskp,halop
+
+    
+    def rotation_curve(self,rvals=np.linspace(0.,0.1,100)):
+
+        disk_force = np.zeros_like(rvals)
+        halo_force = np.zeros_like(rvals)
+
+        for indx,rval in enumerate(rvals):
+            disk_force[indx],halo_force[indx],a,b,c,d,e,f = Fields.return_forces_cart(self,rval,0.0,0.0)
+
+        self.rvals = rvals
+        self.disk_rotation = (rvals*abs(disk_force))**0.5
+        self.halo_rotation = (rvals*abs(halo_force))**0.5
+        self.total_rotation = (rvals*(abs(halo_force)+abs(disk_force)))**0.5
+
+
+    
+    def compute_axis_potential(self,rvals=np.linspace(0.,0.1,100)):
+        '''
+        returns the potential along the major axis
+
+        '''
+
+        disk_pot = np.zeros_like(rvals)
+        halo_pot = np.zeros_like(rvals)
+
+        for indx,rval in enumerate(rvals):
+            a,b,c,d,e,f,disk_pot[indx],halo_pot[indx] = Fields.return_forces_cart(self,rval,0.0,0.0)
+
+        self.rvals = rvals
+        self.disk_pot = disk_pot
+        self.halo_pot = halo_pot
+        self.total_pot = disk_pot+halo_pot
 
 
 
 
-
-
+        
 class Potential():
 
     #
