@@ -22,7 +22,7 @@ from multiprocessing import Pool, freeze_support
 import multiprocessing
 
 
-def compute_bar_lag(ParticleInstance,rcut=0.01):
+def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
     #
     # simple fourier method to calculate where the particles are in relation to the bar
     #
@@ -32,7 +32,10 @@ def compute_bar_lag(ParticleInstance,rcut=0.01):
     A2 = np.sum(ParticleInstance.mass[loR] * np.cos(2.*TH[loR]))
     B2 = np.sum(ParticleInstance.mass[loR] * np.sin(2.*TH[loR]))
     bar_angle = 0.5*np.arctan2(B2,A2)
-    print 'Position angle is %4.3f . . .' %bar_angle
+    
+    if (verbose):
+        print 'Position angle is %4.3f . . .' %bar_angle
+        
     #
     # two steps:
     #   1. rotate theta so that the bar is aligned at 0,2pi

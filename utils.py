@@ -138,12 +138,14 @@ def normalhist(array,nbins,colorst):
 	array_out /= (sum(array_out))
 	plt.plot(binsind,array_out,color=colorst,linewidth=2.0)
 	plt.draw()
+    
 
-def binnormalhist(array,bins,colorst,weights=None):
+    
+def binnormalhist(array,bins,weights=None):
     if weights==None:
         weights = np.ones(len(array))
     #
-    print weights
+    #print weights
     binsind = bins+(0.5*(bins[1]-bins[0]))
     array_out = np.zeros(len(bins))
     for i in range(0,len(array)):
@@ -152,8 +154,8 @@ def binnormalhist(array,bins,colorst,weights=None):
         if ((binn >= 0) & (binn < len(bins)) ):
             array_out[binn] += weights[i]
     array_out /= (sum(array_out))
-    plt.plot(binsind,array_out,color=colorst,linewidth=2.0)
-    plt.draw()
+    
+    return array_out
 
 
 

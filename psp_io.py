@@ -17,6 +17,8 @@ import time
 import numpy as np
 import os
 
+import trapping
+
 
 class Input():
 
@@ -681,7 +683,7 @@ def convert_to_dict(ParticleInstance):
 
 #
 # this really shouldn't even be an option anymore.
-def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=np.pi,transform=False):
+def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=np.pi,transform=False,bar_angle=None):
     #
     # if transform=True, requires ParticleInstance.xbar to be defined
     #
@@ -690,7 +692,8 @@ def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=
         particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut))[0]
     if transform==True:
         # compute the bar lag
-        BL = trapping.compute_bar_lag(ParticleInstance,rcut=0.01)
+        ParticleInstanceTransformed = trapping.BarTransform(ParticleInstance,bar_angle=bar_angle)
+        BL = ( (np.arctan2(ParticleInstanceTransformed.ypos,ParticleInstanceTransformed.xpos) + np.pi/2.) % np.pi) - np.pi/2.
         # look for particles in the wedge relative to bar angle
         particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut) & (BL > loT) & (BL < hiT))[0]
     #

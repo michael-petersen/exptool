@@ -212,16 +212,19 @@ class Fields():
             use_l = 0
         else:
             use_l = self.lmaxhalo
+            
         #
         if self.diskmonopole:
             use_m = 0
         else:
             use_m = self.mmax
+            
         #
         if self.truncate_disk_n < self.norder:
             use_n = self.truncate_disk_n
         else:
             use_n = self.norder
+            
         #
         # disk force call
         diskfr,diskfp,diskfz,diskp,diskp0 = eof.accumulated_forces(r2val, zval, phival-rotpos, \
@@ -292,125 +295,6 @@ class Fields():
 
 
 
-
-        
-class Potential():
-
-    #
-    # Format of the particle of array (ParticleArray) must be:
-    #   ParticleArray.MASS
-    #                .XPOS
-    #                .YPOS
-    #                .ZPOS
-    #                .XVEL
-    #                .YVEL
-    #                .ZVEL
-    #                .POTE
-    #
-
-    def __init__(self,ParticleArray,nbins=200):
-
-
-        self.PA = PArray()
-
-        # check to see if this is single or multi-timestep
-        try:
-            # what is the time input here?
-            self.PA.MASS = ParticleArray.MASS
-            self.PA.XPOS = ParticleArray.XPOS
-            self.PA.YPOS = ParticleArray.YPOS
-            self.PA.ZPOS = ParticleArray.ZPOS
-            self.PA.XVEL = ParticleArray.XVEL
-            self.PA.YVEL = ParticleArray.YVEL
-            self.PA.ZVEL = ParticleArray.ZVEL
-            self.PA.POTE = ParticleArray.POTE
-            self.multitime = True
-        except:
-            self.PA.TIME = ParticleArray.time
-            self.PA.MASS = ParticleArray.mass
-            self.PA.XPOS = ParticleArray.xpos
-            self.PA.YPOS = ParticleArray.ypos
-            self.PA.ZPOS = ParticleArray.zpos
-            self.PA.XVEL = ParticleArray.xvel
-            self.PA.YVEL = ParticleArray.yvel
-            self.PA.ZVEL = ParticleArray.zvel
-            self.PA.POTE = ParticleArray.pote
-            self.multitime = False
-
-        self.nbins = nbins
-
-        Potential.m_zero(self)
-
-        Potential.circular_velocity(self)
-
-    def m_zero(self):
-
-        #
-        # calculate the axisymmetric component
-        #
-        self.RPOS = ( self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS + self.PA.ZPOS*self.PA.ZPOS)**0.5
-
-        
-        #
-        # calculate internal rbins (default log-spaced, no intent to change presently)
-        #
-        #
-        log_rbins = np.linspace( np.log10(np.min(self.RPOS)),np.log10(np.max(self.RPOS)),self.nbins)
-
-        #    minimum r should be a percentile choice?
-        minpad = 0.3 # percentile value to exclude at small radii
-        min_rval = np.percentile(self.RPOS,minpad)
-        log_rbins = np.linspace( np.log10(min_rval),np.log10(np.max(self.RPOS)),self.nbins)
-
-
-        #    alternately, could set a minimum floor for the rbins based on a fraction of the scaleheight
-        log_rbins = np.linspace( -3.3,np.log10(np.max(self.RPOS)),self.nbins)
-
-        # convert bins to non-log
-        rbins_int = 10.**log_rbins
-        
-
-        # dr for each bin FOR VOLUME (add extra bin at end)
-        drbins = np.ediff1d( (rbins_int**3.))#,to_end=(self.rbins[-1]**3.-self.rbins[-2]**3.))
-        volume = (4./3.)*np.pi*drbins
-
-        #self.r_bin_index = np.digitize(self.RPOS,self.rbins)
-
-        #
-        # calculate the mass per rbin (last bin is half-open, as per np.histogram)
-        #
-        # hist, bin_edges
-        self.mass_dist,rbins_int2 = np.histogram(self.RPOS,bins=rbins_int,weights=self.PA.MASS)
-        self.rbins = rbins_int2[0:-1]
-        self.dens_dist = self.mass_dist/volume
-
-
-    def m_potential(self):
-
-        #
-        # calculate the potential given the calculated density distribution
-        #
-
-        # smooth the potential distribution
-        #    NOTE! This is being output in log now
-        self.smth_dens = helpers.savitzky_golay(np.log10(self.dens_dist),5,3)
-
-        # compute errors
-        self.smth_err = self.smth_dens - np.log10(self.dens_dist)
-
-        #
-        # compute density integral (finite differencing technique)
-        #
-
-        # THIS IS BROKEN AND VERY ANNOYING BECAUSE OF IT
-        #               0->R             rho(r)     *        dr
-        self.idens = np.cumsum((10.**self.smth_dens)*np.ediff1d(self.rbins,to_end=(self.rbins[-1]-self.rbins[-2])))
-
-    def circular_velocity(self):
-        
-        self.vcirc = (np.cumsum(self.mass_dist) / self.rbins)**0.5
-        
-        
 
 
 
