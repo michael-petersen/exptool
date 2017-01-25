@@ -15,7 +15,7 @@ import kmeans
 import utils
 import os
 from scipy import interpolate
-
+from scipy.interpolate import UnivariateSpline
 
 import itertools
 from multiprocessing import Pool, freeze_support
@@ -255,7 +255,7 @@ class BarDetermine():
         #
         # this implementation is not particularly robust, could revisit in future
 
-    def frequency_and_derivative(self,smth_order=None,fft_order=None,verbose=0):
+    def frequency_and_derivative(self,smth_order=None,fft_order=None,spline_derivative=None,verbose=0):
 
         
 
@@ -277,6 +277,16 @@ class BarDetermine():
 
         if (fft_order):
             self.deriv = self.deriv
+
+        if (spline_derivative):
+
+            # hard set as a cubic spline,
+            #    number is a smoothing factor between knots, see scipy.UnivariateSpline
+            
+            spl = UnivariateSpline(self.time, self.pos, k=3, s=spline_derivative)
+            self.deriv = (spl.derivative())(self.time)
+
+            
             
     def bar_fourier_compute(self,posx,posy,maxr=1.):
 
