@@ -10,6 +10,7 @@
 '''
 
 fig = visualize.show_dump('/path/to/OUTFILE,'comp')
+ax1,ax2,ax3,ax4 = fig.get_axes()
 
 '''
 

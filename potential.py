@@ -28,6 +28,8 @@ class Fields():
     '''
     class to accumulate (all) particles from a dump and return the field quantities
 
+    UNFORTUNATELY, this only works on halo+disk systems right now. Should offload the ability to plug in multiple components.
+
     '''
     def __init__(self,infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,verbose=1):
 
