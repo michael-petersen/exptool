@@ -229,7 +229,7 @@ class Fields():
             
         #
         # disk force call
-        diskfr,diskfp,diskfz,diskp,diskp0 = eof.accumulated_forces(r2val, zval, phival-rotpos, \
+        diskfr,diskfp,diskfz,diskp,diskp0 = eof.accumulated_forces(r2val, zval, phival + rotpos, \
                                                       self.EOF.cos[:,0:use_n], self.EOF.sin[:,0:use_n], \
                                                       self.potC[:,0:use_n,:,:], self.rforceC[:,0:use_n,:,:], self.zforceC[:,0:use_n,:,:],\
                                                       self.potS[:,0:use_n,:,:], self.rforceS[:,0:use_n,:,:], self.zforceS[:,0:use_n,:,:],\
@@ -239,13 +239,16 @@ class Fields():
                                                       ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd)
         #
         # halo force call
-        halofr,haloft,halofp,halop,halop0 = spheresl.force_eval(r3val, costh, phival-rotpos, \
+        halofr,haloft,halofp,halop,halop0 = spheresl.force_eval(r3val, costh, phival + rotpos, \
                                                    self.halofac*self.SL.expcoef,\
                                                    self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
                                                    #lmaxhalo,nmaxhalo,\
                                                    use_l,self.nmaxhalo,\
                                                    self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
+                                                   
         # recommended guards against bizarre phi forces
+
+        # do we need any other guards?
         if r3val < np.min(self.xihalo):
             halofp = 0.
             diskfp = 0.
