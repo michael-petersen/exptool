@@ -119,9 +119,9 @@ class Fields():
 
                 cparticles = rrank.argsort()[0:ncenter]
 
-                xcen_halo = np.sum(PSPDumpDiskTransformed.xpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
-                ycen_halo = np.sum(PSPDumpDiskTransformed.ypos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
-                zcen_halo = np.sum(PSPDumpDiskTransformed.zpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+                xcen_halo = np.sum(PSPDumpHaloTransformed.xpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
+                ycen_halo = np.sum(PSPDumpHaloTransformed.ypos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
+                zcen_halo = np.sum(PSPDumpHaloTransformed.zpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
             print('potential.Fields.total_coefficients: (x,y,z) = {0:6.5f},{1:6.5f},{2:6.5f}'.format(float(xcen_disk),float(ycen_disk),float(zcen_disk)))
 
             PSPDumpDiskTransformed.xpos -= xcen_disk
