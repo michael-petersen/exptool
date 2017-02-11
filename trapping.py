@@ -130,11 +130,11 @@ class BarTransform():
 
         self.xpos = transformed_x
         self.ypos = transformed_y
-        self.zpos = self.ParticleInstanceIn.zpos
+        self.zpos = np.copy(self.ParticleInstanceIn.zpos) # interesting. needs to be a copy for later operations to work!
 
         self.xvel = transformed_vx
         self.yvel = transformed_vy
-        self.zvel = self.ParticleInstanceIn.zvel
+        self.zvel = np.copy(self.ParticleInstanceIn.zvel)
 
         self.mass = self.ParticleInstanceIn.mass
         self.pote = self.ParticleInstanceIn.pote

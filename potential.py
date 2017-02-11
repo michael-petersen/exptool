@@ -31,7 +31,7 @@ class Fields():
     UNFORTUNATELY, this only works on halo+disk systems right now. Should offload the ability to plug in multiple components.
 
     '''
-    def __init__(self,infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,verbose=1):
+    def __init__(self,infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,centering=False,mutual_center=False,verbose=1):
 
         self.infile = infile
         self.eof_file = eof_file
@@ -40,6 +40,8 @@ class Fields():
         self.nhalo = nhalo
         self.transform = transform
         self.no_odd = no_odd
+        self.centering = centering
+        self.mutual_center = mutual_center
 
         self.verbose = verbose
 
@@ -52,6 +54,7 @@ class Fields():
         # read in the files
         #
         PSPDumpDisk = psp_io.Input(self.infile,comp='star')
+        
         if self.transform:
             PSPDumpDiskTransformed = trapping.BarTransform(PSPDumpDisk)
             
@@ -60,11 +63,13 @@ class Fields():
                 
         else:
             PSPDumpDiskTransformed = PSPDumpDisk
-            
+
+
 
         PSPDumpHaloT = psp_io.Input(self.infile,comp='dark')
 
         PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
+
 
         self.halofac = float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
         
@@ -73,7 +78,61 @@ class Fields():
             
         else:
             PSPDumpHaloTransformed = PSPDumpHalo
+
+        #
+        # do centering
+        if self.centering:
+
+            print('potential.Fields.total_coefficients: Computing centering (centering=True)')
+
             
+            ncenter = 10000
+
+            # rank order particles
+            rrank = (PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
+                     PSPDumpDiskTransformed.ypos*PSPDumpDiskTransformed.ypos + \
+                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5
+
+            cparticles = rrank.argsort()[0:ncenter]
+
+            xcen_disk = np.sum(PSPDumpDiskTransformed.xpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+            ycen_disk = np.sum(PSPDumpDiskTransformed.ypos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+            zcen_disk = np.sum(PSPDumpDiskTransformed.zpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+
+            # pinned to same position?
+            if self.mutual_center:
+
+                print('potential.Fields.total_coefficients: Using computed disk center for halo (mutual_center=True)')
+
+                xcen_halo = xcen_disk
+                ycen_halo = ycen_disk
+                zcen_halo = zcen_disk
+
+
+
+            else:
+
+                # rank order particles
+                rrank = (PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
+                     PSPDumpDiskTransformed.ypos*PSPDumpDiskTransformed.ypos + \
+                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5
+
+                cparticles = rrank.argsort()[0:ncenter]
+
+                xcen_halo = np.sum(PSPDumpDiskTransformed.xpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+                ycen_halo = np.sum(PSPDumpDiskTransformed.ypos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+                zcen_halo = np.sum(PSPDumpDiskTransformed.zpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+            print('potential.Fields.total_coefficients: (x,y,z) = {0:6.5f},{1:6.5f},{2:6.5f}'.format(float(xcen_disk),float(ycen_disk),float(zcen_disk)))
+
+            PSPDumpDiskTransformed.xpos -= xcen_disk
+            PSPDumpDiskTransformed.ypos -= ycen_disk
+            PSPDumpDiskTransformed.zpos -= zcen_disk
+            
+            PSPDumpHaloTransformed.xpos -= xcen_halo
+            PSPDumpHaloTransformed.ypos -= ycen_halo
+            PSPDumpHaloTransformed.zpos -= zcen_halo
+            
+                     
         #
         # compute coefficients
         #
@@ -81,6 +140,7 @@ class Fields():
 
         
         self.SL = spheresl.compute_coefficients(PSPDumpHaloTransformed,self.sph_file,self.model_file,verbose=self.verbose,no_odd=self.no_odd)
+
 
     def prep_tables(self):
 
