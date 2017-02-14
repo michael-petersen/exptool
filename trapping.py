@@ -282,10 +282,19 @@ class BarDetermine():
 
             # hard set as a cubic spline,
             #    number is a smoothing factor between knots, see scipy.UnivariateSpline
+            #
+            #    recommended: 7 for dt=0.002 spacing
             
             spl = UnivariateSpline(self.time, self.pos, k=3, s=spline_derivative)
             self.deriv = (spl.derivative())(self.time)
 
+            self.dderiv = np.zeros_like(self.deriv)
+            #
+            # can also do a second deriv
+            for indx,timeval in enumerate(self.time):
+                
+                self.dderiv[indx] = spl.derivatives(timeval)[2]
+                
             
             
     def bar_fourier_compute(self,posx,posy,maxr=1.):
