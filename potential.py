@@ -122,7 +122,8 @@ class Fields():
                 self.xcen_halo = np.sum(PSPDumpHaloTransformed.xpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
                 self.ycen_halo = np.sum(PSPDumpHaloTransformed.ypos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
                 self.zcen_halo = np.sum(PSPDumpHaloTransformed.zpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
-            print('potential.Fields.total_coefficients: (x,y,z) = {0:6.5f},{1:6.5f},{2:6.5f}'.format(float(xcen_disk),float(ycen_disk),float(zcen_disk)))
+            print('potential.Fields.total_coefficients: (x,y,z) = {0:6.5f},{1:6.5f},{2:6.5f}'\
+                  .format(float(self.xcen_disk),float(self.ycen_disk),float(self.zcen_disk)))
 
             PSPDumpDiskTransformed.xpos -= self.xcen_disk
             PSPDumpDiskTransformed.ypos -= self.ycen_disk
