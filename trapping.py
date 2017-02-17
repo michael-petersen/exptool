@@ -227,7 +227,7 @@ class BarDetermine():
 
         
 
-    def unwrap_bar_position(self,jbuffer=-1.,smooth=False):
+    def unwrap_bar_position(self,jbuffer=-1.,smooth=False,reverse=False,adjust=np.pi):
     
 
         #
@@ -235,14 +235,19 @@ class BarDetermine():
         #
         jnum = 0
         jset = np.zeros_like(self.pos)
+
         
         for i in range(1,len(self.pos)):
-            
-            if (self.pos[i]-self.pos[i-1]) < jbuffer:   jnum += 1
+
+            if reverse:
+                if (self.pos[i]-self.pos[i-1]) > -1.*jbuffer:   jnum -= 1
+
+            else:
+                if (self.pos[i]-self.pos[i-1]) < jbuffer:   jnum += 1
 
             jset[i] = jnum
 
-        unwrapped_pos = self.pos + jset*np.pi
+        unwrapped_pos = self.pos + jset*adjust
 
         if (smooth):
             unwrapped_pos = helpers.savitzky_golay(unwrapped_pos,7,3)
