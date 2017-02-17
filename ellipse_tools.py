@@ -327,7 +327,7 @@ class genEllipse:
             ax2 = fig.add_subplot(122)
 
         ax1.scatter(self.A,1.-self.B/self.A,color='black',s=10.)
-        ax2.scatter(self.A,np.arctan(self.B/self.A),color='black',s=10.)
+        ax2.scatter(self.A,self.ANG,color='black',s=10.)
 
 
 

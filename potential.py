@@ -54,6 +54,9 @@ class Fields():
         # read in the files
         #
         PSPDumpDisk = psp_io.Input(self.infile,comp='star')
+
+        # add for ability to tabulate
+        self.time = PSPDumpDisk.time
         
         if self.transform:
             PSPDumpDiskTransformed = trapping.BarTransform(PSPDumpDisk)
