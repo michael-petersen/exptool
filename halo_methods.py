@@ -167,7 +167,7 @@ def init_table(modelfile,numr,rmin,rmax,cmap=0,scale=1.0,spline=True):
     #
     if spline==True:
         pfunc = interpolate.splrep(R1, P1, s=0)
-        dfunc = interpolate.splrep(R1, D1, s=0)
+        dfunc = interpolate.splrep(R1, fac0*D1, s=0)
     #
     #
     for i in range(0,numr):#(i=0; i<numr; i++):
