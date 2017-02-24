@@ -8,6 +8,23 @@ import numpy as np
 from scipy import interpolate
 
 
+'''
+
+lmax,nmax,numr,cmap,rmin,rmax,scale = halo_methods.parse_slgrid(sph_file,verbose=0)
+
+import halo_methods
+lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file,verbose=0,retall=True)
+
+xi,rarr,p0,d0 = halo_methods.init_table(model_file,numr,rmin,rmax,cmap=cmap,scale=scale)
+
+halo_methods.r_to_xi(0.01,cmap,scale)
+
+
+out = spheresl.get_halo_dens_pot_force(0.01, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=cmap, scale=scale)
+
+'''
+
+
 def parse_slgrid(file,verbose=0):
     f = open(file,'rb')
     #
@@ -83,35 +100,46 @@ def read_cached_table(file,verbose=0,retall=True):
 
 
 def xi_to_r(xi,cmap,scale):
+    
     if (cmap==1):
         if (xi<-1.0): print "xi < -1!" 
         if (xi>=1.0): print "xi >= 1!"
-        ret =(1.0+xi)/(1.0 - xi) * scale;
+            
+        ret = (1.0 + xi)/(1.0 - xi) * scale;
+            
     if (cmap==2):
         ret = np.exp(xi);
     if (cmap==0):
         if (xi<0.0): print "xi < 0!"
         ret = xi;
+        
     return ret
 
 
 def r_to_xi(r,cmap,scale):
+    
     if (cmap==1):
         if (r<0.0): print "radius < 0!"
         ret =  (r/scale-1.0)/(r/scale+1.0);
+            
     if (cmap==2):
         if (r<=0.0): print "radius <= 0!"
         ret = np.log(r);
+        
     if (cmap==0):
         ret = r;
+        
     return ret;
 
 
-def d_xi_to_r(xi,cmap=0,scale=1.):
+def d_xi_to_r(xi,cmap=0,scale):
+    
     if (cmap==1):
         if (xi<-1.0): print "xi < -1!" 
         if (xi>=1.0): print "xi >= 1!"
+            
         ret = 0.5*(1.0-xi)*(1.0-xi)/scale;
+        
     if (cmap==2):
         ret = np.exp(-xi);
     if (cmap==0):
@@ -143,7 +171,6 @@ def read_sph_model_table(file):
     return np.array(radius),np.array(density),np.array(mass),np.array(potential)
 
 
-# R,D,M,P = halo_methods.read_sph_model_table(
 
 
 def init_table(modelfile,numr,rmin,rmax,cmap=0,scale=1.0,spline=True):

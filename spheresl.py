@@ -223,14 +223,14 @@ def get_halo_force_pot(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.
 
 
 
-def get_halo_pot_matrix(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):#, int which):
+def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):#, int which):
     #
     # needs the potential table to be defined
     #
     #if (which || !cmap):
     numr = p0.shape[0]
     
-    x = halo_methods.r_to_xi(x,cmap,scale);
+    x = halo_methods.r_to_xi(x_in,cmap,scale);
     
     #print x
     if (cmap==1):
@@ -245,11 +245,11 @@ def get_halo_pot_matrix(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1
     indx = int(np.floor( (x-np.min(xi))/(dxi) ))
     #print indx
     
-    if (indx<0): indx = 0;
-    if (indx>numr-2): indx = numr - 2;
+    if (indx < 0):      indx = 0;
+    if (indx > numr-2): indx = numr - 2;
         
     x1 = (xi[indx+1] - x)/(dxi);
-    x2 = (x - xi[indx])/(dxi);
+    x2 = (x -   xi[indx])/(dxi);
     
     mat = np.zeros([lmax+1,nmax+1])
 
@@ -651,7 +651,7 @@ def factorial_return(lmax):
             factorial[l][m] = np.sqrt( (0.5*l+0.25)/np.pi * np.exp(gammaln(1.0+l-m) - gammaln(1.0+l+m)) );
             
             if (m != 0):
-                factorial[l][m] *= np.sqrt(2.)#M_SQRT2;
+                factorial[l][m] *= np.sqrt(2.)
 
     return factorial
 
