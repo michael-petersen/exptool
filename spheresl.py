@@ -49,7 +49,7 @@ get_halo_pot
 '''
 ###############################################################################
 
-def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=0, scale=1.0):
+def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale):
     #
     # needs the potential table to be defined
     #
@@ -98,7 +98,7 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=0,
 
 
 
-def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap=0, scale=1.0):#, int which):
+def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap, scale):#, int which):
     #
     # needs the potential table to be defined
     #
@@ -173,19 +173,20 @@ def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
 
 
 
-def get_halo_force_pot(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):#, int which):
+def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):#, int which):
     #
     # needs the potential table to be defined
     #
-    #if (which || !cmap):
+    
     numr = p0.shape[0]
     
-    x = halo_methods.r_to_xi(x,cmap,scale);
+    x = halo_methods.r_to_xi(x_in,cmap,scale);
     
     #print x
     if (cmap==1):
         if (x<-1.0): x=-1.0;
         if (x>=1.0): x=1.0-1.0e-08;
+            
     if (cmap==2):
         if (x<xmin): x=xmin;
         if (x>xmax): x=xmax;
@@ -205,29 +206,39 @@ def get_halo_force_pot(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.
     
     pot_mat = np.zeros([lmax+1,nmax+1])
     force_mat = np.zeros([lmax+1,nmax+1])
-    
-    for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
-        
-        for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
-            
-            pot_mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
 
-            if indx == 0:
+    pot_mat = (x1*eftable[:,:,indx] + x2*eftable[:,:,indx+1])/np.sqrt(evtable[:,:]) * (x1*p0[indx] + x2*p0[indx+1]);
+
+    if indx == 0:
+        # do a forced advance of the indx by one if running into the edge
+        force_mat = fac * ((x2 - 0.5)*eftable[:,:,0]*p0[0] - 2.0*x2*eftable[:,:,1]*p0[1] + (x2 + 0.5)*eftable[:,:,2]*p0[2]) / np.sqrt(evtable);
+
+    else:
+        force_mat = fac * ((x2 - 0.5)*eftable[:,:,indx-1]*p0[indx-1] - 2.0*x2*eftable[:,:,indx]*p0[indx] + (x2 + 0.5)*eftable[:,:,indx+1]*p0[indx+1]) / np.sqrt(evtable);
+
+    
+    #for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
+        
+        #for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
+            
+            #pot_mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
+
+            #if indx == 0:
                 # do a forced advance of the indx by one if running into the edge
-                force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,0]*p0[0] - 2.0*x2*eftable[l,n,1]*p0[1] + (x2 + 0.5)*eftable[l,n,2]*p0[2]) / np.sqrt(evtable[l][n]);
-            else:
-                force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*x2*eftable[l,n,indx]*p0[indx] + (x2 + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l][n]);
+            #    force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,0]*p0[0] - 2.0*x2*eftable[l,n,1]*p0[1] + (x2 + 0.5)*eftable[l,n,2]*p0[2]) / np.sqrt(evtable[l][n]);
+            #else:
+            #    force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*x2*eftable[l,n,indx]*p0[indx] + (x2 + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l][n]);
 
             
     return pot_mat,force_mat
 
 
 
-def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):#, int which):
+def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
     #
     # needs the potential table to be defined
     #
-    #if (which || !cmap):
+
     numr = p0.shape[0]
     
     x = halo_methods.r_to_xi(x_in,cmap,scale);
@@ -236,6 +247,7 @@ def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scal
     if (cmap==1):
         if (x<-1.0): x=-1.0;
         if (x>=1.0): x=1.0-1.0e-08;
+            
     if (cmap==2):
         if (x<xmin): x=xmin;
         if (x>xmax): x=xmax;
@@ -253,7 +265,7 @@ def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scal
     
     mat = np.zeros([lmax+1,nmax+1])
 
-    mat = (x1*eftable[:,:,indx] + x2*eftable[:,:,indx+1])/np.sqrt(evtable[:,:]) * (x1*p0[indx] + x2*p0[indx+1]);
+    mat = (x1*eftable[:,:,indx] + x2*eftable[:,:,indx+1])/np.sqrt(evtable) * (x1*p0[indx] + x2*p0[indx+1]);
     
     #for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
         
@@ -266,7 +278,7 @@ def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scal
 
 
 
-def get_halo_pot(x, l, n, evtable, eftable, xi, p0, cmap=0, scale=1.0):#, int which):
+def get_halo_pot(x, l, n, evtable, eftable, xi, p0, cmap, scale):#, int which):
     #
     # needs the potential table to be defined
     #
@@ -478,7 +490,7 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
     #
     fac0 = -4.0*np.pi;
     lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
-    xi,r,p0,d0 = halo_methods.init_table(model_file,numr,rmin,rmax,cmap=cmap,scale=scale)
+    xi,r,p0,d0 = halo_methods.init_table(model_file,numr,rmin,rmax,cmap,scale)
     #
     expcoef = np.zeros([lmax*(lmax+2)+1,nmax+1])
     #
@@ -511,7 +523,7 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
         #
         # go through loops
         #
-        potd = get_halo_pot_matrix(r, lmax, nmax, evtable, eftable, xi, p0, cmap=cmap, scale=scale)
+        potd = get_halo_pot_matrix(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
            # returns potd, (lmax+1,nmax+1)
         
         loffset = 0
@@ -574,7 +586,7 @@ def legendre_R(lmax, x):
     #
     for m in range(0,lmax):
         pl2 = p[m][m];
-        p[m+1][m] = pl1 = x*(2*m+1)*pl2;
+        p[m+1][m] = pl1 = x*(2.*m+1.)*pl2;
         
         for l in range(m+2,lmax+1):
             p[l][m] = pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m);
@@ -688,7 +700,7 @@ def get_dens_coefs(l, l_coef, dend):
 
 def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
   lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
-  xi,rarr,p0,d0 = halo_methods.init_table(mod_file,numr,rmin,rmax,cmap=cmap,scale=scale)
+  xi,rarr,p0,d0 = halo_methods.init_table(mod_file,numr,rmin,rmax,cmap,scale)
   if (L2 == -1): L2 = lmax+1
   # compute factorial array
   factorial = factorial_return(lmax)
@@ -698,9 +710,9 @@ def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
   fac1 = factorial[0][0];
   #
   # use the basis to get the density,potential,force arrays (which have already been read in somewhere?)
-  dend = get_halo_dens(r, lmax, nmax, evtable, eftable, xi, d0, cmap=0, scale=1.0)
-  potd = get_halo_pot_matrix(r, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0)
-  dpot = get_halo_force(r, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0)
+  dend = get_halo_dens(r, lmax, nmax, evtable, eftable, xi, d0, cmap, scale)
+  potd = get_halo_pot_matrix(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
+  dpot = get_halo_force(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
   #
   #
   legs,dlegs = dlegendre_R(lmax,costh)
@@ -796,7 +808,7 @@ def all_eval(r, costh, phi, expcoef,\
     # use the basis to get the density,potential,force arrays
     #
     # these three need to be stuffed together into one call to save loops
-    dend,dpot,potd = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=cmap, scale=scale)
+    dend,dpot,potd = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale)
     #
     #
     legs,dlegs = dlegendre_R(lmax,costh)
@@ -896,7 +908,7 @@ def force_eval(r, costh, phi, expcoef,\
     # use the basis to get the density,potential,force arrays
     #
     # these three need to be stuffed together into one call to save loops
-    potd,dpot = get_halo_force_pot(r, lmax, nmax, evtable, eftable, xi, p0, cmap=cmap, scale=scale)
+    potd,dpot = get_halo_force_pot(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
     #
     #
     legs,dlegs = dlegendre_R(lmax,costh)
@@ -956,11 +968,15 @@ def force_eval(r, costh, phi, expcoef,\
 
 
 def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L2=1000):
+
+  # parse model files
   lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
-  xi,rarr,p0,d0 = halo_methods.init_table(mod_file,numr,rmin,rmax,cmap=cmap,scale=scale)
+  xi,rarr,p0,d0 = halo_methods.init_table(mod_file,numr,rmin,rmax,cmap,scale)
+  
   # compute factorial array
   factorial = factorial_return(lmax)
   #
+  
   # begin function
   norb = len(Particles.xpos)
   r = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos)**0.5
@@ -987,7 +1003,7 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
       # use the basis to get the density,potential,force arrays
       #
       # these three need to be stuffed together into one call to save loops
-      dend,dpot,potd = get_halo_dens_pot_force(r[part], lmax, nmax, evtable, eftable, xi, d0, p0, cmap=cmap, scale=scale)
+      dend,dpot,potd = get_halo_dens_pot_force(r[part], lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale)
       #
       #
       legs,dlegs = dlegendre_R(lmax,costh[part])
@@ -1000,41 +1016,56 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
       #
       loffset = 1
       for l in range(1,lmax+1):
+
+        # if L truncation is set
         if (l > (L2+1)) | (l < (L1+1)): continue
+        
         # M loop
         moffset = 0
+        
         for m in range(0,l+1):
+          
           fac1 = factorial[l][m];
+          
           if (m==0):
-                den1[part] += np.sum(fac1*legs[1][m] * (expcoef[loffset+moffset] * dend[l]));
-                pot1[part] += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
-                potr[part] += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
-                pott[part] += np.sum(fac1*dlegs[l][m]* (expcoef[loffset+moffset] * potd[l]));
+                den1[part] += np.sum(fac1* legs[1][m] * expcoef[loffset+moffset] * dend[l]);
+                pot1[part] += np.sum(fac1* legs[l][m] * expcoef[loffset+moffset] * potd[l]);
+                potr[part] += np.sum(fac1* legs[l][m] * expcoef[loffset+moffset] * dpot[l]);
+                pott[part] += np.sum(fac1*dlegs[l][m] * expcoef[loffset+moffset] * potd[l]);
+                
                 moffset+=1;
+                
           else:
-                cosm = np.cos(phi[part]*m);
-                sinm = np.sin(phi[part]*m);
-                den1[part] += np.sum(fac1*legs[l][m]*( expcoef[loffset+moffset]   * dend[l]*cosm + expcoef[loffset+moffset+1] * dend[l]*sinm ));
-                pot1[part] += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
-                # this should be checked in other evaluations
-                potr[part] += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
-                pott[part] += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
-                potp[part] += np.sum(fac1*legs[l][m] * m * (-expcoef[loffset+moffset]   * potd[l]*sinm +   expcoef[loffset+moffset+1] * potd[l]*cosm ));
+                cosm = np.cos(phi[part] * m);
+                sinm = np.sin(phi[part] * m);
+                den1[part] += np.sum(fac1*  legs[l][m] * dend[l] *     ( expcoef[loffset+moffset] * cosm + expcoef[loffset+moffset+1] * sinm ));
+                pot1[part] += np.sum(fac1*  legs[l][m] * potd[l] *     ( expcoef[loffset+moffset] * cosm + expcoef[loffset+moffset+1] * sinm ));
+                potr[part] += np.sum(fac1*  legs[l][m] * dpot[l] *     ( expcoef[loffset+moffset] * cosm + expcoef[loffset+moffset+1] * sinm ));
+                pott[part] += np.sum(fac1* dlegs[l][m] * potd[l] *     ( expcoef[loffset+moffset] * cosm + expcoef[loffset+moffset+1] * sinm ));
+                potp[part] += np.sum(fac1*  legs[l][m] * potd[l] * m * (-expcoef[loffset+moffset] * sinm + expcoef[loffset+moffset+1] * cosm ));
+                
                 moffset +=2;
+                
         loffset+=(2*l+1)
   # END particle loop
   #
   #
   #
-  densfac = 1.0/(scale*scale*scale) * 0.25/np.pi;
-  potlfac = 1.0/scale;
-  den0  *= densfac;
-  den1  *= densfac;
-  pot0  *= potlfac;
-  pot1  *= potlfac;
-  potr  *= potlfac/scale;
-  pott  *= potlfac*sinth;
-  potp  *= potlfac;
+
+  #
+  # 02-27-17: why are these here? they are wrong. what is the prescale??
+  #
+  #densfac = 1.0/(scale*scale*scale) * 0.25/np.pi;
+  #potlfac = 1.0/scale;
+  
+  #den0  *= densfac;
+  #den1  *= densfac;
+  #pot0  *= potlfac;
+  #pot1  *= potlfac;
+  #potr  *= potlfac/scale;
+  #pott  *= potlfac*sinth;
+  #potp  *= potlfac;
+  
   return den0,den1,pot0,pot1,potr,pott,potp,rr
 
 

@@ -9,18 +9,32 @@ from scipy import interpolate
 
 
 '''
+import halo_methods
+
+
+sph_file = '/scratch/mpetersen/Disk001/.slgrid_sph_cache'
+
+sph_file = '/scratch/mpetersen/Disk001/SLGridSph.cache.run001'
+model_file = '/scratch/mpetersen/Disk001/SLGridSph.model'
+
 
 lmax,nmax,numr,cmap,rmin,rmax,scale = halo_methods.parse_slgrid(sph_file,verbose=0)
 
-import halo_methods
+
 lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file,verbose=0,retall=True)
 
 xi,rarr,p0,d0 = halo_methods.init_table(model_file,numr,rmin,rmax,cmap=cmap,scale=scale)
 
+
 halo_methods.r_to_xi(0.01,cmap,scale)
+
+halo_methods.d_xi_to_r(0.01,cmap,scale)
 
 
 out = spheresl.get_halo_dens_pot_force(0.01, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=cmap, scale=scale)
+
+
+
 
 '''
 
@@ -132,7 +146,7 @@ def r_to_xi(r,cmap,scale):
     return ret;
 
 
-def d_xi_to_r(xi,cmap=0,scale):
+def d_xi_to_r(xi,cmap,scale):
     
     if (cmap==1):
         if (xi<-1.0): print "xi < -1!" 
@@ -142,9 +156,11 @@ def d_xi_to_r(xi,cmap=0,scale):
         
     if (cmap==2):
         ret = np.exp(-xi);
+        
     if (cmap==0):
         if (xi<0.0): print "xi < 0!"
         ret = 1.0;
+        
     return ret
 
 
@@ -153,11 +169,14 @@ def d_xi_to_r(xi,cmap=0,scale):
 
 
 def read_sph_model_table(file):
+    
     f = open(file)
+    
     radius = []
     density = []
     mass = []
     potential = []
+    
     for line in f:
         q = [d for d in line.split()]
         if len(q)==4:
@@ -174,22 +193,29 @@ def read_sph_model_table(file):
 
 
 def init_table(modelfile,numr,rmin,rmax,cmap=0,scale=1.0,spline=True):
+    
     R1,D1,M1,P1 = read_sph_model_table(modelfile)
+    
     fac0 = 4.*np.pi
     xi = np.zeros(numr)
     r = np.zeros(numr)
     p0 = np.zeros(numr)
     d0 = np.zeros(numr)
+    
     if (cmap==1):
         xmin = (rmin/scale - 1.0)/(rmin/scale + 1.0);
-        xmax = (rmax/scale - 1.0)/(rmax/scale + 1.0);           
+        xmax = (rmax/scale - 1.0)/(rmax/scale + 1.0);
+                 
     if (cmap==2):
         xmin = log(rmin);
         xmax = log(rmax);
+        
     if (cmap==0):
         xmin = rmin;
         xmax = rmax;
+        
     dxi = (xmax-xmin)/(numr-1);
+        
     #
     #
     if spline==True:
