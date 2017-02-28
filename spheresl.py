@@ -177,7 +177,20 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
     #
     # needs the potential table to be defined
     #
-    
+
+    # truncate the table if not doing a full tabulation
+    lmax_check = evtable.shape[0] - 1
+    nmax_check = evtable.shape[1] - 1
+
+    if lmax < lmax_check:
+      evtable = evtable[0:lmax+1,:]
+      eftable = eftable[0:lmax+1,:,:]
+
+    if nmax < nmax_check:
+      evtable = evtable[:,0:nmax+1]
+      eftable = eftable[:,0:nmax+1]      
+
+
     numr = p0.shape[0]
     
     x = halo_methods.r_to_xi(x_in,cmap,scale);
@@ -537,21 +550,21 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
             moffset = 0
             for m in range(0,l+1):
 
-                
-                
                 fac = factorial[l][m] * legs[l][m]
+
+                fac4 = potd[l]*fac*fac0; 
                 
                 if (m==0):
-                    fac4 = potd[l]*fac*fac0;  
-                    expcoef[loffset+moffset] += fac4 * mass 
+                     
+                    expcoef[loffset+moffset] += fac4 * mass
+                    
                     moffset += 1  # advance expcoef position
                     
                 else:
-                    fac1 = np.cos(phi*m);
-                    fac2 = np.sin(phi*m);
-                    fac4 = potd[l]*fac*fac0;
-                    expcoef[loffset+moffset  ] += fac1 * fac4 * mass
-                    expcoef[loffset+moffset+1] += fac2 * fac4 * mass
+                  
+                    expcoef[loffset+moffset  ] += np.cos( phi * m ) * fac4 * mass
+                    expcoef[loffset+moffset+1] += np.sin( phi * m ) * fac4 * mass
+                    
                     moffset += 2  # advance expcoef position
                     
             loffset += (2*l+1)  # advance expcoef position
@@ -767,15 +780,15 @@ def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
   #
   #
   #
-  densfac = 1.0/(scale*scale*scale) * 0.25/np.pi;
-  potlfac = 1.0/scale;
-  den0  *= densfac;
-  den1  *= densfac;
-  pot0  *= potlfac;
-  pot1  *= potlfac;
-  potr  *= potlfac/scale;
-  pott  *= potlfac*sinth;
-  potp  *= potlfac;
+  #densfac = 1.0/(scale*scale*scale) * 0.25/np.pi;
+  #potlfac = 1.0/scale;
+  #den0  *= densfac;
+  #den1  *= densfac;
+  #pot0  *= potlfac;
+  #pot1  *= potlfac;
+  #potr  *= potlfac/scale;
+  #pott  *= potlfac*sinth;
+  #potp  *= potlfac;
   return den0,den1,pot0,pot1,potr,pott,potp
 
 
@@ -798,18 +811,37 @@ def all_eval(r, costh, phi, expcoef,\
 
     '''
 
+    # check to see if the lmax, nmax, and evtable, eftable, expcoef agree
+    #   this allows for truncation of lmax,nmax in a simple way
+    # truncate the table if not doing a full tabulation
+    lmax_check = evtable.shape[0] - 1
+    nmax_check = evtable.shape[1] - 1
+
+    if lmax < lmax_check:
+      evtable = evtable[0:lmax+1,:]
+      eftable = eftable[0:lmax+1,:,:]
+      expcoef = expcoef[0:lmax+1,:]
+
+    if nmax < nmax_check:
+      evtable = evtable[:,0:nmax+1]
+      eftable = eftable[:,0:nmax+1]
+      expcoef = expcoef[:,0,nmax+1]   
+
+
+
     # compute factorial array
     factorial = factorial_return(lmax)
-    #
-    # begin function
-    sinth = -np.sqrt(np.abs(1.0 - costh*costh));
     fac1 = factorial[0][0];
+
+    # begin function
+    #sinth = -np.sqrt(np.abs(1.0 - costh*costh));
+    
     #
     # use the basis to get the density,potential,force arrays
     #
     # these three need to be stuffed together into one call to save loops
     dend,dpot,potd = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale)
-    #
+    
     #
     legs,dlegs = dlegendre_R(lmax,costh)
     #
@@ -819,6 +851,7 @@ def all_eval(r, costh, phi, expcoef,\
 
     # converted den1 to be the total density (not just perturbing density, NOTE CHANGE!) (01.20.2017)
     den1 = np.sum(fac1 * expcoef[0]*dend[0]);
+    
     pot1 = 0.0;
     pott = 0.0;
     potp = 0.0;
@@ -841,11 +874,12 @@ def all_eval(r, costh, phi, expcoef,\
         fac1 = factorial[l][m];
         
         if (m==0):
-              den1 += np.sum(fac1* legs[1][m] * (expcoef[loffset+moffset] * dend[l]));
+              den1 += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * dend[l]));
               pot1 += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
               potr += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
               pott += np.sum(fac1*dlegs[l][m] * (expcoef[loffset+moffset] * potd[l]));
               moffset+=1;
+              
         else:
               cosm = np.cos(phi*m);
               sinm = np.sin(phi*m);
@@ -855,20 +889,22 @@ def all_eval(r, costh, phi, expcoef,\
               pott += np.sum(fac1*dlegs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
               potp += np.sum(fac1* legs[l][m] * m * (-expcoef[loffset+moffset] * potd[l]*sinm + expcoef[loffset+moffset+1] * potd[l]*cosm ));
               moffset +=2;
+              
       loffset+=(2*l+1)
     #
     #
     #
     
-    densfac = (1.0/(scale*scale*scale)) * (0.25/np.pi);
-    potlfac = 1.0/scale;
+    #densfac = (1.0/(scale*scale*scale)) * (0.25/np.pi);
+    densfac = 0.25/np.pi
+    #potlfac = 1.0/scale;
     den0  *= densfac;
     den1  *= densfac;
-    pot0  *= potlfac;
-    pot1  *= potlfac;
-    potr  *= potlfac/scale;
-    pott  *= potlfac*sinth;
-    potp  *= potlfac;
+    #pot0  *= potlfac;
+    #pot1  *= potlfac;
+    #potr  *= potlfac/scale;
+    #pott  *= potlfac*sinth;
+    #potp  *= potlfac;
     
     return den0,den1,pot0,pot1,potr,pott,potp
 
@@ -898,18 +934,38 @@ def force_eval(r, costh, phi, expcoef,\
 
     '''
 
+    # check to see if the lmax, nmax, and evtable, eftable, expcoef agree
+    #   this allows for truncation of lmax,nmax in a simple way
+    # truncate the table if not doing a full tabulation
+    lmax_check = evtable.shape[0] - 1
+    nmax_check = evtable.shape[1] - 1
+
+    if lmax < lmax_check:
+      evtable = evtable[0:lmax+1,:]
+      eftable = eftable[0:lmax+1,:,:]
+      expcoef = expcoef[0:lmax+1,:]
+
+    if nmax < nmax_check:
+      evtable = evtable[:,0:nmax+1]
+      eftable = eftable[:,0:nmax+1]
+      expcoef = expcoef[:,0,nmax+1]   
+
+
     # compute factorial array
     factorial = factorial_return(lmax)
-    #
-    # begin function
-    sinth = -np.sqrt(np.abs(1.0 - costh*costh));
     fac1 = factorial[0][0];
+
+    
+    # begin function
+    #sinth = -np.sqrt(np.abs(1.0 - costh*costh));
+    
     #
     # use the basis to get the density,potential,force arrays
     #
+    
     # these three need to be stuffed together into one call to save loops
     potd,dpot = get_halo_force_pot(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
-    #
+    
     #
     legs,dlegs = dlegendre_R(lmax,costh)
     #
@@ -954,12 +1010,12 @@ def force_eval(r, costh, phi, expcoef,\
         #
         #
 
-    potlfac = 1.0/scale;
-    potr  *= potlfac/scale;
-    pott  *= potlfac*sinth;
-    potp  *= potlfac;
-    pot   *= potlfac;
-    pot0  *= potlfac;
+    #potlfac = 1.0/scale;
+    #potr  *= potlfac/scale;
+    #pott  *= potlfac*sinth;
+    #potp  *= potlfac;
+    #pot   *= potlfac;
+    #pot0  *= potlfac;
        
     return potr,pott,potp,pot,pot0
 
@@ -1056,10 +1112,11 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
   # 02-27-17: why are these here? they are wrong. what is the prescale??
   #
   #densfac = 1.0/(scale*scale*scale) * 0.25/np.pi;
+  densfac = 0.25*np.pi
   #potlfac = 1.0/scale;
   
-  #den0  *= densfac;
-  #den1  *= densfac;
+  den0  *= densfac;
+  den1  *= densfac;
   #pot0  *= potlfac;
   #pot1  *= potlfac;
   #potr  *= potlfac/scale;
