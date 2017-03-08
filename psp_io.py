@@ -328,6 +328,7 @@ class Input():
         # generic PSP items worth making accessible
         self.comp_titles = ['' for i in range(0,self.ncomp)]
         self.comp_expansions = ['' for i in range(0,self.ncomp)]
+        self.comp_basis = ['' for i in range(0,self.ncomp)]
         self.comp_niatr = np.zeros(self.ncomp,dtype=np.uint64)                # each component's number of integer attributes
         self.comp_ndatr = np.zeros(self.ncomp,dtype=np.uint64)                # each component's number of double attributes
         self.comp_string = ['' for i in range(0,self.ncomp)]
@@ -356,6 +357,7 @@ class Input():
         
         self.comp_titles[present_comp] = comptitle.strip()
         self.comp_expansions[present_comp] = expansion.strip()
+        self.comp_basis[present_comp] = basisinfo
         self.comp_niatr[present_comp] = niatr
         self.comp_ndatr[present_comp] = ndatr
         self.comp_string[present_comp] = str(head)
