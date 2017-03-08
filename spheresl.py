@@ -943,12 +943,12 @@ def force_eval(r, costh, phi, expcoef,\
     if lmax < lmax_check:
       evtable = evtable[0:lmax+1,:]
       eftable = eftable[0:lmax+1,:,:]
-      expcoef = expcoef[0:lmax+1,:]
+      expcoef = expcoef[0:(lmax+1)*(lmax+1),:]
 
     if nmax < nmax_check:
       evtable = evtable[:,0:nmax+1]
       eftable = eftable[:,0:nmax+1]
-      expcoef = expcoef[:,0:nmax+1]   
+      expcoef = expcoef[:,0:nmax+1]
 
 
     # compute factorial array

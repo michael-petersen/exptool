@@ -207,7 +207,8 @@ class Fields():
         # halo evaluation call
         haloden0,haloden1,halopot0,halopot1,halopotr,halopott,halopotp = spheresl.all_eval(r3val, costh, phival,\
                                                                                            self.halofac*self.SL.expcoef,\
-                                                                                           self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
+                                                                                           self.xihalo,self.p0halo,self.d0halo,\
+                                                                                           self.cmaphalo,self.scalehalo,\
                                                                                            self.lmaxhalo,self.nmaxhalo,\
                                                                                            self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
 

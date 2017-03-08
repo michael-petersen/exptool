@@ -132,12 +132,22 @@ class Input():
 
             if validate==True:
 
+                # set to a new mode
                 mode = 3
 
                 Input.psp_read_headers(self)
         
                 if self.verbose>=1:
                     print 'psp_io.Input: The time is %3.3f, with %i components and %i total bodies.' %(self.time,self.ncomp,self.ntot)
+
+                    if self.verbose >= 2:
+
+                        comp_num = 0
+                        while comp_num < self.ncomp:
+                            
+                            print 'psp_io.Input: Component %s, using %s force calculation.' %(self.comp_titles[comp_num],self.comp_expansions[comp_num])
+
+                            comp_num += 1
             
             
                 
@@ -317,6 +327,7 @@ class Input():
 
         # generic PSP items worth making accessible
         self.comp_titles = ['' for i in range(0,self.ncomp)]
+        self.comp_expansions = ['' for i in range(0,self.ncomp)]
         self.comp_niatr = np.zeros(self.ncomp,dtype=np.uint64)                # each component's number of integer attributes
         self.comp_ndatr = np.zeros(self.ncomp,dtype=np.uint64)                # each component's number of double attributes
         self.comp_string = ['' for i in range(0,self.ncomp)]
@@ -339,11 +350,12 @@ class Input():
 
         self.comp_pos_data[present_comp] = self.f.tell()            # save where the data actually begins
 
-        # 8 is the number of fields
+        # 8 is the number of fields (m,x,y,z,vx,vy,vz,p)
         comp_length = nbodies*(self.floatl*8 + 4*niatr + self.floatl*ndatr)
         self.comp_data_end[present_comp] = self.f.tell() + comp_length                         # where does the data from this component end?
         
         self.comp_titles[present_comp] = comptitle.strip()
+        self.comp_expansions[present_comp] = expansion.strip()
         self.comp_niatr[present_comp] = niatr
         self.comp_ndatr[present_comp] = ndatr
         self.comp_string[present_comp] = str(head)
