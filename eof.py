@@ -1243,4 +1243,47 @@ def extract_eof_coefficients(f):
     return EOF_Obj
 
 
+##########################################################################################
+#
+# add ability to parse PSP files for setup in accumulation
+#
+#
+
+
+def parse_components(simulation_directory,simulation_name,output_number):
+
+    # set up a dictionary to hold the details
+    ComponentDetails = {}
+
+    PSP = psp_io.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
+
+    for comp_num in range(0,PSP.ncomp):
+
+        # find components that have cylindrical matches
+        if PSP.comp_expansions[comp_num] == 'cylinder':
+
+            # set up a dictionary based on the component name
+            ComponentDetails[PSP.comp_titles[comp_num]] = {}
+
+            # population dictionary with desirables
+            ComponentDetails[PSP.comp_titles[comp_num]]['nbodies'] = PSP.comp_nbodies[comp_num]
+
+            # break basis string for eof_file
+            broken_basis = PSP.comp_basis[comp_num].split(',')
+            broken_basis = [v.strip() for v in broken_basis] # rip out spaces
+            basis_dict = {}
+            for value in broken_basis:  basis_dict[value.split('=')[0]] = value.split('=')[1]
+
+            # ^^^
+            # ideally this will be populated with defaults as well so that all values used are known
+
+            try:
+                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = simulation_directory+basis_dict['eof_file']
+                
+            except:
+                print('eof.parse_components: Component %s has no EOF file specified (setting None).' %PSP.comp_titles[comp_num])
+                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = None
+
+    return ComponentDetails
+
 
