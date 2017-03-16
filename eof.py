@@ -33,6 +33,9 @@ from collections import OrderedDict
 import utils
 import psp_io
 
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+
 #
 # tools to read in the eof cache and corresponding details
 #
@@ -233,6 +236,16 @@ def z_to_y(z,hscale):
     '''
     return z/(abs(z)+1.e-10)*np.arcsinh(abs(z/hscale))
 
+
+def y_to_z(y,hscale):
+    '''
+    return mapping of Y-dimension table scaling to vertical position
+    
+    '''
+    return hscale*np.sinh(y)
+
+
+
 def r_to_xi(r,ascale,cmap=0):
     '''
     return mapping of radial position to X-dimension table scaling.
@@ -243,6 +256,25 @@ def r_to_xi(r,ascale,cmap=0):
     else:
         return r
 
+
+def xi_to_r(xi,ascale,cmap=0):
+    '''
+    return mapping of X-dimension table to radial position
+
+    '''
+    if (cmap) :
+        if (np.min(xi)<-1.0):
+            print("xi < -1!");
+            return 0.
+        
+        if (np.max(xi) >= 1.0):
+            print("xi >= 1!");
+            return 0.
+
+        return (1.0 + xi)/(1.0 - xi) * ascale
+
+    else:
+        return xi
 
 
 #
@@ -431,7 +463,28 @@ def accumulate_single_m(ParticleInstance,potC,potS,MORDER,NMAX,XMIN,dX,YMIN,dY,N
     return accum_cos,accum_sin
 
 
+def show_basis(eof_file,plot=False):
+    potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
+    rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
+    XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
+    xvals = xi_to_r(np.array([XMIN + i*dX for i in range(0,numx+1)]),ascale,cmap)
+    zvals =  y_to_z(np.array([YMIN + i*dY for i in range(0,numy+1)]),hscale)
+
+    xgrid,zgrid = np.meshgrid(xvals,zvals)
+    
+    if plot:
+
+        for mm in range(0,MMAX+1):
+            fig = plt.figure()
+
+            for nn in range(0,norder):
+                ax = fig.add_subplot(norder,1,nn+1)
+
+                ax.contourf(xgrid,zgrid,potC[mm,nn,:,:].T,cmap=cm.gnuplot)
+                ax.text(np.max(xgrid),0.,'N=%i' %nn)
+
+    
 
 
 
