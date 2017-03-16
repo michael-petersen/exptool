@@ -783,7 +783,10 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     Particles  :  psp_io-style input particles
     accum_cos  :  cosine component of the coefficients
     accum_sin  :  sine   component of the coefficients
-    
+
+    eof_file   :  if defined, will set all parameters in the block below
+
+    (eof_file parameters)
     potC       :  cosine potential functions
     rforceC    :  cosine radial force functions
     zforceC    :  cosine vertical force functions
@@ -801,13 +804,15 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     ASCALE
     HSCALE
     CMAP
-    m1
-    m2
-    verbose
+
+    
+    m1         :  minimum azimuthal order to include
+    m2         :  maximum azimuthal order to include
+    verbose    :  verbosity (1=print progress)
 
     outputs
     --------------
-    p0         :    monopole potential
+    p0         :    monopole potential   (m = 0)
     p          :    perturbing potential (m > 0)
     fr         :    radial force
     fp         :    azimuthal force
@@ -831,7 +836,9 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     #
     # cycle particles
     for part in range(0,norb):
+        
         if (verbose > 0) & ( ((float(part)+1.) % 1000. == 0.0) | (part==0)): utils.print_progress(part,norb,'eof.accumulated_eval_particles')
+            
         phi = PHI[part]
         X,Y,ix,iy = return_bins(R[part],Particles.zpos[part],rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
         #
