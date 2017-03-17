@@ -515,7 +515,7 @@ def map_basis(eof_file):
 
     else:
         mC = np.memmap(eof_file, dtype=np.float32, offset=76, shape=(mmax+1,norder,3,numx+1,numy+1))
-        mS = np.memmap(eof_file, dtype=np.float32, offset=76+(8*4*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
+        mS = np.memmap(eof_file, dtype=np.float32, offset=76+(8*3*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
 
 
     return mC,mS
