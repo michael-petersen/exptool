@@ -484,8 +484,41 @@ def show_basis(eof_file,plot=False):
                 ax.contourf(xgrid,zgrid,potC[mm,nn,:,:].T,cmap=cm.gnuplot)
                 ax.text(np.max(xgrid),0.,'N=%i' %nn)
 
-    
+from shutil import copyfile
 
+def map_basis(eof_file):
+    '''
+    return memory maps for modification of basis functions.
+
+    --------------
+
+    be careful! this will allow for overwriting of the basis functions. it is smart to make a copy first (which this does)
+
+    --------------
+    for example, to zero (actually must be epsilon) specific functions, do:
+
+    EPS = 1.e-10
+    # zero out the orders that are vertically asymmetric
+    for i in range(0,4):  # 4 if dens, 3 if not
+          mC[0, 9,i,:,:] = np.zeros([numx+1,numy+1]) + EPS
+
+    mC.flush() # <--- this locks in the changes to the file.
+
+    '''
+    copyfile(eof_file, eof_file+'.original')
+    
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof.eof_params(eof_file)
+
+    if (dens):
+        mC = np.memmap(eof_file, dtype=np.float32, offset=76, shape=(mmax+1,norder,4,numx+1,numy+1))
+        mS = np.memmap(eof_file, dtype=np.float32, offset=76+(8*4*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,4,numx+1,numy+1))
+
+    else:
+        mC = np.memmap(eof_file, dtype=np.float32, offset=76, shape=(mmax+1,norder,3,numx+1,numy+1))
+        mS = np.memmap(eof_file, dtype=np.float32, offset=76+(8*4*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
+
+
+    return mC,mS
 
 
 def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, m1=0,m2=1000):
