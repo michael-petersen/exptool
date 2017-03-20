@@ -28,13 +28,15 @@ import sys
 import itertools
 import multiprocessing
 from collections import OrderedDict
+from shutil import copyfile
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+
 
 # exptool definitions
 import utils
 import psp_io
 
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 
 #
 # tools to read in the eof cache and corresponding details
@@ -479,12 +481,19 @@ def show_basis(eof_file,plot=False):
             fig = plt.figure()
 
             for nn in range(0,norder):
-                ax = fig.add_subplot(norder,1,nn+1)
+                ax = fig.add_subplot(norder,2,2*(nn+1))
 
                 ax.contourf(xgrid,zgrid,potC[mm,nn,:,:].T,cmap=cm.gnuplot)
-                ax.text(np.max(xgrid),0.,'N=%i' %nn)
 
-from shutil import copyfile
+                if nn > 0:
+                    ax2 = fig.add_subplot(norder,2,2*(nn+1)+1)
+
+                    ax2.contourf(xgrid,zgrid,potS[mm,nn,:,:].T,cmap=cm.gnuplot)
+                    
+                ax2.text(np.max(xgrid),0.,'N=%i' %nn)
+
+
+
 
 def map_basis(eof_file):
     '''
@@ -510,12 +519,12 @@ def map_basis(eof_file):
     rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof.eof_params(eof_file)
 
     if (dens):
-        mC = np.memmap(eof_file, dtype=np.float32, offset=76, shape=(mmax+1,norder,4,numx+1,numy+1))
-        mS = np.memmap(eof_file, dtype=np.float32, offset=76+(8*4*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,4,numx+1,numy+1))
+        mC = np.memmap(eof_file, dtype=np.float64, offset=76, shape=(mmax+1,norder,4,numx+1,numy+1))
+        mS = np.memmap(eof_file, dtype=np.float64, offset=76+(8*4*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,4,numx+1,numy+1))
 
     else:
-        mC = np.memmap(eof_file, dtype=np.float32, offset=76, shape=(mmax+1,norder,3,numx+1,numy+1))
-        mS = np.memmap(eof_file, dtype=np.float32, offset=76+(8*3*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
+        mC = np.memmap(eof_file, dtype=np.float64, offset=76, shape=(mmax+1,norder,3,numx+1,numy+1))
+        mS = np.memmap(eof_file, dtype=np.float64, offset=76+(8*3*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
 
 
     return mC,mS
