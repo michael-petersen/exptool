@@ -421,48 +421,6 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
 
 
 
-def accumulate_single_m(ParticleInstance,potC,potS,MORDER,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0):
-    #
-    # take all the particles and stuff them into the basis, OF A SINGLE AZIMUTHAL HARMONIC
-    #
-    #   this returns a matrix the same size as potC/potS so it can easily be passed
-    #
-    #   also accumulates the monopole so can be integrated as pure potential
-    #   
-    norm = -4.*np.pi
-    #
-    # set up particles
-    #
-    norb = len(ParticleInstance.mass)
-    #
-    # set up accumulation arrays
-    #
-    accum_cos = np.zeros_like(potC)
-    accum_sin = np.zeros_like(potS)
-    #
-    for n in range(0,norb):
-        if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): utils.print_progress(n,norb,'eof.accumulate_single_m')
-        #
-        r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2. + 1.e-10)**0.5
-        phi = np.arctan2(ParticleInstance.ypos[n],ParticleInstance.xpos[n])
-
-        # accumulate monopole
-        vc0,vs0 = get_pot_single_m(r, ParticleInstance.zpos[n], potC,potS,0,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP);
-        accum_cos[0] += norm * ParticleInstance.mass[n] * vc0
-
-        # accumulate desired order
-        vc,vs = get_pot_single_m(r, ParticleInstance.zpos[n], potC,potS,MORDER,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP);
-
-        #
-        mcos = np.cos(phi*MORDER);
-        accum_cos[MORDER] += norm * ParticleInstance.mass[n] * mcos * vc 
-        #
-        #
-        if (MORDER>0):
-            msin = np.sin(phi*MORDER);
-            accum_sin[MORDER] += norm * ParticleInstance.mass[n] * msin * vs
-                             
-    return accum_cos,accum_sin
 
 
 def show_basis(eof_file,plot=False):
@@ -677,75 +635,6 @@ def accumulated_forces(r, z, phi, \
     return fr,fp,fz,p,p0
 
 
-
-'''
-
-# the only problem is that this is faster for monopole calculations for some reason...numpy overhead?
-
-def accumulated_forces(r, z, phi, \
-                       accum_cos, accum_sin, \
-                       potC, rforceC, zforceC,\
-                       potS, rforceS, zforceS,\
-                       rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,\
-                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):
-
-
-
-    fr = 0.0;
-    fz = 0.0;
-    fp = 0.0;
-    p  = 0.0;
-    p0 = 0.0;
-    #
-    # compute mappings
-    #
-    X,Y,ix,iy = return_bins(r,z,rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
-    #
-    delx0 = ix + 1.0 - X;
-    dely0 = iy + 1.0 - Y;
-    delx1 = X - ix;
-    dely1 = Y - iy;
-    #
-    c00 = delx0*dely0;
-    c10 = delx1*dely0;
-    c01 = delx0*dely1;
-    c11 = delx1*dely1;
-    #
-    for mm in range(0,MMAX+1):
-
-        # skip if not allowing odd terms
-        if ((mm % 2) != 0) & (no_odd):
-            continue
-        
-        ccos = np.cos(phi*mm);
-        ssin = np.sin(phi*mm);
-        #
-        fac = accum_cos[mm] * ccos;
-        p += np.sum(fac * (potC[mm,:,ix,iy]*c00 + potC[mm,:,ix+1,iy  ]*c10 + potC[mm,:,ix,iy+1]*c01 + potC[mm,:,ix+1,iy+1]*c11));
-        fr += np.sum(fac * (rforceC[mm,:,ix,iy] * c00 + rforceC[mm,:,ix+1,iy  ] * c10 + rforceC[mm,:,ix,iy+1] * c01 + rforceC[mm,:,ix+1,iy+1] * c11));
-        fz += np.sum(fac * ( zforceC[mm,:,ix,iy] * c00 + zforceC[mm,:,ix+1,iy  ] * c10 + zforceC[mm,:,ix,iy+1] * c01 + zforceC[mm,:,ix+1,iy+1] * c11 ));
-            #
-        fac = accum_cos[mm] * ssin;
-            #
-        fp += np.sum(fac * mm * ( potC[mm,:,ix,iy] * c00 + potC[mm,:,ix+1,iy] * c10 + potC[mm,:,ix,iy+1] * c01 + potC[mm,:,ix+1,iy+1] * c11 ));
-            #
-        if (mm > 0):
-                #
-            fac = accum_sin[mm] * ssin;
-                #
-            p += np.sum(fac * (potS[mm,:,ix,iy]*c00 + potS[mm,:,ix+1,iy  ]*c10 + potS[mm,:,ix,iy+1]*c01 + potS[mm,:,ix+1,iy+1]*c11));
-            fr += np.sum(fac * (rforceS[mm,:,ix,iy] * c00 + rforceS[mm,:,ix+1,iy  ] * c10 + rforceS[mm,:,ix,iy+1] * c01 + rforceS[mm,:,ix+1,iy+1] * c11));
-            fz += np.sum(fac * ( zforceS[mm,:,ix,iy] * c00 + zforceS[mm,:,ix+1,iy  ] * c10 + zforceS[mm,:,ix,iy+1] * c01 + zforceS[mm,:,ix+1,iy+1] * c11 ));
-            fac = -accum_sin[mm] * ccos;
-            fp += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
-                #
-        if (mm == 0): p0 = p
-    return fr,fp,fz,p,p0
-
-'''
-
-
-
 def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, densC, potS, rforceS, zforceS, densS, rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
     fr = 0.0;
     fz = 0.0;
@@ -863,14 +752,7 @@ def accumulated_eval_contributions(r, z, phi, accum_cos, accum_sin, potC, rforce
 
 def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                                potC=0, rforceC=0, zforceC=0, potS=0, rforceS=0, zforceS=0,\
-                               rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=0,eof_file=''):
-
-    # add support for just using an eof_file input
-    if eof_file != '':
-        potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
-        rmin,rmax,numx,numy,MMAX,NMAX,ASCALE,HSCALE,CMAP,dens = eof_params(eof_file)
-        # overwrite rmin/zmin with the scaled values
-        rmin,rmax,dR,zmin,zmax,dZ = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ASCALE,HSCALE=HSCALE,NUMX=numx,NUMY=numy,CMAP=CMAP)
+                               rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=0,eof_file='',density=False):
     '''
     accumulated_eval_particles
         -takes a set of particles with standard PSP attributes (see psp_io documentation) and returns potential and forces.
@@ -918,6 +800,19 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     R          :    planar radius (x,y,z=0)
 
     '''
+    dens = 0
+    # add support for just using an eof_file input
+    if eof_file != '':
+        potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
+        rmin,rmax,numx,numy,MMAX,NMAX,ASCALE,HSCALE,CMAP,dens = eof_params(eof_file)
+        # overwrite rmin/zmin with the scaled values
+        rmin,rmax,dR,zmin,zmax,dZ = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ASCALE,HSCALE=HSCALE,NUMX=numx,NUMY=numy,CMAP=CMAP)
+
+    # check to see if density works and flag is properly set
+    if (dens == 0) & (density == True):
+        print('eof.accumulated_eval_particles: cannot compute density (functions not specified). moving on without...')
+        density = False
+    
     #
     #
     #
@@ -927,6 +822,9 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     fp = np.zeros(norb)
     p = np.zeros(norb)
     p0 = np.zeros(norb)
+    if density:
+        d = np.zeros(norb)
+        d0 = np.zeros(norb)
     #
     RR = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos+1.e-10)**0.5
     PHI = np.arctan2(Particles.ypos,Particles.xpos)
@@ -968,7 +866,8 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
             fac = accum_cos[mm] * ssin;
             
             fp[part] += np.sum(fac * mm * ( potC[mm,:,ix,iy] * c00 + potC[mm,:,ix+1,iy] * c10 + potC[mm,:,ix,iy+1] * c01 + potC[mm,:,ix+1,iy+1] * c11 ));
-            
+
+            if density: d[part] += np.sum(fac * (   densC[mm,:,ix,iy] * c00 +    densC[mm,:,ix+1,iy  ] * c10 +    densC[mm,:,ix,iy+1] * c01 +    densC[mm,:,ix+1,iy+1] * c11))           
 
             # accumulate sine terms
             if (mm > 0):
@@ -981,6 +880,8 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                 fac = -accum_sin[mm] * ccos;
                 fp[part] += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
                 #
+
+                if density: np.sum(fac * (densS[mm,:,ix,iy]*c00 + densS[mm,:,ix+1,iy  ]*c10 + densS[mm,:,ix,iy+1]*c01 + densS[mm,:,ix+1,iy+1]*c11));
                 
             if (mm==0):
                 
@@ -988,8 +889,16 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                 
                 # reset for perturbing potential
                 p[part]  = 0.
-                
-    return p0,p,fr,fp,fz,R
+
+                if density:
+                    d0[part] = d[part]
+                    d[part]  = 0.
+
+    if density:
+        return p0,p,d0,d,fr,fp,fz,R
+    
+    else:
+        return p0,p,fr,fp,fz,R
 
 
 

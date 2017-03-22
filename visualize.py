@@ -54,43 +54,11 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
     if (type=='pos'):
 
-        # XY
-        kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+        kdeX,kdeY,XY,\
+          kdeZYz,kdeZYy,ZY,\
+          kdeXZx,kdeXZz,XZ,\
+          levels,levels_edge = kde_pos(PSPDump1,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
 
-        # make a log guard
-        eps = np.min(PSPDump.mass)
-
-        # change to log surface density
-        kdePOSXY = np.log10(kdePOSXY+eps)
-
-        # XZ
-        kdeXZx,kdeXZz,kdePOSXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
-                                                      gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                      weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
-
-        # change to log surface density
-        kdePOSXZ = np.log10(kdePOSXZ+eps)
-
-        # ZY
-        kdeZYz,kdeZYy,kdePOSZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
-                                                  gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
-
-        # change to surface density
-        kdePOSZY = np.log10(kdePOSZY+eps)
-
-        # set up the figure
-
-        maxlev_edge = np.max([np.max(kdePOSXZ),np.max(kdePOSZY)])
-        
-        levels_edge = np.round(np.linspace(np.log10(eps),maxlev_edge,cres),1)
-        levels = np.round(np.linspace(np.log10(eps),np.max(kdePOSXY),cres),1)
-
-        print 'Increase factor:',np.max(levels)/np.max(levels_edge)
-
-        XY = kdePOSXY
-        ZY = kdePOSZY
-        XZ = kdePOSXZ
 
 
     if (type=='Xvel'):
@@ -270,7 +238,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
 
     # dump 1
     ax4 = fig.add_axes([midpoint+midbuffer,                         bottom_edge,                         (wfac-1.)*width_share_r, (wfac-1.)*width_share_h])
-    ax5 = fig.add_axes([midpoint+midbuffer+(wfac-1.)*width_share_r, bottom_edge,                         width_share_l,           (wfac-1.)*width_share_h])
+    ax5 = fig.add_axes([midpoint+midbuffer+(wfac-1.)*width_share_r, bottom_edge,                         width_share_r,           (wfac-1.)*width_share_h])
     ax6 = fig.add_axes([midpoint+midbuffer,                         bottom_edge+(wfac-1.)*width_share_h, (wfac-1.)*width_share_r, width_share_h])
     
     # colorbar
