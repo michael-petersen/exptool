@@ -473,6 +473,8 @@ def show_basis(eof_file,plot=False):
     xvals = xi_to_r(np.array([XMIN + i*dX for i in range(0,numx+1)]),ascale,cmap)
     zvals =  y_to_z(np.array([YMIN + i*dY for i in range(0,numy+1)]),hscale)
 
+    print('eof.show_basis: plotting %i azimuthal orders and %i radial orders...'%(MMAX,norder) )
+
     xgrid,zgrid = np.meshgrid(xvals,zvals)
     
     if plot:
@@ -481,16 +483,17 @@ def show_basis(eof_file,plot=False):
             fig = plt.figure()
 
             for nn in range(0,norder):
-                ax = fig.add_subplot(norder,2,2*(nn+1))
+                if mm > 0: ax = fig.add_subplot(norder,2,2*(nn)+1)
+                else: ax = fig.add_subplot(norder,1,nn+1)
 
                 ax.contourf(xgrid,zgrid,potC[mm,nn,:,:].T,cmap=cm.gnuplot)
 
-                if nn > 0:
-                    ax2 = fig.add_subplot(norder,2,2*(nn+1)+1)
+                if mm > 0:
+                    ax2 = fig.add_subplot(norder,2,2*(nn)+2)
 
                     ax2.contourf(xgrid,zgrid,potS[mm,nn,:,:].T,cmap=cm.gnuplot)
                     
-                ax2.text(np.max(xgrid),0.,'N=%i' %nn)
+                    ax2.text(np.max(xgrid),0.,'N=%i' %nn)
 
 
 
