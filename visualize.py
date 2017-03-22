@@ -168,6 +168,165 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
 
 
+def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
+
+    # XY
+    kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+
+    # make a log guard
+    eps = np.min(PSPDump.mass)
+
+    # change to log surface density
+    kdePOSXY = np.log10(kdePOSXY+eps)
+
+    # XZ
+    kdeXZx,kdeXZz,kdePOSXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
+                                                  gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
+                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+
+    # change to log surface density
+    kdePOSXZ = np.log10(kdePOSXZ+eps)
+
+    # ZY
+    kdeZYz,kdeZYy,kdePOSZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
+                                              gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
+                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+
+    # change to surface density
+    kdePOSZY = np.log10(kdePOSZY+eps)
+
+    # set up the figure
+
+    maxlev_edge = np.max([np.max(kdePOSXZ),np.max(kdePOSZY)])
+
+    levels_edge = np.round(np.linspace(np.log10(eps),maxlev_edge,cres),1)
+    levels = np.round(np.linspace(np.log10(eps),np.max(kdePOSXY),cres),1)
+
+    #print 'Increase factor:',np.max(levels)/np.max(levels_edge)
+
+    XY = kdePOSXY
+    ZY = kdePOSZY
+    XZ = kdePOSXZ
+
+    return kdeX,kdeY,XY,\
+      kdeZYz,kdeZYy,ZY,\
+      kdeXZx,kdeXZz,XZ,\
+      levels,levels_edge
+
+
+
+def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
+                  label1=None,label2=None,
+              # parameters for the plot
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
+    '''
+    compare_dumps
+        look at two different dumps for direct comparison
+
+
+    '''
+
+    # read in files
+
+    PSPDump1 = psp_io.Input(infile1,comp=comp)
+    PSPDump2 = psp_io.Input(infile2,comp=comp)
+
+    if transform:
+        PSPDump1 = trapping.BarTransform(PSPDump1)
+        PSPDump2 = trapping.BarTransform(PSPDump2)
+
+
+    # do the kde
+
+    kdeX1,kdeY1,XY1,\
+      kdeZYz1,kdeZYy1,ZY1,\
+      kdeXZx1,kdeXZz1,XZ1,\
+      levels1,levels_edge1 = kde_pos(PSPDump1,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+
+    kdeX2,kdeY2,XY2,\
+      kdeZYz2,kdeZYy2,ZY2,\
+      kdeXZx2,kdeXZz2,XZ2,\
+      levels2,levels_edge2 = kde_pos(PSPDump2,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+
+
+    fig = plt.figure(figsize=(14.,7.))
+
+    left_edge = 0.13
+    midpoint = 0.47
+    midbuffer = 0.04
+    wfac = 5.
+    width_share = 1./wfac
+    right_edge = 0.83
+    width_share_l = (midpoint-left_edge)*width_share
+    width_share_r = (right_edge-midpoint)*width_share
+    top_edge    = 0.85
+    bottom_edge = 0.15
+    width_share_h = (top_edge-bottom_edge)*width_share
+
+    # dump 1
+    ax1 = fig.add_axes([left_edge,                         bottom_edge,                         (wfac-1.)*width_share_l, (wfac-1.)*width_share_h])
+    ax2 = fig.add_axes([left_edge+(wfac-1.)*width_share_l, bottom_edge,                         width_share_l,           (wfac-1.)*width_share_h])
+    ax3 = fig.add_axes([left_edge,                         bottom_edge+(wfac-1.)*width_share_h, (wfac-1.)*width_share_l, width_share_h])
+
+    # dump 1
+    ax4 = fig.add_axes([midpoint+midbuffer,                         bottom_edge,                         (wfac-1.)*width_share_r, (wfac-1.)*width_share_h])
+    ax5 = fig.add_axes([midpoint+midbuffer+(wfac-1.)*width_share_r, bottom_edge,                         width_share_l,           (wfac-1.)*width_share_h])
+    ax6 = fig.add_axes([midpoint+midbuffer,                         bottom_edge+(wfac-1.)*width_share_h, (wfac-1.)*width_share_r, width_share_h])
+    
+    # colorbar
+    ax7 = fig.add_axes([0.89,bottom_edge,0.01,wfac*width_share_h])
+
+        
+    # XY
+    cbar = ax1.contourf(kdeX1,kdeY1,XY1,levels1,cmap=cm.gnuplot)
+    ax1.axis([-0.05,0.05,-0.05,0.05])
+    ax1.text(-0.04,0.04,label1)
+    cbh = fig.colorbar(cbar,cax=ax7)
+    for label in ax1.get_xticklabels():
+        label.set_rotation(45)
+        label.set_horizontalalignment("right")        
+
+    # ZY
+    ax2.contourf(kdeZYz1,kdeZYy1,ZY1,levels_edge1,cmap=cm.gnuplot)
+    ax2.axis([-0.01,0.01,-0.05,0.05])
+    ax2.set_yticklabels(())
+    for label in ax2.get_xticklabels():
+        label.set_rotation(45)
+        label.set_horizontalalignment("right")
+        
+    # XZ
+    ax3.contourf(kdeXZx1,kdeXZz1,XZ1,levels_edge1,cmap=cm.gnuplot)
+    ax3.axis([-0.05,0.05,-0.01,0.01])
+    ax3.set_xticklabels(())
+
+    # XY2
+    cbar = ax4.contourf(kdeX2,kdeY2,XY2,levels1,cmap=cm.gnuplot)
+    ax4.axis([-0.05,0.05,-0.05,0.05])
+    ax4.set_yticklabels(())
+    ax4.text(-0.04,0.04,label2)
+    for label in ax4.get_xticklabels():
+        label.set_rotation(45)
+        label.set_horizontalalignment("right")
+        
+
+    # ZY2
+    ax5.contourf(kdeZYz2,kdeZYy2,ZY2,levels_edge1,cmap=cm.gnuplot)
+    ax5.axis([-0.01,0.01,-0.05,0.05])
+    ax5.set_yticklabels(())
+    for label in ax5.get_xticklabels():
+        label.set_rotation(45)
+        label.set_horizontalalignment("right")
+        
+    # XZ2
+    ax6.contourf(kdeXZx2,kdeXZz2,XZ2,levels_edge1,cmap=cm.gnuplot)
+    ax6.axis([-0.05,0.05,-0.01,0.01])
+    ax6.set_xticklabels(())
+    ax6.set_yticklabels(())
+
+    return fig
+
+
+
 
 ############################################################################################
 def plot_image_velocity(O,ax,ax2,ax3,rmax=0.04,nsamp=257,levels = np.linspace(0.0,3.2,100),zlim=0.1):
