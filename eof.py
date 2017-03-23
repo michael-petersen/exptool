@@ -862,12 +862,14 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
             p[part]  += np.sum(fac * (   potC[mm,:,ix,iy] * c00 +    potC[mm,:,ix+1,iy  ] * c10 +    potC[mm,:,ix,iy+1] * c01 +    potC[mm,:,ix+1,iy+1] * c11))
             fr[part] += np.sum(fac * (rforceC[mm,:,ix,iy] * c00 + rforceC[mm,:,ix+1,iy  ] * c10 + rforceC[mm,:,ix,iy+1] * c01 + rforceC[mm,:,ix+1,iy+1] * c11))
             fz[part] += np.sum(fac * (zforceC[mm,:,ix,iy] * c00 + zforceC[mm,:,ix+1,iy  ] * c10 + zforceC[mm,:,ix,iy+1] * c01 + zforceC[mm,:,ix+1,iy+1] * c11))
-                   
+
+            if density: d[part] += np.sum(fac * (   densC[mm,:,ix,iy] * c00 +    densC[mm,:,ix+1,iy  ] * c10 +    densC[mm,:,ix,iy+1] * c01 +    densC[mm,:,ix+1,iy+1] * c11))
+                                              
             fac = accum_cos[mm] * ssin;
             
             fp[part] += np.sum(fac * mm * ( potC[mm,:,ix,iy] * c00 + potC[mm,:,ix+1,iy] * c10 + potC[mm,:,ix,iy+1] * c01 + potC[mm,:,ix+1,iy+1] * c11 ));
 
-            if density: d[part] += np.sum(fac * (   densC[mm,:,ix,iy] * c00 +    densC[mm,:,ix+1,iy  ] * c10 +    densC[mm,:,ix,iy+1] * c01 +    densC[mm,:,ix+1,iy+1] * c11))           
+
 
             # accumulate sine terms
             if (mm > 0):
@@ -877,11 +879,12 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                 p[part] += np.sum(fac * (potS[mm,:,ix,iy]*c00 + potS[mm,:,ix+1,iy  ]*c10 + potS[mm,:,ix,iy+1]*c01 + potS[mm,:,ix+1,iy+1]*c11));
                 fr[part] += np.sum(fac * (rforceS[mm,:,ix,iy] * c00 + rforceS[mm,:,ix+1,iy  ] * c10 + rforceS[mm,:,ix,iy+1] * c01 + rforceS[mm,:,ix+1,iy+1] * c11));
                 fz[part] += np.sum(fac * ( zforceS[mm,:,ix,iy] * c00 + zforceS[mm,:,ix+1,iy  ] * c10 + zforceS[mm,:,ix,iy+1] * c01 + zforceS[mm,:,ix+1,iy+1] * c11 ));
+                if density: d[part] += np.sum(fac * (densS[mm,:,ix,iy]*c00 + densS[mm,:,ix+1,iy  ]*c10 + densS[mm,:,ix,iy+1]*c01 + densS[mm,:,ix+1,iy+1]*c11));
+
                 fac = -accum_sin[mm] * ccos;
                 fp[part] += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
                 #
 
-                if density: np.sum(fac * (densS[mm,:,ix,iy]*c00 + densS[mm,:,ix+1,iy  ]*c10 + densS[mm,:,ix,iy+1]*c01 + densS[mm,:,ix+1,iy+1]*c11));
                 
             if (mm==0):
                 
@@ -901,6 +904,9 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
         return p0,p,fr,fp,fz,R
 
 
+
+
+    
 
 ############################################################################################
 #
