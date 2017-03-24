@@ -25,93 +25,6 @@ import kde_3d
 import trapping
 
 
-def show_dump(infile,comp,type='pos',transform=True,\
-              # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
-    '''
-    show_dump
-        first ability to see a PSPDump in the simplest way possible
-
-
-    '''
-
-    # read in file
-
-    PSPDump = psp_io.Input(infile,comp=comp)
-
-    if transform:
-        PSPDump = trapping.BarTransform(PSPDump)
-
-    '''
-    try:
-        PSPDump = psp_io.convert_to_dict(PSPDump)
-
-    except:
-        print 'visualize.show_dump(): PSP Dump is already a dictionary. How did you do that?'
-
-    '''
-    # do a kde
-
-    if (type=='pos'):
-
-        kdeX,kdeY,XY,\
-          kdeZYz,kdeZYy,ZY,\
-          kdeXZx,kdeXZz,XZ,\
-          levels,levels_edge = kde_pos(PSPDump,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
-
-
-    if ( (type=='Xvel') | (type=='Rvel') |  (type=='Tvel')):
-
-        if (type=='Xvel'): velarr = PSPDump.xvel
-        if (type=='Rvel'): velarr = (PSPDump.xpos*PSPDump.xvel + PSPDump.ypos*PSPDump.yvel)/(PSPDump.xpos*PSPDump.xpos + PSPDump.ypos*PSPDump.ypos)**0.5
-        if (type=='Tvel'): velarr = (PSPDump.xpos*PSPDump.yvel - PSPDump.ypos*PSPDump.xvel)/(PSPDump.xpos*PSPDump.xpos + PSPDump.ypos*PSPDump.ypos)**0.5
-
-
-        kdeX,kdeY,XY,\
-              kdeZYz,kdeZYy,ZY,\
-              kdeXZx,kdeXZz,XZ,\
-              levels,levels_edge = kde_xvel(PSPDump,velarr,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
-
-
-        # reset to positive velocities for tangential case.
-        if (type=='Tvel'): levels = levels_edge = np.linspace(0.,np.max(levels),cres)
-
-
-    fig = plt.figure(figsize=(7.,7.))
-
-    left_edge = 0.15
-    wfac = 5.
-    width_share = 1./wfac
-    right_edge = 0.78
-    width_share = (right_edge-left_edge)*width_share
-    bottom_edge = 0.15
-    ax1 = fig.add_axes([left_edge,bottom_edge,(wfac-1.)*width_share,(wfac-1.)*width_share])
-    ax2 = fig.add_axes([left_edge+(wfac-1.)*width_share,bottom_edge,width_share,(wfac-1.)*width_share])
-    ax3 = fig.add_axes([left_edge,bottom_edge+(wfac-1.)*width_share,(wfac-1.)*width_share,width_share])
-    ax4 = fig.add_axes([0.82,bottom_edge,0.02,wfac*width_share])
-
-        
-    # XY
-
-    cbar = ax1.contourf(kdeX,kdeY,XY,levels,cmap=cm.gnuplot)
-    ax1.axis([-0.05,0.05,-0.05,0.05])
-    cbh = fig.colorbar(cbar,cax=ax4)
-        
-
-    # ZY
-
-    ax2.contourf(kdeZYz,kdeZYy,ZY,levels_edge,cmap=cm.gnuplot)
-    ax2.axis([-0.01,0.01,-0.05,0.05])
-    ax2.set_yticklabels(())
-
-    # XZ
-    ax3.contourf(kdeXZx,kdeXZz,XZ,levels_edge,cmap=cm.gnuplot)
-    ax3.axis([-0.05,0.05,-0.01,0.01])
-    ax3.set_xticklabels(())
-
-    return fig
-
-
 
 def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
 
@@ -207,6 +120,188 @@ def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
       levels,levels_edge
 
 
+
+def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,sncut=5.):
+
+    # XY
+    kdeX,kdeY,kdeNUMXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
+                                              gridsize=gridsize,extents=face_extents,weights=None,\
+                                              opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+
+    # zero below an SN cut
+    kdeNUMXY[np.where(kdeNUMXY < sncut)] = 1.e10
+    
+    kdeX,kdeY,kdeVELXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
+                                              gridsize=gridsize,extents=face_extents,weights=velarr,\
+                                              opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+
+    kdeX,kdeY,kdeDISPXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
+                                               gridsize=gridsize,extents=face_extents,weights=velarr**2.,\
+                                               opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+
+
+    # XZ
+    kdeXZx,kdeXZz,kdeNUMXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
+                                                  gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
+                                                  weights=None,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+    kdeNUMXZ[np.where(kdeNUMXZ < sncut)] = 1.e10
+    kdeXZx,kdeXZz,kdeVELXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
+                                                  gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
+                                                  weights=velarr,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+
+    kdeXZx,kdeXZz,kdeDISPXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
+                                                  gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
+                                                  weights=velarr**2.,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+                                              
+    # ZY
+    kdeZYz,kdeZYy,kdeNUMZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
+                                              gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
+                                              weights=None,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+    kdeNUMZY += 0.0001
+    kdeNUMZY[np.where(kdeNUMZY < sncut)] = 1.e10
+    kdeZYz,kdeZYy,kdeVELZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
+                                              gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
+                                              weights=velarr,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+
+    kdeZYz,kdeZYy,kdeDISPZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
+                                              gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
+                                              weights=velarr**2.,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+
+                                              
+    maxlev_edge = np.max([np.max(abs(kdeVELXY/kdeNUMXY)),np.max(abs(kdeVELZY/kdeNUMZY)),np.max(abs(kdeVELXZ/kdeNUMXZ))])
+
+    levels_edge = np.round(np.linspace(-1.*maxlev_edge,maxlev_edge,cres),3)
+    levels = np.round(np.linspace(-1.*maxlev_edge,maxlev_edge,cres),3)
+
+    print 'Increase factor:',np.max(levels)/np.max(levels_edge)
+
+    
+    XY = kdeDISPXY/kdeNUMXY - (kdeVELXY/kdeNUMXY)**2.
+    ZY = kdeDISPZY/kdeNUMZY - (kdeVELZY/kdeNUMZY)**2.
+    XZ = kdeDISPXZ/kdeNUMXZ - (kdeVELXZ/kdeNUMXZ)**2.
+
+    return kdeX,kdeY,XY,\
+      kdeZYz,kdeZYy,ZY,\
+      kdeXZx,kdeXZz,XZ,\
+      levels,levels_edge
+
+
+
+
+      
+
+def show_dump(infile,comp,type='pos',transform=True,\
+              # parameters for the plot
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
+    '''
+    show_dump
+        first ability to see a PSPDump in the simplest way possible
+
+
+    '''
+
+    # read in file
+
+    PSPDump = psp_io.Input(infile,comp=comp)
+
+    if transform:
+        PSPDump = trapping.BarTransform(PSPDump)
+
+    '''
+    try:
+        PSPDump = psp_io.convert_to_dict(PSPDump)
+
+    except:
+        print 'visualize.show_dump(): PSP Dump is already a dictionary. How did you do that?'
+
+    '''
+    # do a kde
+
+    if (type=='pos'):
+
+        kdeX,kdeY,XY,\
+          kdeZYz,kdeZYy,ZY,\
+          kdeXZx,kdeXZz,XZ,\
+          levels,levels_edge = kde_pos(PSPDump,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+
+
+    if ( (type=='Xvel') | (type=='Rvel') |  (type=='Tvel')):
+
+        if (type=='Xvel'): velarr = PSPDump.xvel
+        if (type=='Rvel'): velarr = (PSPDump.xpos*PSPDump.xvel + PSPDump.ypos*PSPDump.yvel)/(PSPDump.xpos*PSPDump.xpos + PSPDump.ypos*PSPDump.ypos)**0.5
+        if (type=='Tvel'): velarr = (PSPDump.xpos*PSPDump.yvel - PSPDump.ypos*PSPDump.xvel)/(PSPDump.xpos*PSPDump.xpos + PSPDump.ypos*PSPDump.ypos)**0.5
+
+
+        kdeX,kdeY,XY,\
+              kdeZYz,kdeZYy,ZY,\
+              kdeXZx,kdeXZz,XZ,\
+              levels,levels_edge = kde_xvel(PSPDump,velarr,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+
+
+        # reset to positive velocities for tangential case.
+        if (type=='Tvel'): levels = levels_edge = np.linspace(0.,np.max(levels),cres)
+
+
+    if ( (type=='Xdisp') | (type=='Rdisp') |  (type=='disp')):
+
+        if (type=='Xdisp'): velarr = PSPDump.xvel
+        if (type=='Rdisp'): velarr = (PSPDump.xpos*PSPDump.xvel + PSPDump.ypos*PSPDump.yvel)/(PSPDump.xpos*PSPDump.xpos + PSPDump.ypos*PSPDump.ypos)**0.5
+        if (type=='Tdisp'): velarr = (PSPDump.xpos*PSPDump.yvel - PSPDump.ypos*PSPDump.xvel)/(PSPDump.xpos*PSPDump.xpos + PSPDump.ypos*PSPDump.ypos)**0.5
+
+
+        kdeX,kdeY,XY,\
+              kdeZYz,kdeZYy,ZY,\
+              kdeXZx,kdeXZz,XZ,\
+              levels,levels_edge = kde_disp(PSPDump,velarr,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+
+
+        # reset to positive velocities for tangential case.
+        levels = levels_edge = np.linspace(0.,np.max(levels),cres)
+
+
+
+    fig = plt.figure(figsize=(7.,7.))
+
+    left_edge = 0.15
+    wfac = 5.
+    width_share = 1./wfac
+    right_edge = 0.78
+    width_share = (right_edge-left_edge)*width_share
+    bottom_edge = 0.15
+    ax1 = fig.add_axes([left_edge,bottom_edge,(wfac-1.)*width_share,(wfac-1.)*width_share])
+    ax2 = fig.add_axes([left_edge+(wfac-1.)*width_share,bottom_edge,width_share,(wfac-1.)*width_share])
+    ax3 = fig.add_axes([left_edge,bottom_edge+(wfac-1.)*width_share,(wfac-1.)*width_share,width_share])
+    ax4 = fig.add_axes([0.82,bottom_edge,0.02,wfac*width_share])
+
+        
+    # XY
+
+    cbar = ax1.contourf(kdeX,kdeY,XY,levels,cmap=cm.gnuplot)
+    ax1.axis([-0.05,0.05,-0.05,0.05])
+    cbh = fig.colorbar(cbar,cax=ax4)
+    for label in ax1.get_xticklabels():
+        label.set_rotation(45)
+        #label.set_horizontalalignment("right")         
+
+    # ZY
+
+    ax2.contourf(kdeZYz,kdeZYy,ZY,levels_edge,cmap=cm.gnuplot)
+    ax2.axis([-0.01,0.01,-0.05,0.05])
+    ax2.set_yticklabels(())
+    for label in ax2.get_xticklabels():
+        label.set_rotation(45)
+        
+    # XZ
+    ax3.contourf(kdeXZx,kdeXZz,XZ,levels_edge,cmap=cm.gnuplot)
+    ax3.axis([-0.05,0.05,-0.01,0.01])
+    ax3.set_xticklabels(())
+
+    return fig
+
+
+
+################################################
+# for two side-by-side plots
 
 def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
                   label1=None,label2=None,
