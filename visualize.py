@@ -12,6 +12,8 @@
 fig = visualize.show_dump('/path/to/OUTFILE','comp')
 ax1,ax2,ax3,ax4 = fig.get_axes()
 
+visualize.compare_dumps('/scratch/mpetersen/Disk001/OUT.run001.01100','/scratch/mpetersen/Disk001/OUT.run001.01558','star',type='Rvel',label1='T=2.2',label2='T=3.2')
+
 '''
 
 
@@ -73,12 +75,15 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
 
 
 def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,sncut=5.):
+    #
+    # do a velocity cut along the line of sight
+    #
 
     # XY
     kdeX,kdeY,kdeNUMXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=face_extents,weights=None,\
                                               opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
-    kdeNUMXY += 0.0001
+
     kdeNUMXY[np.where(kdeNUMXY < sncut)] = 1.e10
     kdeX,kdeY,kdeVELXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=velarr,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
 
@@ -87,7 +92,6 @@ def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
     kdeXZx,kdeXZz,kdeNUMXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
                                                   weights=None,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
-    kdeNUMXZ += 0.0001
     kdeNUMXZ[np.where(kdeNUMXZ < sncut)] = 1.e10
     kdeXZx,kdeXZz,kdeVELXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
@@ -97,7 +101,6 @@ def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
     kdeZYz,kdeZYy,kdeNUMZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
                                               weights=None,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
-    kdeNUMZY += 0.0001
     kdeNUMZY[np.where(kdeNUMZY < sncut)] = 1.e10
     kdeZYz,kdeZYy,kdeVELZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
@@ -122,6 +125,9 @@ def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
 
 
 def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,sncut=5.):
+    #
+    # do a dispersion measurement along the line of sight
+    #
 
     # XY
     kdeX,kdeY,kdeNUMXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
@@ -157,7 +163,6 @@ def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
     kdeZYz,kdeZYy,kdeNUMZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
                                               weights=None,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
-    kdeNUMZY += 0.0001
     kdeNUMZY[np.where(kdeNUMZY < sncut)] = 1.e10
     kdeZYz,kdeZYy,kdeVELZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
@@ -200,21 +205,23 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
     '''
 
-    # read in file
+    # read in component(s)
 
-    PSPDump = psp_io.Input(infile,comp=comp)
+    if np.array(comp).size == 1:
+        PSPDump = psp_io.Input(infile,comp=comp)
+
+    else:
+        # allow for multiple components to be mixed together
+        PartArray = [psp_io.Input(infile,comp=cc) for cc in comp]
+
+        PSPDump = psp_io.mix_particles(PartArray)
+
+        
 
     if transform:
         PSPDump = trapping.BarTransform(PSPDump)
 
-    '''
-    try:
-        PSPDump = psp_io.convert_to_dict(PSPDump)
 
-    except:
-        print 'visualize.show_dump(): PSP Dump is already a dictionary. How did you do that?'
-
-    '''
     # do a kde
 
     if (type=='pos'):
