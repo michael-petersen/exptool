@@ -1,6 +1,6 @@
 
 
-import helpers
+import utils
 import numpy as np
 from matplotlib import _cntr as cntr
 from numpy.linalg import eig, inv
@@ -505,10 +505,10 @@ class EllipseFinder():
             massuse = mass
 
         
-        self.xarr,self.yarr,self.posarr = helpers.quick_contour(self.xbins,self.xbins,xpos,ypos,massuse)
+        self.xarr,self.yarr,self.posarr = utils.quick_contour(self.xbins,self.xbins,xpos,ypos,massuse)
 
         if numdens:
-            xt,yt,pt = helpers.quick_contour(self.xbins,self.xbins,xpos,ypos,np.ones(len(xpos)))
+            xt,yt,pt = utils.quick_contour(self.xbins,self.xbins,xpos,ypos,np.ones(len(xpos)))
         
         if logvals:
             self.posarr = np.log10(self.posarr+np.min(massuse))
