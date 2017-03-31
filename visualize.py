@@ -17,7 +17,7 @@
 fig = visualize.show_dump('/path/to/OUTFILE','comp')
 ax1,ax2,ax3,ax4 = fig.get_axes()
 
-visualize.compare_dumps('/scratch/mpetersen/Disk001/OUT.run001.01100','/scratch/mpetersen/Disk001/OUT.run001.01558','star',type='Rvel',label1='T=2.2',label2='T=3.2')
+visualize.compare_dumps('/scratch/mpetersen/Disk001/OUT.run001.01000','/work/mpetersen/Disk001thick/OUT.run001t.01000','star',type='pos',label1='Fiducial',label2='Thick Basis')
 
 
 
@@ -411,16 +411,16 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
 
     fig = plt.figure(figsize=(14.,7.))
 
-    left_edge = 0.13
+    left_edge = 0.12
     midpoint = 0.47
-    midbuffer = 0.04
+    midbuffer = 0.03
     wfac = 5.
     width_share = 1./wfac
     right_edge = 0.83
     width_share_l = (midpoint-left_edge)*width_share
     width_share_r = (right_edge-midpoint)*width_share
     top_edge    = 0.85
-    bottom_edge = 0.15
+    bottom_edge = 0.18
     width_share_h = (top_edge-bottom_edge)*width_share
 
     # dump 1
@@ -441,23 +441,51 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     cbar = ax1.contourf(kdeX1,kdeY1,XY1,levels1,cmap=cm.gnuplot)
     ax1.axis([-0.05,0.05,-0.05,0.05])
     ax1.text(-0.04,0.04,label1)
-    cbh = fig.colorbar(cbar,cax=ax7)
     for label in ax1.get_xticklabels():
-        label.set_rotation(45)
-        label.set_horizontalalignment("center")        
+        label.set_rotation(30)
+        label.set_horizontalalignment("center")
 
+    ax1.set_ylabel('Y',size=24)
+    ax1.set_xlabel('X',size=24)
+
+    cbh = fig.colorbar(cbar,cax=ax7)
+
+    # set the colorbar label
+    if (type=='pos'): ax7.set_ylabel('log Surface Density',size=20)
+    if (type=='Xvel'): ax7.set_ylabel('X Velocity',size=20)
+    if (type=='Yvel'): ax7.set_ylabel('Y Velocity',size=20)
+    if (type=='Zvel'): ax7.set_ylabel('Z Velocity',size=20)
+    if (type=='Rvel'): ax7.set_ylabel('Radial Velocity',size=20)
+    if (type=='Tvel'): ax7.set_ylabel('Tangential Velocity',size=20)
+    if (type=='Xdisp'): ax7.set_ylabel('X Velocity Dispersion ',size=20)
+    if (type=='Rdisp'): ax7.set_ylabel('Radial Velocity Dispersion',size=20)
+    if (type=='Tdisp'): ax7.set_ylabel('Tangential Velocity Dispersion',size=20)
+
+       
+    
     # ZY
     ax2.contourf(kdeZYz1,kdeZYy1,ZY1,levels_edge1,cmap=cm.gnuplot)
     ax2.axis([-0.01,0.01,-0.05,0.05])
     ax2.set_yticklabels(())
     for label in ax2.get_xticklabels():
-        label.set_rotation(45)
+        label.set_rotation(30)
+        label.set_fontsize(10)
         label.set_horizontalalignment("center")
-        
+
+
+    ax2.set_xlabel('Z',size=24)
+    ax2.xaxis.labelpad = 18
+
+    
     # XZ
     ax3.contourf(kdeXZx1,kdeXZz1,XZ1,levels_edge1,cmap=cm.gnuplot)
     ax3.axis([-0.05,0.05,-0.01,0.01])
     ax3.set_xticklabels(())
+    for label in ax3.get_yticklabels():
+        label.set_fontsize(10)
+
+    ax3.set_ylabel('Z',size=24)
+    ax3.yaxis.labelpad = 18
 
     # XY2
     cbar = ax4.contourf(kdeX2,kdeY2,XY2,levels1,cmap=cm.gnuplot)
@@ -465,8 +493,10 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     ax4.set_yticklabels(())
     ax4.text(-0.04,0.04,label2)
     for label in ax4.get_xticklabels():
-        label.set_rotation(45)
+        label.set_rotation(30)
         label.set_horizontalalignment("center")
+
+    ax4.set_xlabel('X',size=24)
         
 
     # ZY2
@@ -474,8 +504,12 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     ax5.axis([-0.01,0.01,-0.05,0.05])
     ax5.set_yticklabels(())
     for label in ax5.get_xticklabels():
-        label.set_rotation(45)
+        label.set_rotation(30)
+        label.set_fontsize(10)
         label.set_horizontalalignment("center")
+
+    ax5.set_xlabel('Z',size=24)
+    ax5.xaxis.labelpad = 18
         
     # XZ2
     ax6.contourf(kdeXZx2,kdeXZz2,XZ2,levels_edge1,cmap=cm.gnuplot)
