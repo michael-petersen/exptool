@@ -125,8 +125,8 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
     np.array(times,dtype=np.float).tofile(f)
 
     # get mass array from snapshot
-    #    only accepts a 0 file to get masses, could eventually be problematic.
-    O = psp_io.Input(infile_template+'00000',nout=norb,comp=comp)
+    #    draws from the first file; consider in future if increasing mass during simulation.
+    O = psp_io.Input(infile_template+'%05i' %time_array[0],nout=norb,comp=comp)
     masses = O.mass[orbvals]
 
     # print to file
@@ -137,7 +137,8 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
 
         O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=norb,comp=comp,verbose=verbose)
 
-        if verbose > 0: print O.time
+        #if verbose > 0: print O.time
+        if verbose > 0: print_progress(val,np.max(time_array),'orbit.map_orbit')
 
         for star in orbvals:
             np.array([O.xpos[star],O.ypos[star],O.zpos[star],O.xvel[star],O.yvel[star],O.zvel[star]],dtype=np.float).tofile(f)
