@@ -14,6 +14,7 @@ What's included:
 print_progress : print incremental progress to screen with a tracking bar
 resample       : quick wrapper for scipy UnivariateSpline that returns the resampled values
 
+legendre_smooth : THIS NEEDS THE THEORETICAL UNDERPINNING!
 
 normalhist : quick and dirty normalized histogram (to 1)
 binnormalhist : normalhist that returns bins

@@ -9,6 +9,11 @@
 #                 TODO? consider adding a utility conditioned on memory mapping for individual orbits to speed up process.
 #                    not clear if needed, reading back in is very fast.
 #
+#
+#    WISHLIST:
+#       orbit interpolation routines
+#       orbit plotting routines
+#
 
 import numpy as np
 import psp_io
