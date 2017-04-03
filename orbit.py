@@ -250,7 +250,7 @@ def resample_orbit(OrbDict,orbit,impr=4,sord=0,transform=False,**kwargs):
         try:
             BarInstance = kwargs['bar']
         except:
-            print('orbit.resample_orbit: bar file reading failed.')
+            print('orbit.resample_orbit: bar file reading failed. Input using bar keyword.')
 
         TDict = orbit_transform(ResampledDict,BarInstance)
         ResampledDict['TX'] = TDict['X']
@@ -275,8 +275,66 @@ def orbit_transform(InDict,BarInstance,velocity=False):
 
     return OutDict
 
-    
 
+
+
+
+def resample_orbit_map(OrbDict,impr=4,sord=0,transform=False,**kwargs):
+    '''
+    return a single resampled orbit
+
+    what's the best way to extend this to multiple orbits?
+    what about adding velocity?
+
+    transform via
+    bar=BarInstance
+
+    '''
+    newT = np.linspace(np.min(OrbDict['T']),np.max(OrbDict['T']),len(OrbDict['T'])*impr)
+
+    # initializte a new dictionary
+    ResampledDict = {}
+    ResampledDict['T'] = newT
+    ResampledDict['M'] = OrbDict['M']
+
+    ResampledDict['X']  = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
+    ResampledDict['Y']  = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
+    ResampledDict['Z']  = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
+    ResampledDict['VX'] = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
+    ResampledDict['VY'] = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
+    ResampledDict['VZ'] = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
+
+
+
+    for orbit in range(0,len(OrbDict['M'])):
+        sX = UnivariateSpline(OrbDict['T'],OrbDict['X'][:,orbit],s=sord)
+        sY = UnivariateSpline(OrbDict['T'],OrbDict['Y'][:,orbit],s=sord)
+        sZ = UnivariateSpline(OrbDict['T'],OrbDict['Z'][:,orbit],s=sord)
+        sVX = UnivariateSpline(OrbDict['T'],OrbDict['VX'][:,orbit],s=sord)
+        sVY = UnivariateSpline(OrbDict['T'],OrbDict['VY'][:,orbit],s=sord)
+        sVZ = UnivariateSpline(OrbDict['T'],OrbDict['VZ'][:,orbit],s=sord)
+    
+        ResampledDict['X'][:,orbit] = sX(newT)
+        ResampledDict['Y'][:,orbit] = sY(newT)
+        ResampledDict['Z'][:,orbit] = sZ(newT)
+        ResampledDict['VX'][:,orbit] = sVX(newT)
+        ResampledDict['VY'][:,orbit] = sVY(newT)
+        ResampledDict['VZ'][:,orbit] = sVZ(newT)
+
+    if transform:
+        try:
+            BarInstance = kwargs['bar']
+        except:
+            print('orbit.resample_orbit: bar file reading failed. Input using bar keyword.')
+
+        ResampledDict = transform_orbit_map(ResampledDict,BarInstance)
+    
+    return ResampledDict
+
+
+#
+# there is a np.flipud discrepancy between transform_orbit and transform_orbit_map
+# 
 
 def transform_orbit_map(OrbitDictionary,BarInstance):
     '''
@@ -297,17 +355,17 @@ def transform_orbit_map(OrbitDictionary,BarInstance):
     bar_positions = trapping.find_barangle(OrbitDictionary['T'],BarInstance)
 
     # make a tiled version for fast computation
-    manybar = np.tile(bar_positions,(OrbitDictionary['T'].shape[0],1)).T
+    manybar = np.tile(bar_positions,(OrbitDictionary['M'].shape[0],1)).T
 
     # transform positions
-    Orbits['TX'] = Orbits['X']*np.cos(manybar) - Orbits['Y']*np.sin(manybar)
-    Orbits['TY'] = -Orbits['X']*np.sin(manybar) - Orbits['Y']*np.cos(manybar)
+    OrbitDictionary['TX'] = OrbitDictionary['X']*np.cos(manybar) - OrbitDictionary['Y']*np.sin(manybar)
+    OrbitDictionary['TY'] = -OrbitDictionary['X']*np.sin(manybar) - OrbitDictionary['Y']*np.cos(manybar)
 
     # transform velocities
-    Orbits['VTX'] = Orbits['VX']*np.cos(manybar) - Orbits['VY']*np.sin(manybar)
-    Orbits['VTY'] = -Orbits['VX']*np.sin(manybar) - Orbits['VY']*np.cos(manybar)
+    OrbitDictionary['VTX'] = OrbitDictionary['VX']*np.cos(manybar) - OrbitDictionary['VY']*np.sin(manybar)
+    OrbitDictionary['VTY'] = -OrbitDictionary['VX']*np.sin(manybar) - OrbitDictionary['VY']*np.cos(manybar)
 
-    return Orbits
+    return OrbitDictionary
 
 
 
