@@ -116,7 +116,7 @@ def find_barpattern(time,BarInstance,smth_order=2):
     return barpattern
 
 
-    
+
     
 
 

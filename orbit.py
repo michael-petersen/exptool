@@ -25,6 +25,8 @@ import trapping
 import utils
 
 
+from scipy.interpolate import UnivariateSpline
+
 '''
 # Quick Start Demo:
 
@@ -138,7 +140,7 @@ def map_orbits(outfile,simulation_directory,runtag,time_array,norb=1,comp='star'
     
     times = []
     for indx,val in enumerate(time_array):
-        O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=1,comp=comp)
+        O = psp_io.Input(infile_template+'%05i' %time_array[indx],nout=1,comp=comp)
         times.append(O.time)
 
     print('done.')
@@ -157,7 +159,8 @@ def map_orbits(outfile,simulation_directory,runtag,time_array,norb=1,comp='star'
     # loop through files and extract orbits
     for indx,val in enumerate(time_array):
 
-        O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=norb,comp=comp,verbose=0) # overriding verbose here--otherwise gets crazy?
+        O = psp_io.Input(infile_template+'%05i' %time_array[indx],nout=norb,comp=comp,verbose=0)
+        # overriding verbose here--otherwise gets crazy?
 
         #if verbose > 0: print O.time
         if (verbose > 0) & (val < np.max(time_array)): utils.print_progress(val,np.max(time_array),'orbit.map_orbit')
@@ -220,6 +223,59 @@ def read_orbit_map(infile):
     return Orbits
 
 
+
+def resample_orbit(OrbDict,orbit,impr=4,sord=0,transform=False,**kwargs):
+    '''
+    return a single resampled orbit
+
+    what's the best way to extend this to multiple orbits?
+    what about adding velocity?
+
+    transform via
+    bar=BarInstance
+
+    '''
+    newT = np.linspace(np.min(OrbDict['T']),np.max(OrbDict['T']),len(OrbDict['T'])*impr)
+    sX = UnivariateSpline(OrbDict['T'],OrbDict['X'][:,orbit],s=sord)
+    sY = UnivariateSpline(OrbDict['T'],OrbDict['Y'][:,orbit],s=sord)
+    sZ = UnivariateSpline(OrbDict['T'],OrbDict['Z'][:,orbit],s=sord)
+    
+    ResampledDict = {}
+    ResampledDict['T'] = newT
+    ResampledDict['X'] = sX(newT)
+    ResampledDict['Y'] = sY(newT)
+    ResampledDict['Z'] = sZ(newT)
+
+    if transform:
+        try:
+            BarInstance = kwargs['bar']
+        except:
+            print('orbit.resample_orbit: bar file reading failed.')
+
+        TDict = orbit_transform(ResampledDict,BarInstance)
+        ResampledDict['TX'] = TDict['X']
+        ResampledDict['TY'] = TDict['Y']
+    
+    return ResampledDict
+
+
+
+def orbit_transform(InDict,BarInstance,velocity=False):
+
+    bar_angle = trapping.find_barangle(InDict['T'],BarInstance)
+
+    
+    OutDict = {}
+    OutDict['X'] = InDict['X']*np.cos(bar_angle) - InDict['Y']*np.sin(bar_angle)
+    OutDict['Y'] = InDict['X']*np.sin(bar_angle) + InDict['Y']*np.cos(bar_angle)
+
+    if velocity:
+        OutDict['VX'] = InDict['VX']*np.cos(bar_angle) - InDict['VY']*np.sin(bar_angle)
+        OutDict['VY'] = InDict['VX']*np.sin(bar_angle) + InDict['VY']*np.cos(bar_angle)
+
+    return OutDict
+
+    
 
 
 def transform_orbit_map(OrbitDictionary,BarInstance):
