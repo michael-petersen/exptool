@@ -15,9 +15,15 @@
 #       orbit plotting routines
 #
 
+# future compatibility
+from __future__ import print_function
+
+
 import numpy as np
 import psp_io
 import trapping
+import utils
+
 
 '''
 # Quick Start Demo:
@@ -26,7 +32,7 @@ import trapping
 tarr = np.arange(0,12,1,dtype='int')
 
 # read in from files and return a dictionary
-Orbits = orbit.map_orbits('/path/to/outfile.dat','/path/to/exp/files',tarr,comp='dark',dictionary=True, norb=10)
+Orbits = orbit.map_orbits('/path/to/outfile.dat','/simulation/directory','runtag',tarr,comp='dark',dictionary=True, norb=10)
 
 
 # Orbits is a dictionary with several quantities (see initialize_orbit_dictionary below)
@@ -55,7 +61,7 @@ def initialize_orbit_dictionary():
 
 
 
-def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,**kwargs):
+def map_orbits(outfile,simulation_directory,runtag,time_array,norb=1,comp='star',verbose=0,**kwargs):
     '''
     make_orbit_map
 
@@ -66,9 +72,12 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
     outfile: string, filename
         where to save the mapping to a file, even if just a temporary filename
 
-    infile_template: string, filename
-        leading directory structure and simulation name, point at EXP outputs
+    simulation_directory: string, filename
+        leading directory structure
 
+    runtag: string
+        name of the simulation
+        
     time_array:  integer array
         array of integers that correspond to simulation files to be queried
 
@@ -98,6 +107,9 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
 
     '''
 
+    
+    infile_template = simulation_directory+'/OUT.'+runtag+'.'
+
     if 'dictionary' in kwargs:
         return_dictionary = kwargs['dictionary'] # this needs to be passed as an integer array
 
@@ -110,7 +122,7 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
     if 'orblist' in kwargs:
         orbvals = kwargs['orblist'] # this needs to be passed as an integer array
         norb = np.max(orbvals)+1
-        print 'N_orbits accepted: ',len(orbvals)
+        print('orbit.map_orbit: N_orbits accepted {} orbits'.format(len(orbvals)))
     else:
         orbvals = np.arange(0,norb,1,dtype='i')
 
@@ -121,10 +133,15 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
     #
 
     # get time array from snapshots
+
+    print('orbit.map_orbit: Making mass template...', end='')
+    
     times = []
     for indx,val in enumerate(time_array):
         O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=1,comp=comp)
         times.append(O.time)
+
+    print('done.')
 
     # print to file
     np.array(times,dtype=np.float).tofile(f)
@@ -140,10 +157,10 @@ def map_orbits(outfile,infile_template,time_array,norb=1,comp='star',verbose=0,*
     # loop through files and extract orbits
     for indx,val in enumerate(time_array):
 
-        O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=norb,comp=comp,verbose=verbose)
+        O = psp_io.Input(infile_template+'%05i' %time_array[val],nout=norb,comp=comp,verbose=0) # overriding verbose here--otherwise gets crazy?
 
         #if verbose > 0: print O.time
-        if verbose > 0: print_progress(val,np.max(time_array),'orbit.map_orbit')
+        if (verbose > 0) & (val < np.max(time_array)): utils.print_progress(val,np.max(time_array),'orbit.map_orbit')
 
         for star in orbvals:
             np.array([O.xpos[star],O.ypos[star],O.zpos[star],O.xvel[star],O.yvel[star],O.zvel[star]],dtype=np.float).tofile(f)
