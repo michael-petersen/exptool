@@ -51,19 +51,36 @@ def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
 
     
 
-def find_barangle(time,BarInstance):
+def find_barangle(time,BarInstance,interpolate=True):
     #
     # use a bar instance to match the output time to a bar position
     #
     #    can take arrays!
     #
+    #    but feels like it only goes one direction?
+    #
+    sord = 0 # should this be a variable?
+    
+    if (interpolate):
+        bar_func = UnivariateSpline(BarInstance.time,-BarInstance.pos,s=sord)
+    
     try:
         indx_barpos = np.zeros([len(time)])
         for indx,timeval in enumerate(time):
-            indx_barpos[indx] = -BarInstance.pos[ abs(timeval-BarInstance.time).argmin()]
+
+            if (interpolate):
+                indx_barpos[indx] = bar_func(timeval)
+
+
+            else:
+                indx_barpos[indx] = -BarInstance.pos[ abs(timeval-BarInstance.time).argmin()]
             
     except:
-        indx_barpos = -BarInstance.pos[ abs(time-BarInstance.time).argmin()]
+        if (interpolate):
+            indx_barpos = bar_func(time)
+
+        else:
+            indx_barpos = -BarInstance.pos[ abs(time-BarInstance.time).argmin()]
         
     return indx_barpos
 
@@ -167,7 +184,18 @@ class BarDetermine():
     # class to find the bar
     #
 
-    def __init__(self):
+    def __init__(self,**kwargs):
+
+        if 'file' in kwargs:
+            try:
+                # check to see if bar file has already been created
+                self.read_bar(kwargs['file'])
+                print 'trapping.BarDetermine: BarInstance sucessfully read.'
+            
+            except:
+                print 'trapping.BarDetermine: no compatible bar file found.'
+                
+
         return None
     
     def track_bar(self,filelist,verbose=0,maxr=1.):
