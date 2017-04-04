@@ -129,21 +129,40 @@ def map_orbits(outfile,simulation_directory,runtag,time_array,norb=1,comp='star'
         orbvals = np.arange(0,norb,1,dtype='i')
 
 
+
+    # get time array from snapshots
+
+    print('orbit.map_orbit: Making mass template...')
+    
+    times = []
+    bad_times = []
+    prev_time = -1.
+    for indx,val in enumerate(time_array):
+        O = psp_io.Input(infile_template+'%05i' %time_array[indx],nout=1,comp=comp)
+        
+        if (indx > 0):
+            if (O.time <= prev_time):
+                print('orbit.map_orbit: Bad file number {}, removing'.format(val))
+                bad_times.append(indx)
+            
+        
+            else: times.append(O.time)
+        else: times.append(O.time)
+
+        prev_time = O.time
+
+    print('...done.')
+
+    
+    # remove any bad times
+    time_array = np.delete(time_array,bad_times)
+
+
     #
     # print self-describing header to file
     np.array([len(time_array),len(orbvals)],dtype=np.int).tofile(f)
     #
 
-    # get time array from snapshots
-
-    print('orbit.map_orbit: Making mass template...', end='')
-    
-    times = []
-    for indx,val in enumerate(time_array):
-        O = psp_io.Input(infile_template+'%05i' %time_array[indx],nout=1,comp=comp)
-        times.append(O.time)
-
-    print('done.')
 
     # print to file
     np.array(times,dtype=np.float).tofile(f)
