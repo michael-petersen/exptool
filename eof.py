@@ -423,7 +423,7 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
 
 
 
-def show_basis(eof_file,plot=False):
+def show_basis(eof_file,plot=False,sine=False):
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
     rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
@@ -434,19 +434,29 @@ def show_basis(eof_file,plot=False):
     print('eof.show_basis: plotting %i azimuthal orders and %i radial orders...'%(MMAX,norder) )
 
     xgrid,zgrid = np.meshgrid(xvals,zvals)
+
+    if sine:
+        width=2
+    else:
+        width=1
     
     if plot:
 
+        plt.subplots_adjust(hspace=0.001)
+        
         for mm in range(0,MMAX+1):
             fig = plt.figure()
 
             for nn in range(0,norder):
-                if mm > 0: ax = fig.add_subplot(norder,2,2*(nn)+1)
+                if mm > 0: ax = fig.add_subplot(norder,width,width*(nn)+1)
                 else: ax = fig.add_subplot(norder,1,nn+1)
 
                 ax.contourf(xgrid,zgrid,potC[mm,nn,:,:].T,cmap=cm.gnuplot)
+                ax.axis([0.0,0.08,-0.03,0.03])
 
-                if mm > 0:
+                if nn < (norder-1): ax.set_xticklabels(())
+
+                if (mm > 0) & (sine):
                     ax2 = fig.add_subplot(norder,2,2*(nn)+2)
 
                     ax2.contourf(xgrid,zgrid,potS[mm,nn,:,:].T,cmap=cm.gnuplot)

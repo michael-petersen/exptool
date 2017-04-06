@@ -185,7 +185,7 @@ def map_orbits(outfile,simulation_directory,runtag,time_array,norb=1,comp='star'
         if (verbose > 0) & (val < np.max(time_array)): utils.print_progress(val,np.max(time_array),'orbit.map_orbit')
 
         for star in orbvals:
-            np.array([O.xpos[star],O.ypos[star],O.zpos[star],O.xvel[star],O.yvel[star],O.zvel[star]],dtype=np.float).tofile(f)
+            np.array([O.xpos[star],O.ypos[star],O.zpos[star],O.xvel[star],O.yvel[star],O.zvel[star],O.pote[star]],dtype=np.float).tofile(f)
 
     f.close()
 
@@ -225,7 +225,7 @@ def read_orbit_map(infile):
 
     #print ntimes,norb
 
-    orb = np.memmap(infile,offset=(16 + 8*ntimes + 8*norb),dtype=np.float,shape=(ntimes,norb,6))
+    orb = np.memmap(infile,offset=(16 + 8*ntimes + 8*norb),dtype=np.float,shape=(ntimes,norb,7))
 
     Orbits = initialize_orbit_dictionary()
 
@@ -238,6 +238,7 @@ def read_orbit_map(infile):
     Orbits['VX'] = orb[:,:,3]
     Orbits['VY'] = orb[:,:,4]
     Orbits['VZ'] = orb[:,:,5]
+    Orbits['P'] = orb[:,:,6]
 
     return Orbits
 
@@ -295,6 +296,15 @@ def orbit_transform(InDict,BarInstance,velocity=False):
     return OutDict
 
 
+
+def compute_quantities(OrbitDictionary):
+
+    v2 = OrbitDictionary['VX']*OrbitDictionary['VX'] + OrbitDictionary['VY']*OrbitDictionary['VY'] + OrbitDictionary['VZ']*OrbitDictionary['VZ']
+    OrbitDictionary['E'] = v2 + OrbitDictionary['P']
+
+    OrbitDictionary['LZ'] = OrbitDictionary['X']*OrbitDictionary['VY'] - OrbitDictionary['Y']*OrbitDictionary['VX']
+
+    return OrbitDictionary
 
 
 
