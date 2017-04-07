@@ -259,13 +259,25 @@ def resample_orbit(OrbDict,orbit,impr=4,sord=0,transform=False,**kwargs):
     sX = UnivariateSpline(OrbDict['T'],OrbDict['X'][:,orbit],s=sord)
     sY = UnivariateSpline(OrbDict['T'],OrbDict['Y'][:,orbit],s=sord)
     sZ = UnivariateSpline(OrbDict['T'],OrbDict['Z'][:,orbit],s=sord)
-    
+
+    sVX = UnivariateSpline(OrbDict['T'],OrbDict['VX'][:,orbit],s=sord)
+    sVY = UnivariateSpline(OrbDict['T'],OrbDict['VY'][:,orbit],s=sord)
+    sVZ = UnivariateSpline(OrbDict['T'],OrbDict['VZ'][:,orbit],s=sord)
+
+    sP = UnivariateSpline(OrbDict['T'],OrbDict['P'][:,orbit],s=sord)
+  
+        
     ResampledDict = {}
     ResampledDict['T'] = newT
     ResampledDict['X'] = sX(newT)
     ResampledDict['Y'] = sY(newT)
     ResampledDict['Z'] = sZ(newT)
+    ResampledDict['VX'] = sVX(newT)
+    ResampledDict['VY'] = sVY(newT)
+    ResampledDict['VZ'] = sVZ(newT)
+    ResampledDict['P'] = sP(newT)
 
+    
     if transform:
         try:
             BarInstance = kwargs['bar']
@@ -332,6 +344,7 @@ def resample_orbit_map(OrbDict,impr=4,sord=0,transform=False,**kwargs):
     ResampledDict['VX'] = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
     ResampledDict['VY'] = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
     ResampledDict['VZ'] = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
+    ResampledDict['P']  = np.zeros([ResampledDict['T'].size,OrbDict['M'].size],dtype='f4')
 
 
 
@@ -342,13 +355,15 @@ def resample_orbit_map(OrbDict,impr=4,sord=0,transform=False,**kwargs):
         sVX = UnivariateSpline(OrbDict['T'],OrbDict['VX'][:,orbit],s=sord)
         sVY = UnivariateSpline(OrbDict['T'],OrbDict['VY'][:,orbit],s=sord)
         sVZ = UnivariateSpline(OrbDict['T'],OrbDict['VZ'][:,orbit],s=sord)
-    
+        sP = UnivariateSpline(OrbDict['T'],OrbDict['P'][:,orbit],s=sord)
+   
         ResampledDict['X'][:,orbit] = sX(newT)
         ResampledDict['Y'][:,orbit] = sY(newT)
         ResampledDict['Z'][:,orbit] = sZ(newT)
         ResampledDict['VX'][:,orbit] = sVX(newT)
         ResampledDict['VY'][:,orbit] = sVY(newT)
         ResampledDict['VZ'][:,orbit] = sVZ(newT)
+        ResampledDict['P'][:,orbit] = sP(newT)
 
     if transform:
         try:
