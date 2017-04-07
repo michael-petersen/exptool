@@ -6,12 +6,11 @@
 #    11.12.16 formalized class structure, provided example usage.
 #    11.19.16 documented definitions; considered for generic upgrade.
 #    11.20.16 do generic upgrade to make a single utility
-#                 TODO? consider adding a utility conditioned on memory mapping for individual orbits to speed up process.
-#                    not clear if needed, reading back in is very fast.
-#
+#    04.07.17 update orbit mapping to use memory mapping capability (2x speedup!). dangerous if PSP structure changes between dumps (unlikely)
 #
 #    WISHLIST:
 #       orbit plotting routines
+#       may want saving capability, though 1000 dumps takes 6s, so perhaps no problem
 #
 
 # future compatibility: let's make this Python 3 setup
@@ -72,7 +71,7 @@ class Orbits(dict):
 
 
 
-    def map_orbits(self,outfile,simulation_directory,runtag,time_array,norb=1,comp='star',verbose=0,**kwargs):
+    def map_orbits(self,simulation_directory,runtag,time_array,norb=1,comp='star',verbose=0,**kwargs):
         '''
         make_orbit_map
 
@@ -80,9 +79,6 @@ class Orbits(dict):
 
         Parameters:
         ----------
-        outfile: string, filename
-            where to save the mapping to a file, even if just a temporary filename
-
         simulation_directory: string, filename
             leading directory structure
 
@@ -201,7 +197,17 @@ class Orbits(dict):
         self['LZ'] = self['X']*self['VY'] - self['Y']*self['VX']
 
 
+    def polar_coordinates(self):
 
+        self['Rp'] = np.power(self['X']*self['X'] + self['Y']*self['Y'],0.5)
+        self['Phi'] = np.arctan2(self['Y'],self['X'])
+
+        try:
+            self['Phib'] = np.arctan2(self['TY'],self['TX'])
+        except:
+            pass
+
+        
 
     def resample_orbit_map(self,impr=4,sord=0,transform=False,**kwargs):
         '''
@@ -275,6 +281,39 @@ class Orbits(dict):
 
 
 
+
+
+def find_orbit_frequencies(OrbitInstance,window=[0,10000]):
+    '''
+    calculate the peak of the orbit frequency plot
+
+    much testing/theoretical work to be done here (perhaps see the seminal papers?)
+
+    what do we want the windowing to look like?
+
+    '''
+
+    try:
+        x = OrbitInstance['Rp']
+    except:
+        print('orbit.find_orbit_frequencies: must have polar_coordinates.')
+
+    if window[1] == 10000:
+        window[1] = OrbitInstance['Phi'].shape[0]
+
+    # get frequency values
+    freq = np.fft.fftfreq(Orbits['T'][window[0]:window[1]].shape[-1],d=(Orbits['T'][1]-Orbits['T'][0]))
+    
+    sp_r = np.fft.fft(OrbitInstance['Rp'][window[0]:window[1]],axis=1)
+    sp_t = np.fft.fft(OrbitInstance['Phi'][window[0]:window[1]],axis=1)
+    sp_z = np.fft.fft(OrbitInstance['Z'][window[0]:window[1]],axis=1)
+
+    OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5),axis=1)])
+    OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5),axis=1)])
+    OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5),axis=1)])
+
+    
+    return OmegaR,OmegaT,OmegaZ
 
 
                 
