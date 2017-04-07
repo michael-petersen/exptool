@@ -73,7 +73,7 @@ class Input():
     # orbit_resolve
 
 
-    def __init__(self, infile, comp=None, nout=None, verbose=0, orbit_list=None, infile_list=None, validate=False):
+    def __init__(self, infile, comp=None, nout=None, verbose=0, orbit_list=None, infile_list=None, validate=True):
 
         #
         # set input parameters
@@ -390,7 +390,7 @@ class Input():
         #      which defines self.readtype
         #
 
-        Input.create_particle_buffer(self)
+        self.create_particle_buffer()
 
 
         #
