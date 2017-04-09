@@ -297,20 +297,24 @@ def find_orbit_frequencies(OrbitInstance,window=[0,10000]):
         x = OrbitInstance['Rp']
     except:
         print('orbit.find_orbit_frequencies: must have polar_coordinates.')
+        OrbitInstance.polar_coordinates()
 
     if window[1] == 10000:
         window[1] = OrbitInstance['Phi'].shape[0]
 
     # get frequency values
-    freq = np.fft.fftfreq(Orbits['T'][window[0]:window[1]].shape[-1],d=(Orbits['T'][1]-Orbits['T'][0]))
+    freq = np.fft.fftfreq(OrbitInstance['T'][window[0]:window[1]].shape[-1],d=(OrbitInstance['T'][1]-OrbitInstance['T'][0]))
     
-    sp_r = np.fft.fft(OrbitInstance['Rp'][window[0]:window[1]],axis=1)
-    sp_t = np.fft.fft(OrbitInstance['Phi'][window[0]:window[1]],axis=1)
-    sp_z = np.fft.fft(OrbitInstance['Z'][window[0]:window[1]],axis=1)
+    sp_r = np.fft.fft(OrbitInstance['Rp'][window[0]:window[1]],axis=0)
+    sp_t = np.fft.fft(OrbitInstance['Phi'][window[0]:window[1]],axis=0)
+    sp_z = np.fft.fft(OrbitInstance['Z'][window[0]:window[1]],axis=0)
 
-    OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5),axis=1)])
-    OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5),axis=1)])
-    OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5),axis=1)])
+    # why does sp_r have a zero frequency peak??
+    sp_r[0,:] = np.zeros(OrbitInstance['Phi'].shape[1])
+
+    OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5),axis=0)])
+    OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5),axis=0)])
+    OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5),axis=0)])
 
     
     return OmegaR,OmegaT,OmegaZ
