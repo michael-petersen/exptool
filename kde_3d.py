@@ -183,7 +183,7 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
 
 
 
-def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None, npower=6.):
+def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None, npower=6.,type='gaussian'):
     """
     Performs a gaussian kernel density estimate over a regular grid using a
     convolution of the gaussian kernel with a 2D histogram of the data.
@@ -286,7 +286,7 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     # Scaling factor for bandwidth
     scotts_factor = np.power(n, -1.0 / npower) # For 2D
 
-    #---- Make the gaussian kernel -------------------------------------------
+    #---- Make the kernel -------------------------------------------
 
     # First, determine how big the kernel needs to be
     std_devs = np.diag(np.sqrt(cov))
@@ -300,12 +300,21 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     yy = np.arange(kern_ny, dtype=np.float) - kern_ny / 2.0
     xx, yy = np.meshgrid(xx, yy)
 
-    # Then evaluate the gaussian function on the kernel grid
     kernel = np.vstack((xx.flatten(), yy.flatten()))
-    kernel = np.dot(inv_cov, kernel) * kernel 
-    kernel = np.sum(kernel, axis=0) / 2.0 
-    kernel = np.exp(-kernel) 
+
+    if type=='gaussian':
+        # Then evaluate the gaussian function on the kernel grid
+        kernel = np.dot(inv_cov, kernel) * kernel 
+        kernel = np.sum(kernel, axis=0) / 2.0 
+        kernel = np.exp(-kernel) 
+
+    if type=='linear':
+        # still in testing
+        pass
+
+
     kernel = kernel.reshape((kern_ny, kern_nx))
+
 
     #---- Produce the kernel density estimate --------------------------------
 

@@ -21,10 +21,14 @@ import numpy as np
 import psp_io
 import trapping
 import utils
+import kde_3d
 
 # standard imports
 from scipy.interpolate import UnivariateSpline
 import copy
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib as mpl
 
 '''
 # Quick Start Demo:
@@ -322,16 +326,121 @@ def find_orbit_frequencies(OrbitInstance,window=[0,10000]):
 
                 
 
-def make_orbit_density(infile):
+def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalelength=0.01,colorplot=True,nsamp=56):
     '''
     Makes density plot of a single orbit
 
     Parameters
     -----------
-    infile: string
+    OrbitInstance
 
 
     '''
 
-    pass
+    lo = window[0]
+    hi = window[1]
+
+    if (hi+1) > OrbitInstance['T'].size: hi = OrbitInstance['T'].size - 1
+
+    scalefac = 1./scalelength
+
+    #scalefac = 100.
+
+    if not replot:
+        fig = plt.figure(figsize=(6.46,4.53),dpi=100)
+    else:
+        plt.clf()
+        fig = plt.gcf()
+
+    # 
+    #want to re-scale the extent to make a more intelligent boundary
+    #
+    extentx_in = 1.2*np.max(abs(OrbitInstance['TX'][lo:hi,orbit]))
+    extenty_in = 1.2*np.max(abs(OrbitInstance['TY'][lo:hi,orbit]))
+    extentz_in = 1.2*np.max(abs(OrbitInstance['Z'][lo:hi,orbit]))
+    #
+    xbins = np.linspace(-extentx_in,extentx_in,nsamp)
+    ybins = np.linspace(-extenty_in,extenty_in,nsamp)
+    xx,yy = np.meshgrid( xbins,ybins)
+    zbins = np.linspace(-extentz_in,extentz_in,nsamp)
+    xxz,zz = np.meshgrid( xbins,zbins)
+
+    # test the kde waters
+    try:
+        tt = kde_3d.fast_kde_two(OrbitInstance['TX'][lo:hi,orbit],OrbitInstance['TY'][lo:hi,orbit],\
+                             gridsize=(nsamp,nsamp), extents=(-extentx_in,extentx_in,-extenty_in,extenty_in),\
+                             nocorrelation=True, weights=None)
+        tz = kde_3d.fast_kde_two(OrbitInstance['TX'][lo:hi,orbit],OrbitInstance['Z'][lo:hi,orbit],\
+                             gridsize=(nsamp,nsamp), extents=(-extentx_in,extentx_in,-extentz_in,extentz_in),\
+                             nocorrelation=True, weights=None)
+    except:
+        tt = tz = np.zeros([nsamp,nsamp])
+
+    # set up the axes
+    ax1 = fig.add_axes([0.15,0.55,0.25,0.35])
+    ax2 = fig.add_axes([0.52,0.55,0.25,0.35])
+    ax3 = fig.add_axes([0.80, 0.55, 0.03, 0.35])
+    ax4 = fig.add_axes([0.15,0.15,0.25,0.35])
+    ax5 = fig.add_axes([0.52,0.15,0.25,0.35])
+    if colorplot: ax6 = fig.add_axes([0.80, 0.15, 0.03, 0.35])
+
+    #
+
+    
+    _ = ax1.contourf(scalefac*xx,scalefac*yy,np.flipud(tt/np.sum(tt)),cmap=cm.Greys)
+    _ = ax2.contourf(scalefac*xxz,scalefac*zz,np.flipud(tz/np.sum(tz)),cmap=cm.Greys)
+    
+    _ = ax1.set_ylabel('Y$_{\\rm bar}$ [R$_d$]')
+    _ = ax2.set_ylabel('Z [R$_d$]')
+    _ = ax4.set_ylabel('Y$_{\\rm bar}$ [R$_d$]')
+    _ = ax4.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
+    _ = ax5.set_ylabel('Z [R$_d$]')
+    _ = ax5.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
+    
+    _ = ax1.set_xticklabels(())
+    _ = ax2.set_xticklabels(())
+
+    if colorplot:
+        loT = OrbitInstance['T'][lo]
+        hiT = OrbitInstance['T'][hi]
+        dT  = (hiT-loT)/float(hi-lo)
+        spacing = 5
+        
+        for indx in range(1,(hi-lo)+1,spacing):
+            _ = ax4.plot(scalefac*OrbitInstance['TX'][lo+indx:lo+indx+spacing+1,orbit],scalefac*OrbitInstance['TY'][lo+indx:lo+indx+spacing+1,orbit],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
+            _ = ax5.plot(scalefac*OrbitInstance['TX'][lo+indx:lo+indx+spacing+1,orbit],scalefac*OrbitInstance['Z'][lo+indx:lo+indx+spacing+1,orbit],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
+
+        
+    else:
+        _ = ax4.plot(scalefac*OrbitInstance['TX'][lo:hi,orbit],scalefac*OrbitInstance['TY'][lo:hi,orbit],color='black',lw=0.5)
+        _ = ax5.plot(scalefac*OrbitInstance['TX'][lo:hi,orbit],scalefac*OrbitInstance['Z'][lo:hi,orbit],color='black',lw=0.5)
+
+
+    # any interest in the start point?
+    #_ = ax4.scatter(scalefac*OrbitInstance['TX'][lo,orbit],scalefac*OrbitInstance['TY'][lo,orbit],color='red',s=3.)
+    _ = ax1.axis([-2,2,-2,2])
+    _ = ax4.axis([-2,2,-2,2])
+    
+    _ = ax2.axis([-2,2,-0.8,0.8])
+    _ = ax5.axis([-2,2,-0.8,0.8])
+    
+    _ = ax4.set_xticklabels(['-2','','-1','','0','','1','','2'])
+    _ = ax4.set_yticklabels(['-2','','-1','','0','','1','','2'])
+    _ = ax1.set_yticklabels(['-2','','-1','','0','','1','','2'])
+    _ = ax2.set_yticklabels(['-.8','','-.4','','0','','.4','','.8'])
+    _ = ax5.set_xticklabels(['-2','','-1','','0','','1','','2'])
+    _ = ax5.set_yticklabels(['-.8','','-.4','','0','','.4','','.8'])
+    
+    cmap = mpl.cm.Greys; norm = mpl.colors.Normalize(vmin=0., vmax=1.)
+    cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
+    _ = cb1.set_label('Relative Frequency',size=10)
+    _ = cb1.set_ticks([0.,0.25,0.5,0.75,1.])
+
+    if colorplot:
+        cmap = mpl.cm.gnuplot; norm = mpl.colors.Normalize(vmin=loT, vmax=hiT)
+        cb1 = mpl.colorbar.ColorbarBase(ax6, cmap=cmap,norm=norm)
+        _ = cb1.set_label('System Time',size=10)
+        _ = cb1.set_ticks([np.round(loT,2),np.round( 0.33*(hiT-loT) + loT,2),np.round( 0.66*(hiT-loT) + loT,2),np.round( 0.99*(hiT-loT) + loT,2)])
+
+
 
