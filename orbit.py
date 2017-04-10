@@ -287,7 +287,45 @@ class Orbits(dict):
 
 
 
-def find_orbit_frequencies(OrbitInstance,window=[0,10000]):
+
+
+def find_orbit_frequencies(T,R,PHI,Z,window=[0,10000]):
+    '''
+    calculate the peak of the orbit frequency plot
+
+    much testing/theoretical work to be done here (perhaps see the seminal papers?)
+
+    what do we want the windowing to look like?
+
+    '''
+
+    if window[1] == 10000:
+        window[1] = R.shape[0]
+
+    # get frequency values
+    freq = np.fft.fftfreq(T[window[0]:window[1]].shape[-1],d=(T[1]-T[0]))
+    
+    sp_r = np.fft.fft(  R[window[0]:window[1]])
+    sp_t = np.fft.fft(PHI[window[0]:window[1]])
+    sp_z = np.fft.fft(  Z[window[0]:window[1]])
+
+    # why does sp_r have a zero frequency peak??
+    sp_r[0] = 0.0
+
+    OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5))])
+    OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5))])
+    OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5))])
+
+    
+    return OmegaR,OmegaT,OmegaZ
+
+
+                
+
+
+                
+
+def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
     '''
     calculate the peak of the orbit frequency plot
 
@@ -333,6 +371,7 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
     Parameters
     -----------
     OrbitInstance
+        -with transformation and polar coordinates setup. will add forcing for this at some point
 
 
     '''
