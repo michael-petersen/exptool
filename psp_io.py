@@ -92,6 +92,9 @@ class Input():
         self.infile_list = infile_list
         self.ILIST = None
 
+        # override validate flag if component
+        if self.comp != None: validate=False
+
         #
         # do the components have niatr/ndatr? to be deprecated once I figure out how to write them properly
             
