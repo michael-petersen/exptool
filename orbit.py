@@ -338,7 +338,7 @@ def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
     try:
         x = OrbitInstance['Rp']
     except:
-        print('orbit.find_orbit_frequencies: must have polar_coordinates.')
+        print('orbit.find_orbit_frequencies: must have polar_coordinates. calculating...')
         OrbitInstance.polar_coordinates()
 
     if window[1] == 10000:
@@ -352,17 +352,20 @@ def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
     sp_z = np.fft.fft(OrbitInstance['Z'][window[0]:window[1]],axis=0)
 
     # why does sp_r have a zero frequency peak??
-    sp_r[0,:] = np.zeros(OrbitInstance['Phi'].shape[1])
+    try:
+        sp_r[0,:] = np.zeros(OrbitInstance['Phi'].shape[1])
+    except:
+        sp_r[0] = 0.
 
     OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5),axis=0)])
     OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5),axis=0)])
     OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5),axis=0)])
 
     # check the frequencies; restrict to obits with multiple rotation periods
-    minfreq = 4./(np.max(OrbitInstance['T'][window[0]:window[1]]) - np.min(OrbitInstance['T'][window[0]:window[1]]))
-    OmegaR[np.where(OmegaR <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaR <= minfreq)[0]).size)
-    OmegaT[np.where(OmegaT <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaT <= minfreq)[0]).size)
-    OmegaZ[np.where(OmegaZ <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaZ <= minfreq)[0]).size)
+    #minfreq = 4./(np.max(OrbitInstance['T'][window[0]:window[1]]) - np.min(OrbitInstance['T'][window[0]:window[1]]))
+    #OmegaR[np.where(OmegaR <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaR <= minfreq)[0]).size)
+    #OmegaT[np.where(OmegaT <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaT <= minfreq)[0]).size)
+    #OmegaZ[np.where(OmegaZ <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaZ <= minfreq)[0]).size)
 
     
     return OmegaR,OmegaT,OmegaZ
