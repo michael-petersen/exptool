@@ -358,7 +358,7 @@ def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
     OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5),axis=0)])
     OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5),axis=0)])
 
-    # check the frequencies
+    # check the frequencies; restrict to obits with multiple rotation periods
     minfreq = 4./(np.max(OrbitInstance['T'][window[0]:window[1]]) - np.min(OrbitInstance['T'][window[0]:window[1]]))
     OmegaR[np.where(OmegaR <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaR <= minfreq)[0]).size)
     OmegaT[np.where(OmegaT <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaT <= minfreq)[0]).size)
@@ -370,7 +370,7 @@ def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
 
                 
 
-def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalelength=0.01,colorplot=True,nsamp=56,transform=True,rescale=True):
+def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,scalelength=0.01,colorplot=True,nsamp=56,transform=True,rescale=True):
     '''
     Makes density plot of a single orbit
 
@@ -385,23 +385,45 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
     lo = window[0]
     hi = window[1]
 
+    if (lo) > OrbitInstance['T'].size:
+        print('orbit.make_orbit_density: invalid lower time boundary. resizing...')
+        lo = 0
+    
+    # check size boundaries
+    if (hi+1) > OrbitInstance['T'].size: hi = OrbitInstance['T'].size - 1
+
+
     if transform:
         try:
-            x_coord = OrbitInstance['TX']
-            y_coord = OrbitInstance['TY']
+            x_coord_tmp = OrbitInstance['TX']
+            y_coord_tmp = OrbitInstance['TY']
+            
         except:
             print('orbit.make_orbit_density: transformation must be defined in orbit dictionary.')
 
     else:
-        x_coord = OrbitInstance['X']
-        y_coord = OrbitInstance['Y']
+        x_coord_tmp = OrbitInstance['X']
+        y_coord_tmp = OrbitInstance['Y']
+
+    z_coord_tmp = OrbitInstance['Z']
         
+    # check if orbit instance is multidimensional
+    try:
+        orbit += 1
+        orbit -= 1
+        x_coord = x_coord_tmp[lo:hi,orbit]
+        y_coord = y_coord_tmp[lo:hi,orbit]
+        z_coord = z_coord_tmp[lo:hi,orbit]
+        
+    except:
+        x_coord = x_coord_tmp[lo:hi]
+        y_coord = y_coord_tmp[lo:hi]
+        z_coord = z_coord_tmp[lo:hi]        
 
-    if (hi+1) > OrbitInstance['T'].size: hi = OrbitInstance['T'].size - 1
 
+    # undo scaling
     scalefac = 1./scalelength
 
-    #scalefac = 100.
 
     if not replot:
         fig = plt.figure(figsize=(6.46,4.53),dpi=100)
@@ -412,9 +434,9 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
     # 
     #want to re-scale the extent to make a more intelligent boundary
     #
-    extentx_in = 1.2*np.max(abs(x_coord[lo:hi,orbit]))
-    extenty_in = 1.2*np.max(abs(y_coord[lo:hi,orbit]))
-    extentz_in = 1.2*np.max(abs(OrbitInstance['Z'][lo:hi,orbit]))
+    extentx_in = 1.2*np.max(abs(x_coord))
+    extenty_in = 1.2*np.max(abs(y_coord))
+    extentz_in = 1.2*np.max(abs(z_coord))
     #
     xbins = np.linspace(-extentx_in,extentx_in,nsamp)
     ybins = np.linspace(-extenty_in,extenty_in,nsamp)
@@ -426,10 +448,10 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
 
     # test the kde waters
     try:
-        tt = kde_3d.fast_kde_two(x_coord[lo:hi,orbit],y_coord[lo:hi,orbit],\
+        tt = kde_3d.fast_kde_two(x_coord,y_coord,\
                              gridsize=(nsamp,nsamp), extents=(-extentx_in,extentx_in,-extenty_in,extenty_in),\
                              nocorrelation=True, weights=None)
-        tz = kde_3d.fast_kde_two(x_coord[lo:hi,orbit],OrbitInstance['Z'][lo:hi,orbit],\
+        tz = kde_3d.fast_kde_two(x_coord,z_coord,\
                              gridsize=(nsamp,nsamp), extents=(-extentx_in,extentx_in,-extentz_in,extentz_in),\
                              nocorrelation=True, weights=None)
     except:
@@ -466,17 +488,13 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
         spacing = 5
         
         for indx in range(1,(hi-lo)+1,spacing):
-            _ = ax4.plot(scalefac*x_coord[lo+indx:lo+indx+spacing+1,orbit],scalefac*y_coord[lo+indx:lo+indx+spacing+1,orbit],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
-            _ = ax5.plot(scalefac*x_coord[lo+indx:lo+indx+spacing+1,orbit],scalefac*OrbitInstance['Z'][lo+indx:lo+indx+spacing+1,orbit],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
+            _ = ax4.plot(scalefac*x_coord[indx:indx+spacing+1],scalefac*y_coord[indx:indx+spacing+1],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
+            _ = ax5.plot(scalefac*x_coord[indx:indx+spacing+1],scalefac*z_coord[indx:indx+spacing+1],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
 
         
     else:
-        _ = ax4.plot(scalefac*x_coord[lo:hi,orbit],scalefac*y_coord[lo:hi,orbit],color='black',lw=0.5)
-        _ = ax5.plot(scalefac*x_coord[lo:hi,orbit],scalefac*OrbitInstance['Z'][lo:hi,orbit],color='black',lw=0.5)
-
-
-    # any interest in the start point?
-    #_ = ax4.scatter(scalefac*x_coord[lo,orbit],scalefac*y_coord[lo,orbit],color='red',s=3.)
+        _ = ax4.plot(scalefac*x_coord,scalefac*y_coord,color='black',lw=0.5)
+        _ = ax5.plot(scalefac*x_coord,scalefac*z_coord,color='black',lw=0.5)
 
     # double all window sizes?
     pfac = 1.
@@ -486,19 +504,19 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
         # allow for rescaling of the plots?
         #   e.g. don't use this if making a library
 
-        if np.max(OrbitInstance['Rp'][lo:hi,orbit]) < 0.75*scalelength:
+        if np.max([np.max(x_coord),np.max(y_coord)]) < 0.75*scalelength:
             pfac = 0.5
         
-        if np.min(OrbitInstance['Rp'][lo:hi,orbit]) > 1.5*scalelength:
+        if np.min([np.max(x_coord),np.max(y_coord)]) > 1.5*scalelength:
             pfac = 2.
 
-        if np.min(OrbitInstance['Rp'][lo:hi,orbit]) > 2.5*scalelength:
+        if np.min([np.max(x_coord),np.max(y_coord)]) > 2.5*scalelength:
             pfac = 4.
 
-        if np.max(OrbitInstance['Z'][lo:hi,orbit]) > 0.7*scalelength:
+        if np.max(z_coord) > 0.7*scalelength:
             pfacz = 1.5
 
-        if np.max(OrbitInstance['Z'][lo:hi,orbit]) < 0.33*scalelength:
+        if np.max(z_coord) < 0.33*scalelength:
             pfacz = 0.5
 
 
@@ -511,8 +529,6 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
 
     xy_lims = [str(int(np.round(-2.*pfac,0))),str(int(np.round(-1.*pfac,0))),str(int(np.round(1.*pfac,0))),str(int(np.round(2.*pfac,0)))]
     xz_lims = [str(np.round(-0.8*pfacz,1)),str(np.round(-0.4*pfacz,1)),str(np.round(0.4*pfacz,1)),str(np.round(0.8*pfacz,1))]
-
-    print(xy_lims,xz_lims)
 
     _ = ax4.set_xticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
     _ = ax4.set_yticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
@@ -530,7 +546,7 @@ def make_orbit_density(OrbitInstance,orbit,window=[0,10000],replot=False,scalele
         cmap = mpl.cm.gnuplot; norm = mpl.colors.Normalize(vmin=loT, vmax=hiT)
         cb1 = mpl.colorbar.ColorbarBase(ax6, cmap=cmap,norm=norm)
         _ = cb1.set_label('System Time',size=10)
-        _ = cb1.set_ticks([np.round(loT,2),np.round( 0.33*(hiT-loT) + loT,2),np.round( 0.66*(hiT-loT) + loT,2),np.round( 0.99*(hiT-loT) + loT,2)])
+        _ = cb1.set_ticks([np.round(loT,2),np.round( 0.33*(hiT-loT) + loT,2),np.round( 0.66*(hiT-loT) + loT,2),np.round( 0.98*(hiT-loT) + loT,2)])
 
 
 
