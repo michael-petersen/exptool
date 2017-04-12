@@ -560,7 +560,7 @@ def accumulated_eval_table(r, z, phi, accum_cos, accum_sin, eof_file, m1=0,m2=10
 
 
 
-def accumulated_forces(r, z, phi, \
+def force_eval(r, z, phi, \
                        accum_cos, accum_sin, \
                        potC, rforceC, zforceC,\
                        potS, rforceS, zforceS,\
@@ -586,6 +586,18 @@ def accumulated_forces(r, z, phi, \
     p0    :   monopole potential
     
     '''
+
+    # reduce the array sizes to the specified sizes
+    accum_cos = accum_cos[0:MMAX+1,0:NMAX]
+    accum_sin = accum_sin[0:MMAX+1,0:NMAX]
+
+    
+    potC    = potC[0:MMAX+1,0:NMAX,:,:]
+    rforceC = potC[0:MMAX+1,0:NMAX,:,:]
+    zforceC = potC[0:MMAX+1,0:NMAX,:,:]
+    potS    = potC[0:MMAX+1,0:NMAX,:,:]
+    rforceS = potC[0:MMAX+1,0:NMAX,:,:]
+    zforceS = potC[0:MMAX+1,0:NMAX,:,:]
 
     fr = 0.0;
     fz = 0.0;

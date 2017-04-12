@@ -165,6 +165,9 @@ class Fields():
         self.XMIN,self.XMAX,self.dX,self.YMIN,self.YMAX,self.dY \
           = eof.set_table_params(RMAX=self.rmaxdisk,RMIN=self.rmindisk,ASCALE=self.ascale,HSCALE=self.hscale,NUMX=self.numx,NUMY=self.numy,CMAP=self.cmapdisk)
 
+        self.disk_use_m = self.mmax
+        self.disk_use_n = self.norder
+
         # build halo tables
         self.lmaxhalo,self.nmaxhalo,self.numrhalo,self.cmaphalo,\
           self.rminhalo,self.rmaxhalo,self.scalehalo,self.ltablehalo,self.evtablehalo,self.eftablehalo \
@@ -173,6 +176,8 @@ class Fields():
         self.xihalo,self.rarrhalo,self.p0halo,self.d0halo \
           = halo_methods.init_table(self.SL.model_file,self.numrhalo,self.rminhalo,self.rmaxhalo,cmap=self.cmaphalo,scale=self.scalehalo)  
 
+        self.halo_use_l = self.lmaxhalo
+        self.halo_use_n = self.nmaxhalo
 
     def return_density(self,xval,yval,zval):
         '''
@@ -243,7 +248,7 @@ class Fields():
         self.diskdens_total = diskdens_total
 
 
-    def set_field_parameters(self,no_odd=False,halomonopole=False,diskmonopole=False,truncate_disk_n=1000):
+    def set_field_parameters(self,no_odd=False,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1):
         '''
         in preparation for other definitions, specify
 
@@ -251,9 +256,12 @@ class Fields():
         '''
         
         self.no_odd = no_odd
-        self.halomonopole = halomonopole
-        self.diskmonopole = diskmonopole
-        self.truncate_disk_n = truncate_disk_n
+
+        if halo_l != -1: self.halo_use_l = halo_l
+        if halo_n != -1: self.halo_use_n = halo_n
+        if disk_m != -1: self.disk_use_m = disk_m
+        if disk_n != -1: self.disk_use_n = disk_n
+
 
 
     def return_forces_cart(self,xval,yval,zval,rotpos=0.0):
@@ -274,41 +282,22 @@ class Fields():
         costh = zval/r3val
         phival = np.arctan2(yval,xval)
 
-        # use only halo monopole?
-        if self.halomonopole:
-            use_l = 0
-        else:
-            use_l = self.lmaxhalo
-            
-        #
-        if self.diskmonopole:
-            use_m = 0
-        else:
-            use_m = self.mmax
-            
-        #
-        if self.truncate_disk_n < self.norder:
-            use_n = self.truncate_disk_n
-        else:
-            use_n = self.norder
-            
+
         #
         # disk force call
-        diskfr,diskfp,diskfz,diskp,diskp0 = eof.accumulated_forces(r2val, zval, phival + rotpos, \
-                                                      self.EOF.cos[:,0:use_n], self.EOF.sin[:,0:use_n], \
-                                                      self.potC[:,0:use_n,:,:], self.rforceC[:,0:use_n,:,:], self.zforceC[:,0:use_n,:,:],\
-                                                      self.potS[:,0:use_n,:,:], self.rforceS[:,0:use_n,:,:], self.zforceS[:,0:use_n,:,:],\
+        diskfr,diskfp,diskfz,diskp,diskp0 = eof.force_eval(r2val, zval, phival + rotpos, \
+                                                      self.EOF.cos, self.EOF.sin, \
+                                                      self.potC, self.rforceC, self.zforceC,\
+                                                      self.potS, self.rforceS, self.zforceS,\
                                                       rmin=self.XMIN,dR=self.dX,zmin=self.YMIN,dZ=self.dY,numx=self.numx,numy=self.numy,fac = 1.0,\
-                                                      #MMAX=mmax,NMAX=norder,\
-                                                      MMAX=use_m,NMAX=use_n,\
+                                                      MMAX=self.disk_use_m,NMAX=self.disk_use_n,\
                                                       ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd)
         #
         # halo force call
         halofr,haloft,halofp,halop,halop0 = spheresl.force_eval(r3val, costh, phival + rotpos, \
                                                    self.halofac*self.SL.expcoef,\
                                                    self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
-                                                   #lmaxhalo,nmaxhalo,\
-                                                   use_l,self.nmaxhalo,\
+                                                   self.halo_use_l,self.halo_use_n,\
                                                    self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
                                                    
         # recommended guards against bizarre phi forces

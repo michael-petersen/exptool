@@ -20,9 +20,16 @@ def transform(xarray,yarray,thetas):
     return new_xpos,new_ypos
 
 
+def clock_transform(xarray,yarray,thetas):
+    new_xpos = np.cos(thetas)*xarray + np.sin(thetas)*yarray
+    new_ypos = -1.*np.sin(thetas)*xarray + np.cos(thetas)*yarray
+    return new_xpos,new_ypos
 
 
-def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=False,halomonopole=False,diskmonopole=False,truncate_disk_n=1000):
+
+
+
+def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=False,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1):
     '''
 
 
@@ -39,9 +46,10 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     initvel         : (vector) [vx0,vy0,vz0]
     rotfreq         : (float)  rotation frequency of rotating, in radians/time
     no_odd          : (bool)   if True, restriction to m=0,2,4,6,...
-    halomonopole    : (bool)   if True, halo m=0 ONLY
-    diskmonopole    : (bool)   if True, disk m=0 ONLY
-    truncate_disk_n : (int)    maximum radial order for BOTH disk and halo
+    halo_l          : (int)    if >0, limit number of azimuthal terms in halo
+    halo_n          : (int)    if >0, limit number of radial terms in halo
+    disk_m          : (int)    if >0, limit number of azimuthal terms in disk
+    disk_n          : (int)    if >0, limit number of radial terms in disk
 
     outputs
     --------------
@@ -51,7 +59,7 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     '''
     #
     # set Field parameters
-    FieldInstance.set_field_parameters(no_odd=no_odd,halomonopole=halomonopole,diskmonopole=diskmonopole,truncate_disk_n=truncate_disk_n)
+    FieldInstance.set_field_parameters(no_odd=no_odd,halo_l=halo_l,halo_n=halo_n,disk_m=disk_m,disk_n=disk_n)
     t0 = time.time()
     times = np.arange(0,nint,1)*dt
     barpos = 2.*np.pi*rotfreq*times
@@ -120,7 +128,7 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     OrbitDictionary['FZ'] = force_zarray
     OrbitDictionary['P']  = pote
     #
-    OrbitDictionary['TX'],OrbitDictionary['TY'] = transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
+    OrbitDictionary['TX'],OrbitDictionary['TY'] = clock_transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
     #    return xarray,yarray,zarray,vxarray,vyarray,vzarray,force_xarray,force_yarray,force_zarray,pote
     return OrbitDictionary
 
