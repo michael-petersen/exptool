@@ -918,7 +918,7 @@ def force_eval(r, costh, phi, expcoef,\
              xi,p0,d0,cmap,scale,\
              lmax,nmax,\
              evtable,eftable,\
-             no_odd=False):
+             no_odd=False,verbose=0):
     '''
     force_eval: simple workhorse to evaluate the spherical basis forces
 
@@ -943,16 +943,16 @@ def force_eval(r, costh, phi, expcoef,\
     nmax_check = evtable.shape[1] - 1
 
     if lmax < lmax_check:
-      if verbose >=4: print 'spheresl.all_eval: reducing lmax.'
+      if verbose >=4: print 'spheresl.force_eval: reducing lmax.'
       evtable = evtable[0:lmax+1,:]
       eftable = eftable[0:lmax+1,:,:]
-      expcoef = expcoef[0:lmax+1,:]
+      expcoef = expcoef[0:(lmax+1)*(lmax+1),:]
 
     if nmax < nmax_check:
-      if verbose >=4: print 'spheresl.all_eval: reducing nmax.'
+      if verbose >=4: print 'spheresl.force_eval: reducing nmax.'
       evtable = evtable[:,0:nmax+1]
       eftable = eftable[:,0:nmax+1]
-      expcoef = expcoef[:,0,nmax+1]   
+      expcoef = expcoef[:,0:nmax+1]   
 
 
 
