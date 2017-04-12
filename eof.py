@@ -588,16 +588,16 @@ def force_eval(r, z, phi, \
     '''
 
     # reduce the array sizes to the specified sizes
-    accum_cos = accum_cos[0:MMAX+1,0:NMAX]
-    accum_sin = accum_sin[0:MMAX+1,0:NMAX]
+    #accum_cos = accum_cos[0:MMAX+1,0:NMAX]
+    #accum_sin = accum_sin[0:MMAX+1,0:NMAX]
 
     
-    potC    = potC[0:MMAX+1,0:NMAX,:,:]
-    rforceC = potC[0:MMAX+1,0:NMAX,:,:]
-    zforceC = potC[0:MMAX+1,0:NMAX,:,:]
-    potS    = potC[0:MMAX+1,0:NMAX,:,:]
-    rforceS = potC[0:MMAX+1,0:NMAX,:,:]
-    zforceS = potC[0:MMAX+1,0:NMAX,:,:]
+    #potC    = potC[0:MMAX+1,0:NMAX,:,:]
+    #rforceC = potC[0:MMAX+1,0:NMAX,:,:]
+    #zforceC = potC[0:MMAX+1,0:NMAX,:,:]
+    #potS    = potC[0:MMAX+1,0:NMAX,:,:]
+    #rforceS = potC[0:MMAX+1,0:NMAX,:,:]
+    #zforceS = potC[0:MMAX+1,0:NMAX,:,:]
 
     fr = 0.0;
     fz = 0.0;

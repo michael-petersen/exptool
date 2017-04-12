@@ -257,10 +257,10 @@ class Fields():
         
         self.no_odd = no_odd
 
-        if halo_l != -1: self.halo_use_l = halo_l
-        if halo_n != -1: self.halo_use_n = halo_n
-        if disk_m != -1: self.disk_use_m = disk_m
-        if disk_n != -1: self.disk_use_n = disk_n
+        if halo_l > -1: self.halo_use_l = halo_l
+        if halo_n > -1: self.halo_use_n = halo_n
+        if disk_m > -1: self.disk_use_m = disk_m
+        if disk_n > -1: self.disk_use_n = disk_n
 
 
 
@@ -290,14 +290,16 @@ class Fields():
                                                       self.potC, self.rforceC, self.zforceC,\
                                                       self.potS, self.rforceS, self.zforceS,\
                                                       rmin=self.XMIN,dR=self.dX,zmin=self.YMIN,dZ=self.dY,numx=self.numx,numy=self.numy,fac = 1.0,\
-                                                      MMAX=self.disk_use_m,NMAX=self.disk_use_n,\
+                                                      #MMAX=self.disk_use_m,NMAX=self.disk_use_n,\
+                                                      MMAX=self.mmax,NMAX=self.norder,\
                                                       ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd)
         #
         # halo force call
         halofr,haloft,halofp,halop,halop0 = spheresl.force_eval(r3val, costh, phival + rotpos, \
                                                    self.halofac*self.SL.expcoef,\
                                                    self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
-                                                   self.halo_use_l,self.halo_use_n,\
+                                                   #self.halo_use_l,self.halo_use_n,\
+                                                   self.lmaxhalo,self.nmaxhalo,\
                                                    self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
                                                    
         # recommended guards against bizarre phi forces

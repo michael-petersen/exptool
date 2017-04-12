@@ -179,6 +179,7 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
     #
 
     # truncate the table if not doing a full tabulation
+    '''
     lmax_check = evtable.shape[0] - 1
     nmax_check = evtable.shape[1] - 1
 
@@ -189,7 +190,7 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
     if nmax < nmax_check:
       evtable = evtable[:,0:nmax+1]
       eftable = eftable[:,0:nmax+1]      
-
+    '''
 
     numr = p0.shape[0]
     
@@ -797,7 +798,7 @@ def all_eval(r, costh, phi, expcoef,\
              xi,p0,d0,cmap,scale,\
              lmax,nmax,\
              evtable,eftable,\
-             no_odd=False):
+             no_odd=False,verbose=0):
     '''
     all_eval: simple workhorse to evaluate the spherical basis
         this version loads everything up first: lots of inputs, but no need to reread anything.
@@ -818,11 +819,13 @@ def all_eval(r, costh, phi, expcoef,\
     nmax_check = evtable.shape[1] - 1
 
     if lmax < lmax_check:
+      if verbose >=4: print 'spheresl.all_eval: reducing lmax.'
       evtable = evtable[0:lmax+1,:]
       eftable = eftable[0:lmax+1,:,:]
       expcoef = expcoef[0:lmax+1,:]
 
     if nmax < nmax_check:
+      if verbose >=4: print 'spheresl.all_eval: reducing nmax.'
       evtable = evtable[:,0:nmax+1]
       eftable = eftable[:,0:nmax+1]
       expcoef = expcoef[:,0,nmax+1]   
@@ -933,7 +936,6 @@ def force_eval(r, costh, phi, expcoef,\
     pot0    :   monopole potential
 
     '''
-
     # check to see if the lmax, nmax, and evtable, eftable, expcoef agree
     #   this allows for truncation of lmax,nmax in a simple way
     # truncate the table if not doing a full tabulation
@@ -941,83 +943,81 @@ def force_eval(r, costh, phi, expcoef,\
     nmax_check = evtable.shape[1] - 1
 
     if lmax < lmax_check:
+      if verbose >=4: print 'spheresl.all_eval: reducing lmax.'
       evtable = evtable[0:lmax+1,:]
       eftable = eftable[0:lmax+1,:,:]
-      expcoef = expcoef[0:(lmax+1)*(lmax+1),:]
+      expcoef = expcoef[0:lmax+1,:]
 
     if nmax < nmax_check:
+      if verbose >=4: print 'spheresl.all_eval: reducing nmax.'
       evtable = evtable[:,0:nmax+1]
       eftable = eftable[:,0:nmax+1]
-      expcoef = expcoef[:,0:nmax+1]
+      expcoef = expcoef[:,0,nmax+1]   
+
 
 
     # compute factorial array
     factorial = factorial_return(lmax)
     fac1 = factorial[0][0];
 
-    
     # begin function
     #sinth = -np.sqrt(np.abs(1.0 - costh*costh));
     
     #
     # use the basis to get the density,potential,force arrays
     #
-    
     # these three need to be stuffed together into one call to save loops
-    potd,dpot = get_halo_force_pot(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
+    dend,dpot,potd = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale)
     
     #
     legs,dlegs = dlegendre_R(lmax,costh)
     #
-    potr = np.sum(fac1 * expcoef[0]*dpot[0]);
     pot0 = np.sum(fac1 * expcoef[0]*potd[0]);
+    potr = np.sum(fac1 * expcoef[0]*dpot[0]);
+    
+    pot1 = 0.0;
     pott = 0.0;
     potp = 0.0;
-    pot  = np.sum(fac1 * expcoef[0]*potd[0]);
     #
     # L loop
     #
     loffset = 1
     for l in range(1,lmax+1):
 
-          # skip odd terms if desired
-          if ( (l % 2) != 0) & (no_odd):
+      # skip odd terms if desired
+      if ( (l % 2) != 0) & (no_odd):
                 loffset+=(2*l+1)
                 continue
+        
+      # M loop
+      moffset = 0
+      
+      for m in range(0,l+1):
+        
+        fac1 = factorial[l][m];
+        
+        if (m==0):
+              pot1 += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
+              potr += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
+              pott += np.sum(fac1*dlegs[l][m] * (expcoef[loffset+moffset] * potd[l]));
+              moffset+=1;
+              
+        else:
+              cosm = np.cos(phi*m);
+              sinm = np.sin(phi*m);
+              pot1 += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
+              potr += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * dpot[l]*cosm + expcoef[loffset+moffset+1] * dpot[l]*sinm ));
+              pott += np.sum(fac1*dlegs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
+              potp += np.sum(fac1* legs[l][m] * m * (-expcoef[loffset+moffset] * potd[l]*sinm + expcoef[loffset+moffset+1] * potd[l]*cosm ));
+              moffset +=2;
+              
+      loffset+=(2*l+1)
 
-          # M loop
-          moffset = 0
+    
+    #return den0,den1,pot0,pot1,potr,pott,potp
 
-          for m in range(0,l+1):
 
-            fac1 = factorial[l][m];
-
-            if (m==0):
-                  pot += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
-                  potr += np.sum(fac1*legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
-                  pott += np.sum(fac1*dlegs[l][m]* (expcoef[loffset+moffset] * potd[l]));
-                  moffset+=1;
-            else:
-                  cosm = np.cos(phi*m);
-                  sinm = np.sin(phi*m);
-                  pot += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
-                  potr += np.sum(fac1*legs[l][m]* ( expcoef[loffset+moffset]   * dpot[l]*cosm +    expcoef[loffset+moffset+1] * dpot[l]*sinm ));
-                  pott += np.sum(fac1*dlegs[l][m]* ( expcoef[loffset+moffset]   * potd[l]*cosm +   expcoef[loffset+moffset+1] * potd[l]*sinm ));
-                  potp += np.sum(fac1*legs[l][m] * m * (-expcoef[loffset+moffset]   * potd[l]*sinm +   expcoef[loffset+moffset+1] * potd[l]*cosm ));
-                  moffset +=2;
-          loffset+=(2*l+1)
-        #
-        #
-        #
-
-    #potlfac = 1.0/scale;
-    #potr  *= potlfac/scale;
-    #pott  *= potlfac*sinth;
-    #potp  *= potlfac;
-    #pot   *= potlfac;
-    #pot0  *= potlfac;
-       
-    return potr,pott,potp,pot,pot0
+    return potr,pott,potp,pot1,pot0
 
 
 
