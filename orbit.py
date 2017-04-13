@@ -354,8 +354,11 @@ def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
     # why does sp_r have a zero frequency peak??
     try:
         sp_r[0,:] = np.zeros(OrbitInstance['Phi'].shape[1])
+        sp_z[0,:] = np.zeros(OrbitInstance['Phi'].shape[1])
+
     except:
         sp_r[0] = 0.
+        sp_z[0] = 0.
 
     OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5),axis=0)])
     OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5),axis=0)])
@@ -473,13 +476,21 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
     
     _ = ax1.contourf(scalefac*xx,scalefac*yy,np.flipud(tt/np.sum(tt)),cmap=cm.Greys)
     _ = ax2.contourf(scalefac*xxz,scalefac*zz,np.flipud(tz/np.sum(tz)),cmap=cm.Greys)
-    
-    _ = ax1.set_ylabel('Y$_{\\rm bar}$ [R$_d$]')
+
     _ = ax2.set_ylabel('Z [R$_d$]')
-    _ = ax4.set_ylabel('Y$_{\\rm bar}$ [R$_d$]')
-    _ = ax4.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
     _ = ax5.set_ylabel('Z [R$_d$]')
-    _ = ax5.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
+
+    if transform:
+        _ = ax1.set_ylabel('Y$_{\\rm bar}$ [R$_d$]')
+        _ = ax4.set_ylabel('Y$_{\\rm bar}$ [R$_d$]')
+        _ = ax4.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
+        _ = ax5.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
+
+    else:
+        _ = ax1.set_ylabel('Y [R$_d$]')
+        _ = ax4.set_ylabel('Y [R$_d$]')
+        _ = ax4.set_xlabel('X [R$_d$]')
+        _ = ax5.set_xlabel('X [R$_d$]')
     
     _ = ax1.set_xticklabels(())
     _ = ax2.set_xticklabels(())
