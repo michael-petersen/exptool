@@ -131,8 +131,10 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     
     if np.min(barpos) < 0.:
         OrbitDictionary['TX'],OrbitDictionary['TY'] = transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
+        OrbitDictionary['VTX'],OrbitDictionary['VTY'] = transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
     else:
         OrbitDictionary['TX'],OrbitDictionary['TY'] = clock_transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
+        OrbitDictionary['VTX'],OrbitDictionary['VTY'] = clock_transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
         
     return OrbitDictionary
 
