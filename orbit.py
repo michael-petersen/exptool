@@ -305,8 +305,8 @@ def find_fundamental_frequency(OrbitInstance,time='T',pos='X',vel='VX',hanning=T
 
 
 
-def organize_frequencies(freq,fftarr):
-    vals = utils.argrelextrema(np.abs(fftarr.real),np.greater,order=10)[0]
+def organize_frequencies(freq,fftarr,order=4):
+    vals = utils.argrelextrema(np.abs(fftarr.real),np.greater,order=order)[0]
     g = np.where(freq[vals] > 0.)[0]
     gomegas = freq[vals[g]]
     gvals = np.abs(fftarr.real)[vals[g]]
