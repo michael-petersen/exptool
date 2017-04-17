@@ -290,6 +290,41 @@ class Orbits(dict):
 # Calculating frequencies
 
 
+def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanning=True,window=[0,10000],order=4):
+    #
+    #
+    lo = window[0]
+    hi = window[1]
+
+    if hi > OrbitInstance[time].shape[-1]:
+        hi = OrbitInstance[time].shape[-1]
+
+    freq = np.fft.fftfreq(OrbitInstance[time][lo:hi].shape[-1],d=(OrbitInstance[time][1]-OrbitInstance[time][0]))
+
+    #
+    norb = OrbitInstance[pos].shape[1]
+
+    OrbitInstance['Or'] = np.zeros(norb)
+    OrbitInstance['Ot'] = np.zeros(norb)
+
+    for orbn in range(0,norb):
+        ft = OrbitInstance[pos][lo:hi,orbn] + 1.j * OrbitInstance[vel][lo:hi,orbn]
+        if hanning:
+            spec = np.fft.fft( ft * np.hanning(len(ft)))
+        else:
+            spec = np.fft.fft( ft )
+
+        omg,val = organize_frequencies(freq,spec,order=order)
+
+        OrbitInstance['Ot'][orbn] = omg[0]
+        OrbitInstance['Or'][orbn] = omg[1] - omg[0]
+        
+    return OrbitInstance
+
+
+
+
+
 def find_fundamental_frequency(OrbitInstance,time='T',pos='X',vel='VX',hanning=True,window=[0,10000]):
     lo = window[0]
     hi = window[1]
