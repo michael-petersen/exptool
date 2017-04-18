@@ -37,6 +37,8 @@ from math import factorial
 from numpy.polynomial.legendre import legvander,legder
 from scipy.linalg import qr,solve_triangular,lu_factor,lu_solve
 
+import matplotlib.pyplot as plt
+
 
 def print_progress(current_n,total_n,module):
     #
@@ -83,10 +85,10 @@ def normalhist(array,nbins,colorst='black'):
 	binsind  = bins+(0.5*(bins[1]-bins[0]))
 	array_out = np.zeros(nbins)
 	for i in range(0,len(array)):
-		binn = m.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
+		binn = np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
 		array_out[binn] += 1
 	array_out /= (sum(array_out))
-	plt.plot(binsind,array_out,color=colorst,linewidth=2.0)
+	plt.plot(binsind,array_out,color=colorst,linewidth=2.0,drawstyle='steps-mid')
 	plt.draw()
     
 

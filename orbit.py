@@ -637,3 +637,170 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
 
 
 
+
+
+
+
+                
+
+def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,scalelength=0.01,nsamp=56,transform=True,rescale=True,logscale=True,ncol=18):
+    '''
+    Makes density plot of a single orbit
+
+    Parameters
+    -----------
+    OrbitInstance
+        -with transformation and polar coordinates setup. will add forcing for this at some point
+
+
+    '''
+
+    lo = window[0]
+    hi = window[1]
+
+    if (lo) > OrbitInstance['T'].size:
+        print('orbit.make_orbit_density: invalid lower time boundary. resizing...')
+        lo = 0
+    
+    # check size boundaries
+    if (hi+1) > OrbitInstance['T'].size: hi = OrbitInstance['T'].size - 1
+
+
+    if transform:
+        try:
+            x_coord = OrbitInstance['TX'][lo:hi,:].flatten()
+            y_coord = OrbitInstance['TY'][lo:hi,:].flatten()
+            
+        except:
+            print('orbit.make_orbit_density: transformation must be defined in orbit dictionary.')
+
+    else:
+        x_coord = OrbitInstance['X'][lo:hi,:].flatten()
+        y_coord = OrbitInstance['Y'][lo:hi,:].flatten()
+
+    z_coord = OrbitInstance['Z'][lo:hi,:].flatten()
+
+    # undo scaling
+    scalefac = 1./scalelength
+
+
+    if not replot:
+        fig = plt.figure(figsize=(7.32,  2.86),dpi=100)
+    else:
+        plt.clf()
+        fig = plt.gcf()
+
+    # 
+    #want to re-scale the extent to make a more intelligent boundary
+    #
+    extentx_in = 1.2*np.max(abs(x_coord))
+    extenty_in = 1.2*np.max(abs(y_coord))
+    extentz_in = 1.2*np.max(abs(z_coord))
+    #
+    xbins = np.linspace(-extentx_in,extentx_in,nsamp)
+    ybins = np.linspace(-extenty_in,extenty_in,nsamp)
+    xx,yy = np.meshgrid( xbins,ybins)
+    zbins = np.linspace(-extentz_in,extentz_in,nsamp)
+    xxz,zz = np.meshgrid( xbins,zbins)
+
+
+
+    # test the kde waters
+    try:
+        tt = kde_3d.fast_kde_two(x_coord,y_coord,\
+                             gridsize=(nsamp,nsamp), extents=(-extentx_in,extentx_in,-extenty_in,extenty_in),\
+                             nocorrelation=True, weights=None)
+        tz = kde_3d.fast_kde_two(x_coord,z_coord,\
+                             gridsize=(nsamp,nsamp), extents=(-extentx_in,extentx_in,-extentz_in,extentz_in),\
+                             nocorrelation=True, weights=None)
+    except:
+        tt = tz = np.zeros([nsamp,nsamp])
+
+    tt += 1.
+    tz += 1.
+
+    # set up the axes
+    ax1 = fig.add_axes([0.15,0.23,0.25,0.65])
+    ax2 = fig.add_axes([0.52,0.23,0.25,0.65])
+    ax3 = fig.add_axes([0.80, 0.23, 0.03, 0.65])
+
+    #
+
+    if logscale:
+        _ = ax1.contourf(scalefac*xx,scalefac*yy,np.log10(np.flipud(tt/np.sum(tt))),ncol,cmap=cm.Greys)
+        _ = ax2.contourf(scalefac*xxz,scalefac*zz,np.log10(np.flipud(tz/np.sum(tz))),ncol,cmap=cm.Greys)
+
+    else:
+        _ = ax1.contourf(scalefac*xx,scalefac*yy,np.flipud(tt/np.sum(tt)),ncol,cmap=cm.Greys)
+        _ = ax2.contourf(scalefac*xxz,scalefac*zz,np.flipud(tz/np.sum(tz)),ncol,cmap=cm.Greys)
+
+    _ = ax2.set_ylabel('Z [R$_d$]')
+
+    if transform:
+        _ = ax1.set_ylabel('Y$_{\\rm bar}$ [R$_d$]')
+        _ = ax1.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
+        _ = ax2.set_xlabel('X$_{\\rm bar}$ [R$_d$]')
+
+
+    else:
+        _ = ax1.set_ylabel('Y [R$_d$]')
+        _ = ax1.set_xlabel('X [R$_d$]')
+        _ = ax2.set_xlabel('X [R$_d$]')
+
+
+    # double all window sizes?
+    pfac = 1.
+    pfacz = 1.
+
+    if rescale:
+        # allow for rescaling of the plots?
+        #   e.g. don't use this if making a library
+
+        if np.max([np.max(x_coord),np.max(y_coord)]) < 0.75*scalelength:
+            pfac = 0.5
+        
+        if np.min([np.max(x_coord),np.max(y_coord)]) > 1.5*scalelength:
+            pfac = 2.
+
+        if np.min([np.max(x_coord),np.max(y_coord)]) > 2.5*scalelength:
+            pfac = 4.
+
+        if np.max(z_coord) > 0.7*scalelength:
+            pfacz = 1.5
+
+        if np.max(z_coord) < 0.33*scalelength:
+            pfacz = 0.5
+
+
+    
+    _ = ax1.axis([-2.*pfac,2.*pfac,-2.*pfac,2.*pfac])
+    
+    _ = ax2.axis([-2.*pfac,2.*pfac,-0.8*pfacz,0.8*pfacz])
+
+    xy_lims = [str(int(np.round(-2.*pfac,0))),str(int(np.round(-1.*pfac,0))),str(int(np.round(1.*pfac,0))),str(int(np.round(2.*pfac,0)))]
+    xz_lims = [str(np.round(-0.8*pfacz,1)),str(np.round(-0.4*pfacz,1)),str(np.round(0.4*pfacz,1)),str(np.round(0.8*pfacz,1))]
+
+    _ = ax1.set_xticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
+    _ = ax1.set_yticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
+    _ = ax2.set_xticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
+    _ = ax2.set_yticklabels([xz_lims[0],'',xz_lims[1],'','0','',xz_lims[2],'',xz_lims[3]],size=12)
+    
+    cmap = mpl.cm.Greys
+
+    norm = mpl.colors.Normalize(vmin=0., vmax=1.)
+
+    cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
+
+    if logscale:
+        _ = cb1.set_ticks([0.,0.25,0.5,0.75,1.])
+        _ = cb1.set_ticklabels(['-8','-6','-4','-2','0'])
+        _ = cb1.set_label('log Relative Frequency',size=10)
+
+    else:
+        _ = cb1.set_ticks([0.,0.25,0.5,0.75,1.])
+        _ = cb1.set_label('Relative Frequency',size=10)
+
+
+
+
+        
