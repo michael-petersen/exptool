@@ -291,7 +291,14 @@ class Orbits(dict):
 
 
 def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanning=True,window=[0,10000],order=4):
-    #
+    '''
+
+
+    outputs
+    -----------------
+    returns first three frequencies, labeled as O+pos+[1,2,3]
+    
+    '''
     #
     lo = window[0]
     hi = window[1]
@@ -304,8 +311,9 @@ def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanni
     #
     norb = OrbitInstance[pos].shape[1]
 
-    OrbitInstance['Or'] = np.zeros(norb)
-    OrbitInstance['Ot'] = np.zeros(norb)
+    OrbitInstance['O'+pos+'1'] = np.zeros(norb)
+    OrbitInstance['O'+pos+'2'] = np.zeros(norb)
+    OrbitInstance['O'+pos+'3'] = np.zeros(norb)
 
     for orbn in range(0,norb):
         ft = OrbitInstance[pos][lo:hi,orbn] + 1.j * OrbitInstance[vel][lo:hi,orbn]
@@ -316,8 +324,9 @@ def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanni
 
         omg,val = organize_frequencies(freq,spec,order=order)
 
-        OrbitInstance['Ot'][orbn] = omg[0]
-        OrbitInstance['Or'][orbn] = omg[1] - omg[0]
+        OrbitInstance['O'+pos+'1'][orbn] = omg[0]
+        OrbitInstance['O'+pos+'2'][orbn] = omg[1]
+        OrbitInstance['O'+pos+'3'][orbn] = omg[2]
         
     return OrbitInstance
 
