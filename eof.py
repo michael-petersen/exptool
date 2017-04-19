@@ -565,7 +565,7 @@ def force_eval(r, z, phi, \
                        potC, rforceC, zforceC,\
                        potS, rforceS, zforceS,\
                        rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,\
-                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):
+                       MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False,perturb=False):
     '''
     accumulated_forces: just like accumulated_eval, except only with forces
 
@@ -599,11 +599,6 @@ def force_eval(r, z, phi, \
     rforceS = rforceS[0:MMAX+1,0:NMAX,:,:]
     zforceS = zforceS[0:MMAX+1,0:NMAX,:,:]
 
-    fr = 0.0;
-    fz = 0.0;
-    fp = 0.0;
-    p  = 0.0;
-    p0 = 0.0;
     #
     # compute mappings
     #
@@ -620,7 +615,7 @@ def force_eval(r, z, phi, \
     c11 = delx1*dely1;
 
     # make numpy array for the sine and cosine terms
-    morder = np.tile(np.arange(0.,MMAX+1.,1.),(NMAX,1)).T
+    morder = np.tile(np.arange(1.,MMAX+1.,1.),(NMAX,1)).T
     ccos = np.cos(phi*morder)
     ssin = np.sin(phi*morder)
 
@@ -631,30 +626,34 @@ def force_eval(r, z, phi, \
     else:
         mask = np.zeros_like(morder) + 1.
     
-    fac = accum_cos * ccos;
-    p0  += np.sum(   fac[0] *  (   potC[0,:,ix,iy] * c00 +    potC[0,:,ix+1,iy  ] * c10 +    potC[0,:,ix,iy+1] * c01 +    potC[0,:,ix+1,iy+1] * c11 ));
-    p   += np.sum(mask * fac * (   potC[:,:,ix,iy] * c00 +    potC[:,:,ix+1,iy  ] * c10 +    potC[:,:,ix,iy+1] * c01 +    potC[:,:,ix+1,iy+1] * c11 ));
-    fr  += np.sum(mask * fac * (rforceC[:,:,ix,iy] * c00 + rforceC[:,:,ix+1,iy  ] * c10 + rforceC[:,:,ix,iy+1] * c01 + rforceC[:,:,ix+1,iy+1] * c11 ));
-    fz  += np.sum(mask * fac * (zforceC[:,:,ix,iy] * c00 + zforceC[:,:,ix+1,iy  ] * c10 + zforceC[:,:,ix,iy+1] * c01 + zforceC[:,:,ix+1,iy+1] * c11 ));
+    fac  = accum_cos[1:,:] * ccos;
+    p0   = np.sum(   accum_cos[0] *  (   potC[0,:,ix,iy] * c00 +    potC[0,:,ix+1,iy  ] * c10 +    potC[0,:,ix,iy+1] * c01 +    potC[0,:,ix+1,iy+1] * c11 ));
+    p    = np.sum(mask * fac * (   potC[1:,:,ix,iy] * c00 +    potC[1:,:,ix+1,iy  ] * c10 +    potC[1:,:,ix,iy+1] * c01 +    potC[1:,:,ix+1,iy+1] * c11 ));
+    fr   = np.sum(mask * fac * (rforceC[1:,:,ix,iy] * c00 + rforceC[1:,:,ix+1,iy  ] * c10 + rforceC[1:,:,ix,iy+1] * c01 + rforceC[1:,:,ix+1,iy+1] * c11 ));
+    fz   = np.sum(mask * fac * (zforceC[1:,:,ix,iy] * c00 + zforceC[1:,:,ix+1,iy  ] * c10 + zforceC[1:,:,ix,iy+1] * c01 + zforceC[1:,:,ix+1,iy+1] * c11 ));
+
+    fr0  = np.sum(accum_cos[0] * (rforceC[0,:,ix,iy] * c00 + rforceC[0,:,ix+1,iy  ] * c10 + rforceC[0,:,ix,iy+1] * c01 + rforceC[0,:,ix+1,iy+1] * c11 ));
+    fz0  = np.sum(accum_cos[0] * (zforceC[0,:,ix,iy] * c00 + zforceC[0,:,ix+1,iy  ] * c10 + zforceC[0,:,ix,iy+1] * c01 + zforceC[0,:,ix+1,iy+1] * c11 ));
 
     # switch factor for azimuthal force
-    fac = accum_cos * ssin;
-            
-    fp += np.sum(mask * fac * morder * ( potC[:,:,ix,iy] * c00 + potC[:,:,ix+1,iy] * c10 + potC[:,:,ix,iy+1] * c01 + potC[:,:,ix+1,iy+1] * c11 ));
+    fac = accum_cos[1:,:] * ssin;
+    fp  = np.sum(mask * fac * morder * ( potC[1:,:,ix,iy] * c00 + potC[1:,:,ix+1,iy] * c10 + potC[1:,:,ix,iy+1] * c01 + potC[1:,:,ix+1,iy+1] * c11 ));
 
     # do sine terms
-    fac = accum_sin * ssin;
+    fac = accum_sin[1:,:] * ssin;
                 
-    p  += np.sum(mask * fac * (   potS[:,:,ix,iy] * c00 +    potS[:,:,ix+1,iy  ] * c10 +    potS[:,:,ix,iy+1] * c01 +    potS[:,:,ix+1,iy+1] * c11 ));
-    fr += np.sum(mask * fac * (rforceS[:,:,ix,iy] * c00 + rforceS[:,:,ix+1,iy  ] * c10 + rforceS[:,:,ix,iy+1] * c01 + rforceS[:,:,ix+1,iy+1] * c11 ));
-    fz += np.sum(mask * fac * (zforceS[:,:,ix,iy] * c00 + zforceS[:,:,ix+1,iy  ] * c10 + zforceS[:,:,ix,iy+1] * c01 + zforceS[:,:,ix+1,iy+1] * c11 ));
+    p  += np.sum(mask * fac * (   potS[1:,:,ix,iy] * c00 +    potS[1:,:,ix+1,iy  ] * c10 +    potS[1:,:,ix,iy+1] * c01 +    potS[1:,:,ix+1,iy+1] * c11 ));
+    fr += np.sum(mask * fac * (rforceS[1:,:,ix,iy] * c00 + rforceS[1:,:,ix+1,iy  ] * c10 + rforceS[1:,:,ix,iy+1] * c01 + rforceS[1:,:,ix+1,iy+1] * c11 ));
+    fz += np.sum(mask * fac * (zforceS[1:,:,ix,iy] * c00 + zforceS[1:,:,ix+1,iy  ] * c10 + zforceS[1:,:,ix,iy+1] * c01 + zforceS[1:,:,ix+1,iy+1] * c11 ));
 
     # switch factor for azimuthal force
-    fac = -accum_sin * ccos;
-    fp += np.sum(mask * fac * morder * ( potS[:,:,ix,iy  ] * c00 + potS[:,:,ix+1,iy  ] * c10 + potS[:,:,ix,iy+1] * c01 + potS[:,:,ix+1,iy+1] * c11 ))
+    fac = -accum_sin[1:,:] * ccos;
+    fp += np.sum(mask * fac * morder * ( potS[1:,:,ix,iy  ] * c00 + potS[1:,:,ix+1,iy  ] * c10 + potS[1:,:,ix,iy+1] * c01 + potS[1:,:,ix+1,iy+1] * c11 ))
                 
-        
-    return fr,fp,fz,p,p0
+    if perturb:
+        return fr,fp,fz,p,p0,fr0,fz0
+    else:
+        return fr+fr0,fp,fz+fz0,p,p0
 
 
 def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, densC, potS, rforceS, zforceS, densS, rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):#, 	double &p0, double& p, double& fr, double& fz, double &fp)

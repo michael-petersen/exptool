@@ -334,7 +334,7 @@ def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanni
 
 
 
-def find_fundamental_frequency(OrbitInstance,time='T',pos='X',vel='VX',hanning=True,window=[0,10000]):
+def find_fundamental_frequency(OrbitInstance,time='T',pos='X',vel='VX',hanning=True,window=[0,10000],retall=False,order=3):
     lo = window[0]
     hi = window[1]
     if hi > OrbitInstance[time].shape[-1]:
@@ -345,7 +345,17 @@ def find_fundamental_frequency(OrbitInstance,time='T',pos='X',vel='VX',hanning=T
         spec = np.fft.fft( ft * np.hanning(len(ft)))
     else:
         spec = np.fft.fft( ft )
-    return freq,spec
+
+    omg,val = organize_frequencies(freq,spec,order=order)
+
+    OrbitInstance['O'+pos+'1'] = omg[0]
+    OrbitInstance['O'+pos+'2'] = omg[1]
+    OrbitInstance['O'+pos+'3'] = omg[2]
+
+    if retall:
+        return OrbitInstance,freq,spec
+    else:
+        return OrbitInstance
 
 
 
