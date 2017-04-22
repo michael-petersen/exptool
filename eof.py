@@ -625,6 +625,10 @@ def force_eval(r, z, phi, \
 
     else:
         mask = np.zeros_like(morder) + 1.
+
+    #
+    # modified 04-19-17 to be perturbation based.
+    #
     
     fac  = accum_cos[1:,:] * ccos;
     p0   = np.sum(   accum_cos[0] *  (   potC[0,:,ix,iy] * c00 +    potC[0,:,ix+1,iy  ] * c10 +    potC[0,:,ix,iy+1] * c01 +    potC[0,:,ix+1,iy+1] * c11 ));
@@ -1389,5 +1393,48 @@ def parse_components(simulation_directory,simulation_name,output_number):
                 ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = None
 
     return ComponentDetails
+
+
+#
+# visualizing routines
+#
+
+def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.):
+    #     now a simple grid
+    #
+    # this will always be square in resolution--could think how to change this?
+    zline = xline*zaspect
+    xgrid,ygrid = np.meshgrid(xline,zline)
+    #
+    P = psp_io.particle_holder()
+    P.xpos = xgrid.reshape(-1,)
+    P.ypos = ygrid.reshape(-1,)
+    P.zpos = np.zeros(xline.shape[0]*xline.shape[0])
+    P.mass = np.zeros(xline.shape[0]*xline.shape[0]) # mass doesn't matter for evaluations, just get field values
+    #
+    #
+    cos_coefs_in = np.copy(EOFObj.cos)
+    sin_coefs_in = np.copy(EOFObj.sin)
+    #
+    if exclude:
+        #for i in [1,2,3,9,10,11,12,13,14,15]:
+        for i in orders:
+            coefs_in[i] = np.zeros(EOFObj.nmax+1)
+    #
+    p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
+    #
+    #
+    wake = {}
+    wake['X'] = xgrid
+    wake['Y'] = ygrid
+    wake['P'] = p.reshape([xline.shape[0],xline.shape[0]])
+    wake['D'] = d.reshape([xline.shape[0],xline.shape[0]])
+    wake['fR'] = fr.reshape([xline.shape[0],xline.shape[0]])
+    wake['R'] = R.reshape([xline.shape[0],xline.shape[0]])
+    wake['fP'] = fp.reshape([xline.shape[0],xline.shape[0]])
+    wake['fZ'] = fz.reshape([xline.shape[0],xline.shape[0]])
+    return wake
+
+
 
 
