@@ -1302,3 +1302,49 @@ def parse_components(simulation_directory,simulation_name,output_number):
     return ComponentDetails
 
 
+
+
+
+#
+# visualizing routines
+#
+
+
+
+def make_wake(SLObj,halofac=1.,exclude=False,orders=None,xline = np.linspace(-0.03,0.03,75),zaspect=1.):
+    #     now a simple grid
+    zline = xline*zaspect
+    xgrid,ygrid = np.meshgrid(xline,zline)
+    #
+    P = psp_io.particle_holder()
+    P.xpos = xgrid.reshape(-1,)
+    P.ypos = ygrid.reshape(-1,)
+    P.zpos = np.zeros(xline.shape[0]*zline.shape[0])
+    P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
+    #
+    #
+    coefs_in = np.copy(SLObj.expcoef)
+    #
+    if exclude:
+        #for i in [1,2,3,9,10,11,12,13,14,15]:
+        for i in orders:
+            coefs_in[i] = np.zeros(SLObj.nmax+1)
+    #
+    den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,coefs_in*halofac,SLObj.sph_file,SLObj.model_file)#,l1=2,l2=2)
+    #
+    #
+    wake = {}
+    wake['X']  =       xgrid
+    wake['Y']  =       ygrid
+    wake['P']  = (pot0+pot1).reshape([xline.shape[0],zline.shape[0]])
+    wake['P1'] =      (pot1).reshape([xline.shape[0],zline.shape[0]])
+    wake['D']  = (den0+den1).reshape([xline.shape[0],zline.shape[0]])
+    wake['D1'] =        den1.reshape([xline.shape[0],zline.shape[0]])
+    wake['fR'] =        potr.reshape([xline.shape[0],zline.shape[0]])
+    wake['R']  =          rr.reshape([xline.shape[0],zline.shape[0]])
+    wake['fP'] =        potp.reshape([xline.shape[0],zline.shape[0]])
+    wake['fZ'] =        pott.reshape([xline.shape[0],zline.shape[0]])
+    return wake
+
+
+

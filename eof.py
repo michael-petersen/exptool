@@ -1409,8 +1409,8 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
     P = psp_io.particle_holder()
     P.xpos = xgrid.reshape(-1,)
     P.ypos = ygrid.reshape(-1,)
-    P.zpos = np.zeros(xline.shape[0]*xline.shape[0])
-    P.mass = np.zeros(xline.shape[0]*xline.shape[0]) # mass doesn't matter for evaluations, just get field values
+    P.zpos = np.zeros(xline.shape[0]*zline.shape[0])
+    P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
     #
     #
     cos_coefs_in = np.copy(EOFObj.cos)
@@ -1427,12 +1427,12 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
     wake = {}
     wake['X'] = xgrid
     wake['Y'] = ygrid
-    wake['P'] = p.reshape([xline.shape[0],xline.shape[0]])
-    wake['D'] = d.reshape([xline.shape[0],xline.shape[0]])
-    wake['fR'] = fr.reshape([xline.shape[0],xline.shape[0]])
-    wake['R'] = R.reshape([xline.shape[0],xline.shape[0]])
-    wake['fP'] = fp.reshape([xline.shape[0],xline.shape[0]])
-    wake['fZ'] = fz.reshape([xline.shape[0],xline.shape[0]])
+    wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
+    wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
+    wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
+    wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
+    wake['fP'] = fp.reshape([xline.shape[0],zline.shape[0]])
+    wake['fZ'] = fz.reshape([xline.shape[0],zline.shape[0]])
     return wake
 
 
