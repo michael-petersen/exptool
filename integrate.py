@@ -7,6 +7,7 @@
 import orbit
 
 
+
 import numpy as np
 import time
 
@@ -15,12 +16,14 @@ verbose = True
 
 
 def transform(xarray,yarray,thetas):
+    ''' counterclockwise planar transformation'''
     new_xpos = np.cos(thetas)*xarray - np.sin(thetas)*yarray
     new_ypos = np.sin(thetas)*xarray + np.cos(thetas)*yarray
     return new_xpos,new_ypos
 
 
 def clock_transform(xarray,yarray,thetas):
+    ''' clockwise planar transformation '''
     new_xpos = np.cos(thetas)*xarray + np.sin(thetas)*yarray
     new_ypos = -1.*np.sin(thetas)*xarray + np.cos(thetas)*yarray
     return new_xpos,new_ypos
@@ -46,10 +49,10 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     initvel         : (vector) [vx0,vy0,vz0]
     rotfreq         : (float)  rotation frequency of rotating, in radians/time
     no_odd          : (bool)   if True, restriction to m=0,2,4,6,...
-    halo_l          : (int)    if >0, limit number of azimuthal terms in halo
-    halo_n          : (int)    if >0, limit number of radial terms in halo
-    disk_m          : (int)    if >0, limit number of azimuthal terms in disk
-    disk_n          : (int)    if >0, limit number of radial terms in disk
+    halo_l          : (int)    if >=0, limit number of azimuthal terms in halo
+    halo_n          : (int)    if >=0, limit number of radial terms in halo
+    disk_m          : (int)    if >=0, limit number of azimuthal terms in disk
+    disk_n          : (int)    if >=0, limit number of radial terms in disk
 
     outputs
     --------------
@@ -137,6 +140,32 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
         OrbitDictionary['VTX'],OrbitDictionary['VTY'] = clock_transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
         
     return OrbitDictionary
+
+
+
+#
+# helper definitions to initialize orbits
+# 
+
+
+def gen_init_step(xpos,vtan,z0=0.0,zvel0=0.):
+    '''
+    initialize an orbit at (planar) apocenter
+
+    inputs
+    -----------
+    xpos   : (float) radius (x) position
+    vtan   : (float) tangential (y) velocity
+    z0     : (float) initial z position (default=0.)
+    zvel   : (float) initial z velocity (default=0.)
+
+    outputs
+    -----------
+    two 3d arrays for input in integrator above
+
+    '''
+
+    return [xpos,0.0,z0],[0.0,new_yvel,zvel0]
 
 
 

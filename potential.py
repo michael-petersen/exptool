@@ -551,3 +551,28 @@ class EnergyKappa():
                 self.EKarray[self.Eindx[i],self.Kindx[i]] += sumval[i]
 
 
+
+
+
+
+#
+# this is EXCLUSIVELY temporary until a better format is decided on
+#
+def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file):
+    infile = simulation_directory+'OUT.'+simulation_name+'.%05i' %intime
+    BarInstance = trapping.BarDetermine()
+    BarInstance.read_bar(simulation_directory+simulation_name+'_barpos.dat')
+    # reset the derivative
+    BarInstance.frequency_and_derivative(spline_derivative=2)
+    PSPDump = psp_io.Input(infile,validate=True)
+    pattern = trapping.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
+    rotfreq = pattern/(2.*np.pi)
+    F = Fields(infile,eof_file,sph_file,model_file,nhalo=1000000,transform=True,no_odd=False,centering=True,mutual_center=True)
+    F.total_coefficients()
+    F.prep_tables()
+    #F.set_field_parameters()
+    #
+    return F,pattern,rotfreq
+
+
+
