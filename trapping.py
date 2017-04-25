@@ -86,7 +86,7 @@ def find_barangle(time,BarInstance,interpolate=True):
 
 
 
-def find_barpattern(time,BarInstance,smth_order=2):
+def find_barpattern(intime,BarInstance,smth_order=2):
     #
     # use a bar instance to match the output time to a bar pattern speed
     #
@@ -99,9 +99,9 @@ def find_barpattern(time,BarInstance,smth_order=2):
     
     try:
         
-        barpattern = np.zeros([len(time)])
+        barpattern = np.zeros([len(intime)])
         
-        for indx,timeval in enumerate(time):
+        for indx,timeval in enumerate(intime):
 
             best_time = abs(timeval-BarInstance.time).argmin()
             
@@ -109,7 +109,7 @@ def find_barpattern(time,BarInstance,smth_order=2):
             
     except:
 
-        best_time = abs(time-BarInstance.time).argmin()
+        best_time = abs(intime-BarInstance.time).argmin()
         
         barpattern = BarInstance.deriv[best_time]
         
