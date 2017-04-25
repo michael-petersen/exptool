@@ -13,6 +13,14 @@ import time
 
 verbose = True
 
+'''
+WISHLIST
+
+1. new integrators
+2. new timestep criteria
+
+
+'''
 
 
 def transform(xarray,yarray,thetas):
