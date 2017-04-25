@@ -173,7 +173,7 @@ def gen_init_step(xpos,vtan,z0=0.0,zvel0=0.):
 
     '''
 
-    return [xpos,0.0,z0],[0.0,new_yvel,zvel0]
+    return [xpos,0.0,z0],[0.0,vtan,zvel0]
 
 
 

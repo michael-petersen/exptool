@@ -292,7 +292,7 @@ class Fields():
                                                       rmin=self.XMIN,dR=self.dX,zmin=self.YMIN,dZ=self.dY,numx=self.numx,numy=self.numy,fac = 1.0,\
                                                       MMAX=self.disk_use_m,NMAX=self.disk_use_n,\
                                                       #MMAX=self.mmax,NMAX=self.norder,\
-                                                      ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd,perturb=True)
+                                                      ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd,perturb=False)
         #
         # halo force call
         halofr,haloft,halofp,halop,halop0 = spheresl.force_eval(r3val, costh, phival + rotpos, \

@@ -656,9 +656,11 @@ def force_eval(r, z, phi, \
                 
     if perturb:
         return fr,fp,fz,p,p0,fr0,fz0
+    
     else:
-        return fr+fr0,fp,fz+fz0,p,p0
+        return (fr+fr0),fp,(fz+fz0),p,p0
 
+    #return (fr+fr0),fp,(fz+fz0),p,p0
 
 def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, densC, potS, rforceS, zforceS, densS, rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,no_odd=False):#, 	double &p0, double& p, double& fr, double& fz, double &fp)
     fr = 0.0;
@@ -1399,17 +1401,45 @@ def parse_components(simulation_directory,simulation_name,output_number):
 # visualizing routines
 #
 
-def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.):
+def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,coord='Y',axis=False):
+    '''
+    make_eof_wake: evaluate a simple grid of points along an axis
+
+    inputs
+    ---------
+    EOFObj: 
+
+
+
+
+
+    '''
     #     now a simple grid
     #
     # this will always be square in resolution--could think how to change this?
     zline = xline*zaspect
     xgrid,ygrid = np.meshgrid(xline,zline)
+
+
+    if axis:
+        zline = np.array([0.])
+        xgrid = xline[np.where(xline>=0.)[0]]
+        xline = xgrid
+        ygrid = np.array([0.])
+    
     #
     P = psp_io.particle_holder()
     P.xpos = xgrid.reshape(-1,)
-    P.ypos = ygrid.reshape(-1,)
-    P.zpos = np.zeros(xline.shape[0]*zline.shape[0])
+
+    # set the secondary coordinate
+    if coord=='Y':
+        P.ypos = ygrid.reshape(-1,)
+        P.zpos = np.zeros(xline.shape[0]*zline.shape[0])
+
+    if coord=='Z':
+        P.ypos = np.zeros(xline.shape[0]*zline.shape[0])
+        P.zpos = ygrid.reshape(-1,)
+        
     P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
     #
     #
@@ -1417,11 +1447,11 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
     sin_coefs_in = np.copy(EOFObj.sin)
     #
     if exclude:
-        #for i in [1,2,3,9,10,11,12,13,14,15]:
         for i in orders:
-            coefs_in[i] = np.zeros(EOFObj.nmax+1)
+            cos_coefs_in[i] = np.zeros(EOFObj.nmax)
+            sin_coefs_in[i] = np.zeros(EOFObj.nmax)
     #
-    p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
+    p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
     #
     #
     wake = {}

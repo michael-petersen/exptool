@@ -122,21 +122,30 @@ def find_barpattern(time,BarInstance,smth_order=2):
 
 class BarTransform():
 
-    def __init__(self,ParticleInstanceIn,bar_angle=None):
+    def __init__(self,ParticleInstanceIn,bar_angle=None,rel_bar_angle=0.,maxr=1.):
+
+        '''
+        rel_bar_angle is defined to rotate the bar counterclockwise
+
+        '''
 
         self.ParticleInstanceIn = ParticleInstanceIn
 
         self.bar_angle = bar_angle
+
         
+        if self.bar_angle == None:
+            self.bar_angle = -1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.xpos,self.ParticleInstanceIn.ypos,maxr=maxr)
+
+        # do an arbitary rotation of the particles relative to the bar?
+        self.bar_angle += rel_bar_angle
+
         self.calculate_transform_and_return()
         
         #return None
 
-    def calculate_transform_and_return(self,maxr=1.):
+    def calculate_transform_and_return(self):
 
-
-        if self.bar_angle == None:
-            self.bar_angle = -1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.xpos,self.ParticleInstanceIn.ypos,maxr=maxr)
         
         transformed_x = self.ParticleInstanceIn.xpos*np.cos(self.bar_angle) - self.ParticleInstanceIn.ypos*np.sin(self.bar_angle)
         transformed_y = self.ParticleInstanceIn.xpos*np.sin(self.bar_angle) + self.ParticleInstanceIn.ypos*np.cos(self.bar_angle)
@@ -164,7 +173,7 @@ class BarTransform():
     def bar_fourier_compute(self,posx,posy,maxr=1.):
 
         #
-        # use x and y positions tom compute the m=2 power, and find phase angle
+        # use x and y positions to compute the m=2 power, and find phase angle
         #
         w = np.where( (posx*posx + posy*posy)**0.5 < maxr )[0]
         

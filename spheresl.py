@@ -1330,7 +1330,7 @@ def make_wake(SLObj,halofac=1.,exclude=False,orders=None,xline = np.linspace(-0.
         for i in orders:
             coefs_in[i] = np.zeros(SLObj.nmax+1)
     #
-    den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,coefs_in*halofac,SLObj.sph_file,SLObj.model_file)#,l1=2,l2=2)
+    den0,den1,pot0,pot1,potr,pott,potp,rr = eval_particles(P,coefs_in*halofac,SLObj.sph_file,SLObj.model_file)#,l1=2,l2=2)
     #
     #
     wake = {}
