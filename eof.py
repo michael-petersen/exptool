@@ -1401,7 +1401,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
 # visualizing routines
 #
 
-def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,coord='Y',axis=False):
+def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False):
     '''
     make_eof_wake: evaluate a simple grid of points along an axis
 
@@ -1434,10 +1434,10 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
     # set the secondary coordinate
     if coord=='Y':
         P.ypos = ygrid.reshape(-1,)
-        P.zpos = np.zeros(xline.shape[0]*zline.shape[0])
+        P.zpos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
 
     if coord=='Z':
-        P.ypos = np.zeros(xline.shape[0]*zline.shape[0])
+        P.ypos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
         P.zpos = ygrid.reshape(-1,)
         
     P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values

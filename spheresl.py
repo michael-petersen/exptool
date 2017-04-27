@@ -1311,15 +1311,45 @@ def parse_components(simulation_directory,simulation_name,output_number):
 
 
 
-def make_wake(SLObj,halofac=1.,exclude=False,orders=None,xline = np.linspace(-0.03,0.03,75),zaspect=1.):
+def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline = np.linspace(-0.03,0.03,75),zoffset=0.,coord='Y',axis=False):
+    '''
+    make_sl_wake: evaluate a simple grid of points along an axis
+
+    inputs
+    ---------
+    SLObj: 
+
+
+
+
+
+    '''
     #     now a simple grid
+    #
+    # this will always be square in resolution--could think how to change this?
     zline = xline*zaspect
     xgrid,ygrid = np.meshgrid(xline,zline)
+
+
+    if axis:
+        zline = np.array([0.])
+        xgrid = xline[np.where(xline>=0.)[0]]
+        xline = xgrid
+        ygrid = np.array([0.])
+    
     #
     P = psp_io.particle_holder()
     P.xpos = xgrid.reshape(-1,)
-    P.ypos = ygrid.reshape(-1,)
-    P.zpos = np.zeros(xline.shape[0]*zline.shape[0])
+
+    # set the secondary coordinate
+    if coord=='Y':
+        P.ypos = ygrid.reshape(-1,)
+        P.zpos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
+
+    if coord=='Z':
+        P.ypos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
+        P.zpos = ygrid.reshape(-1,)
+    
     P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
     #
     #
@@ -1330,20 +1360,30 @@ def make_wake(SLObj,halofac=1.,exclude=False,orders=None,xline = np.linspace(-0.
         for i in orders:
             coefs_in[i] = np.zeros(SLObj.nmax+1)
     #
-    den0,den1,pot0,pot1,potr,pott,potp,rr = eval_particles(P,coefs_in*halofac,SLObj.sph_file,SLObj.model_file)#,l1=2,l2=2)
+    den0,den1,pot0,pot1,potr,pott,potp,rr = eval_particles(P,coefs_in*halofac,SLObj.sph_file,SLObj.model_file,l1=l1,l2=l2)
     #
     #
     wake = {}
-    wake['X']  =       xgrid
-    wake['Y']  =       ygrid
-    wake['P']  = (pot0+pot1).reshape([xline.shape[0],zline.shape[0]])
-    wake['P1'] =      (pot1).reshape([xline.shape[0],zline.shape[0]])
-    wake['D']  = (den0+den1).reshape([xline.shape[0],zline.shape[0]])
-    wake['D1'] =        den1.reshape([xline.shape[0],zline.shape[0]])
-    wake['fR'] =        potr.reshape([xline.shape[0],zline.shape[0]])
-    wake['R']  =          rr.reshape([xline.shape[0],zline.shape[0]])
-    wake['fP'] =        potp.reshape([xline.shape[0],zline.shape[0]])
-    wake['fZ'] =        pott.reshape([xline.shape[0],zline.shape[0]])
+    wake['X'] = xgrid
+    wake['Y'] = ygrid
+
+    if zline.shape[0] > 1:
+        wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
+        wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
+        wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
+        wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
+        wake['fP'] = fp.reshape([xline.shape[0],zline.shape[0]])
+        wake['fZ'] = fz.reshape([xline.shape[0],zline.shape[0]])
+
+    else:
+        wake['P'] = p
+        wake['D'] = d
+        wake['fR'] = fr
+        wake['R'] = R
+        wake['fP'] = fp
+        wake['fZ'] = fz
+
+        
     return wake
 
 
