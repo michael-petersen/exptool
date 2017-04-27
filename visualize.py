@@ -68,8 +68,9 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
 
     maxlev_edge = np.max([np.max(kdePOSXZ),np.max(kdePOSZY)])
 
-    levels_edge = np.round(np.linspace(np.log10(eps),maxlev_edge,cres),1)
-    levels = np.round(np.linspace(np.log10(eps),np.max(kdePOSXY),cres),1)
+    # add a prefac to eps to make sure lowest contour catches it
+    levels_edge = np.round(np.linspace(np.log10(0.9*eps),maxlev_edge,cres),1)
+    levels = np.round(np.linspace(np.log10(0.9*eps),np.max(kdePOSXY),cres),1)
 
     #print 'Increase factor:',np.max(levels)/np.max(levels_edge)
 
@@ -118,8 +119,10 @@ def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
 
     maxlev_edge = np.max([np.max(abs(kdeVELXY/kdeNUMXY)),np.max(abs(kdeVELZY/kdeNUMZY)),np.max(abs(kdeVELXZ/kdeNUMXZ))])
 
-    levels_edge = np.round(np.linspace(-1.*maxlev_edge,maxlev_edge,cres),2)
-    levels = np.round(np.linspace(-1.*maxlev_edge,maxlev_edge,cres),2)
+    #
+    # add a buffer 1.1 to capture lowest levels
+    levels_edge = np.round(np.linspace(-1.1*maxlev_edge,maxlev_edge,cres),2)
+    levels = np.round(np.linspace(-1.1*maxlev_edge,maxlev_edge,cres),2)
 
 
     XY = kdeVELXY/kdeNUMXY
@@ -518,44 +521,5 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     ax6.set_yticklabels(())
 
     return fig
-
-
-
-
-############################################################################################
-def plot_image_velocity(O,ax,ax2,ax3,rmax=0.04,nsamp=257,levels = np.linspace(0.0,3.2,100),zlim=0.1):
-    aval = np.sum( np.cos( 2.*np.arctan2(O.ypos,O.xpos) ) )
-    bval = np.sum( np.sin( 2.*np.arctan2(O.ypos,O.xpos) ) )
-    bpos = -np.arctan2(bval,aval)/2.
-    #
-    tX = O.xpos*np.cos(bpos) - O.ypos*np.sin(bpos)
-    tY = -O.xpos*np.sin(bpos) - O.ypos*np.cos(bpos)
-    tYv = -O.xvel*np.sin(bpos) - O.yvel*np.cos(bpos)
-    #
-    print 'ey'
-    w = np.where( (abs(tX) < rmax) & (abs(tY) < rmax) & (abs(O.zpos) < zlim) )[0]
-    extent = rmax#0.06
-    kde_weight = tYv[w]
-    #
-    print 'ey'
-    vv = kde_3d.fast_kde_two(tX[w],tY[w], gridsize=(nsamp,nsamp), extents=(-extent,extent,-extent,extent), nocorrelation=False, weights=kde_weight)
-    kde_weight = tYv[w]**2.
-    #
-    ss = kde_3d.fast_kde_two(tX[w],tY[w], gridsize=(nsamp,nsamp), extents=(-extent,extent,-extent,extent), nocorrelation=False, weights=kde_weight)
-    #
-    #
-    kde_weight = O.mass[w]
-    tt = kde_3d.fast_kde_two(tX[w],tY[w], gridsize=(nsamp,nsamp), extents=(-extent,extent,-extent,extent), nocorrelation=False, weights=None)
-    mm = kde_3d.fast_kde_two(tX[w],tY[w], gridsize=(nsamp,nsamp), extents=(-extent,extent,-extent,extent), nocorrelation=False, weights=kde_weight)
-    avgvel = vv/tt
-    sigma = ss/tt - (vv/tt)**2.
-    # vizualize!
-    xbins = np.linspace(-extent,extent,nsamp)
-    xx,yy = np.meshgrid( xbins,xbins)
-    effvolume = ((xbins[1]-xbins[0])*(xbins[1]-xbins[0]))#*(2.*zlim))
-    ax.contourf(xx,yy,np.log10(mm/effvolume),levels,cmap=cm.spectral)
-    ax2.contourf(xx,yy,avgvel,np.linspace(-1.4,1.4,72),cmap=cm.spectral)
-    ax3.contourf(xx,yy,sigma,np.linspace(0.,1.,72),cmap=cm.spectral)
-
 
 
