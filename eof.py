@@ -1479,4 +1479,7 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
 
 
 
+#
+# add eof visualizers
+#
 
