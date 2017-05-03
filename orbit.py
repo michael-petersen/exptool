@@ -285,7 +285,37 @@ class Orbits(dict):
 
 
 
+#
+# visualizer tool 1
+#
+                
+def write_obj_skeleton(outfile,Orbit,lo=0,hi=10000,prefac=100.):
+    
+    if hi > Orbit['T'].shape[0]:
+        
+        hi = Orbit['T'].shape[0]
 
+    npts = hi - lo
+
+    f = open(outfile,'w')
+
+    print >>f,'o ORBIT1'
+
+    for indx in range(0,npts):
+        print >>f,'v ',prefac*Orbit['TX'][lo+indx],prefac*Orbit['TY'][lo+indx],prefac*Orbit['Z'][lo+indx]
+
+
+    for indx in range(1,npts):
+        print >>f,'l ',indx,indx+1
+
+    # this connects the last point to the first
+    print >>f,'l ',npts,1
+
+    f.close()
+
+
+
+                
 #######################################################################################
 # Calculating frequencies
 
