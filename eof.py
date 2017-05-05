@@ -1532,3 +1532,46 @@ def reorganize_eof_dict(EOFDict):
 
 
 
+def calculate_eof_phase(EOFDict):
+    '''
+    working phase calculations
+
+
+    ''
+    mmax=EOFDict[np.array(EOFDict.keys())[0]].mmax
+    nmax=EOFDict[np.array(EOFDict.keys())[0]].nmax
+    #
+    phases = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0],nmax])
+    netphases = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0]])
+    time_order = np.zeros(np.array(EOFDict.keys()).shape[0])
+    #
+    num = 0
+    for keyval in EOFDict.keys():
+        for mterm in range(1,mmax+1):
+            for nterm in range(0,nmax):
+                phases[mterm,num,nterm] = np.arctan2(EOFDict[keyval].sin[mterm,nterm],EOFDict[keyval].cos[mterm,nterm])
+            #
+            netphases[mterm,num] = np.arctan2(np.sum(EOFDict[keyval].sin[mterm,:]),np.sum(EOFDict[keyval].cos[mterm,:]))
+        time_order[num] = EOFDict[keyval].time
+        num += 1
+    #
+    DC = {}
+    DC['time'] = time_order[time_order.argsort()]
+    #
+    keys = ['phase'+str(int(x)) for x in range(1,mmax+1)]
+    #
+    for indx,key in enumerate(keys):
+        DC[key] = phases[indx+1,time_order.argsort(),:]
+        DC['net'+key] = netphases[indx+1,time_order.argsort()]
+    #
+    skeys = ['speed'+str(int(x)) for x in range(1,mmax+1)]
+    #
+    for indx,skey in enumerate(skeys):
+        DC[skey] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
+        for nterm in range(0,nmax):
+            DC[skey][:,nterm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC[keys[indx]][:,nterm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+        DC['net'+skey] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['net'+keys[indx]],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+    #
+    return DC
+
+

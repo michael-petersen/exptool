@@ -415,3 +415,30 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve( m[::-1], y, mode='valid')
 
 
+#
+# unwrap phase
+#
+def unwrap_phase(phase_array,tol=-np.pi,clock=False):
+    #
+    unwrapped_array = np.zeros_like(phase_array)
+    #
+    k = 0
+    for indx,val in enumerate(phase_array):
+        #
+        if indx > 0:
+            difference = val - phase_array[indx-1]
+            if clock:
+                if difference > tol:
+                    k -= 1
+            else:
+                if difference < tol:
+                    k += 1
+            #
+            unwrapped_array[indx] = val + 2.*np.pi*k
+        #
+        else:
+            unwrapped_array[indx] = val
+    return unwrapped_array
+
+
+
