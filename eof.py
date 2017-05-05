@@ -1483,3 +1483,52 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
 # add eof visualizers
 #
 
+
+def reorganize_eof_dict(EOFDict):
+    # reorganize
+    dipole_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
+    quadrupole_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
+    #
+    octopole_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
+    four_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
+    five_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
+    six_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
+    #
+    monopole_tally = np.zeros([np.array(EOFDict.keys()).shape[0],12])
+    monopole_sum = np.zeros(np.array(EOFDict.keys()).shape[0])
+    time_order = np.zeros(np.array(EOFDict.keys()).shape[0])
+    #
+    num = 0
+    for keyval in EOFDict.keys():
+        for j in range(0,12):
+            dipole_sum[num,j] = EOFDict[keyval].cos[1,j]**2. + EOFDict[keyval].sin[1,j]**2.
+            quadrupole_sum[num,j] = EOFDict[keyval].cos[2,j]**2. + EOFDict[keyval].sin[2,j]**2.
+            octopole_sum[num,j] = EOFDict[keyval].cos[3,j]**2. + EOFDict[keyval].sin[3,j]**2.
+            four_sum[num,j] = EOFDict[keyval].cos[4,j]**2. + EOFDict[keyval].sin[4,j]**2.
+            five_sum[num,j] = EOFDict[keyval].cos[5,j]**2. + EOFDict[keyval].sin[5,j]**2.
+            six_sum[num,j] = EOFDict[keyval].cos[6,j]**2. + EOFDict[keyval].sin[6,j]**2.
+            monopole_tally[num,j] = EOFDict[keyval].cos[0,j]**2.
+        time_order[num] = EOFDict[keyval].time
+        monopole_sum[num] = np.sum(EOFDict[keyval].cos[0]**2.)
+        num += 1
+    # assemble into dictionary
+    CDict = {}
+    CDict['time']   = time_order[time_order.argsort()]
+    CDict['total0'] = monopole_tally[time_order.argsort(),:]
+    CDict['total1'] = dipole_sum[time_order.argsort(),:]
+    CDict['total2'] = quadrupole_sum[time_order.argsort(),:]
+    CDict['total3'] = octopole_sum[time_order.argsort(),:]
+    CDict['total4'] = four_sum[time_order.argsort(),:]
+    CDict['total5'] = five_sum[time_order.argsort(),:]
+    CDict['total6'] = six_sum[time_order.argsort(),:]
+    CDict['sum0'] = np.sum(monopole_tally,axis=1)[time_order.argsort()]
+    CDict['sum1'] = np.sum(dipole_sum,axis=1)[time_order.argsort()]
+    CDict['sum2'] = np.sum(quadrupole_sum,axis=1)[time_order.argsort()]
+    CDict['sum3'] = np.sum(octopole_sum,axis=1)[time_order.argsort()]
+    CDict['sum4'] = np.sum(four_sum,axis=1)[time_order.argsort()]
+    CDict['sum5'] = np.sum(five_sum,axis=1)[time_order.argsort()]
+    CDict['sum6'] = np.sum(six_sum,axis=1)[time_order.argsort()]
+    return CDict
+
+
+
