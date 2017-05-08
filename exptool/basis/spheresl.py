@@ -19,9 +19,9 @@ import os
 
 
 # exptool imports
-import exptool.utils.utils
-import exptool.utils.halo_methods
-import exptool.io.psp_io
+from exptool.utils import utils
+from exptool.utils import halo_methods
+from exptool.io import psp_io
 
 # special math imports
 from scipy.special import gammaln

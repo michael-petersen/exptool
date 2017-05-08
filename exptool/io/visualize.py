@@ -31,9 +31,9 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 # exptool routines
-import exptool.io.psp_io
-import exptool.utils.kde_3d
-import exptool.analysis.trapping
+from exptool.io import psp_io
+from exptool.utils import kde_3d
+from exptool.analysis import trapping
 
 
 

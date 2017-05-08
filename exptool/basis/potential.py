@@ -12,12 +12,12 @@ import numpy as np
 import time
 
 # exptool classes
-import exptool.utils.utils
-import exptool.io.psp_io
-import exptool.analysis.trapping
-import exptool.basis.eof
-import exptool.basis.spheresl
-import exptool.utils.halo_methods
+from exptool.utils import utils
+from exptool.io import psp_io
+from exptool.analysis import trapping
+from exptool.basis import eof
+from exptool.basis import spheresl
+from exptool.utils import halo_methods
 
 # for interpolation
 from scipy.interpolate import UnivariateSpline

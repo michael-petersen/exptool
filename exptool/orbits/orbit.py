@@ -19,10 +19,10 @@ from __future__ import print_function
 # exptool imports
 import numpy as np
 
-import exptool.io.psp_io
-import exptool.analysis.trapping
-import exptool.utils.utils
-import exptool.utils.kde_3d
+from exptool.io import psp_io
+from exptool.analysis import trapping
+from exptool.utils import utils
+from exptool.utils import kde_3d
 
 # standard imports
 from scipy.interpolate import UnivariateSpline

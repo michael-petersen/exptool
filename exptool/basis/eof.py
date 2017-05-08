@@ -34,8 +34,8 @@ import matplotlib.cm as cm
 
 
 # exptool definitions
-import exptool.utils.utils
-import exptool.io.psp_io
+from exptool.utils import utils
+from exptool.io import psp_io
 
 
 #

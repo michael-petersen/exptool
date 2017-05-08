@@ -1,9 +1,13 @@
 
+#
+# basic ellipse fitting tools
+#
 
-import exptool.utils.kde_3d
+
+from exptool.utils import kde_3d
+from exptool.utils import utils
 
 
-import utils
 import numpy as np
 from matplotlib import _cntr as cntr
 from numpy.linalg import eig, inv

@@ -15,7 +15,7 @@ import time
 import os
 import numpy as np
 
-import exptool.io.psp_io
+from exptool.io import psp_io
 
 
 class GQuantities():

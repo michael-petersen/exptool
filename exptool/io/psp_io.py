@@ -17,7 +17,7 @@ import time
 import numpy as np
 import os
 
-import exptool.analysis.trapping
+from exptool.analysis import trapping
 
 
 class Input():

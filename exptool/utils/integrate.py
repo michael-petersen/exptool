@@ -4,7 +4,7 @@
 # take a field instance and do an integration
 #
 
-import exptool.orbits.orbit
+from exptool.orbits import orbit
 
 
 
