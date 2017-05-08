@@ -1,12 +1,15 @@
 # exptool
 ### python analysis of exp files
 
+#### Version 0.1!
+There is actually structure to exptool now, which means that I will
+have to fix the software morass I've been rolling with on UMass'
+supercomputer, eagle.
+
+
 #### To Do
 
-potential.py needs a MAJOR overhaul to be useful.
 
-add a Dump class to psp_io? Could wrap input, but also allow for
-adding separate quantites (R,E,LZ, etc)
 
 
 
