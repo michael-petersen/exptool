@@ -1537,7 +1537,7 @@ def calculate_eof_phase(EOFDict):
     working phase calculations
 
 
-    ''
+    '''
     mmax=EOFDict[np.array(EOFDict.keys())[0]].mmax
     nmax=EOFDict[np.array(EOFDict.keys())[0]].nmax
     #
@@ -1567,6 +1567,10 @@ def calculate_eof_phase(EOFDict):
     skeys = ['speed'+str(int(x)) for x in range(1,mmax+1)]
     #
     for indx,skey in enumerate(skeys):
+
+        # if desired, could put in blocks for unreasonable values here?
+        #goodphase = np.where( DC[keys[indx]][:,nterm] )
+        
         DC[skey] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
         for nterm in range(0,nmax):
             DC[skey][:,nterm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC[keys[indx]][:,nterm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)

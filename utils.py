@@ -425,13 +425,14 @@ def unwrap_phase(phase_array,tol=-np.pi,clock=False):
     k = 0
     for indx,val in enumerate(phase_array):
         #
-        if indx > 0:
-            difference = val - phase_array[indx-1]
+        if (indx > 0) & (indx < len(unwrapped_array)-1):
+            difference_left = val - phase_array[indx-1]
+            difference_right = phase_array[indx+1] - val
             if clock:
-                if difference > tol:
+                if (difference_left > tol) & (difference_right > 0):
                     k -= 1
             else:
-                if difference < tol:
+                if (difference_left < tol) & (difference_right > 0):
                     k += 1
             #
             unwrapped_array[indx] = val + 2.*np.pi*k

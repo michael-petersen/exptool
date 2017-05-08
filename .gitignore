@@ -3,3 +3,6 @@
 *legacy*
 *test*
 .#*
+*.so
+c_ext/build
+c_ext/build/*
