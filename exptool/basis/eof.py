@@ -37,6 +37,7 @@ import matplotlib.cm as cm
 from exptool.utils import utils
 from exptool.io import psp_io
 
+from exptool.basis._accumulate_c import r_to_xi,xi_to_r
 
 #
 # tools to read in the eof cache and corresponding details
@@ -215,8 +216,8 @@ def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY
     # otherwise, r = (r/ASCALE - 1.0)/(r/ASCALE + 1.0);
 
     # calculate radial scalings
-    XMIN    = r_to_xi(RMIN*ASCALE,ASCALE,cmap=CMAP);
-    XMAX    = r_to_xi(Rtable*ASCALE,ASCALE,cmap=CMAP);
+    XMIN    = r_to_xi(RMIN*ASCALE,CMAP,ASCALE);
+    XMAX    = r_to_xi(Rtable*ASCALE,CMAP,ASCALE);
     dX      = (XMAX - XMIN)/NUMX;
 
     # calculate vertical scalings
@@ -247,38 +248,6 @@ def y_to_z(y,hscale):
     return hscale*np.sinh(y)
 
 
-
-def r_to_xi(r,ascale,cmap=0):
-    '''
-    return mapping of radial position to X-dimension table scaling.
-
-    '''
-    if (cmap):
-        return (r/ascale - 1.0)/(r/ascale + 1.0);
-    else:
-        return r
-
-
-def xi_to_r(xi,ascale,cmap=0):
-    '''
-    return mapping of X-dimension table to radial position
-
-    '''
-    if (cmap) :
-        if (np.min(xi)<-1.0):
-            print("xi < -1!");
-            return 0.
-        
-        if (np.max(xi) >= 1.0):
-            print("xi >= 1!");
-            return 0.
-
-        return (1.0 + xi)/(1.0 - xi) * ascale
-
-    else:
-        return xi
-
-
 #
 # particle accumulation definitions
 #
@@ -286,9 +255,9 @@ def return_bins(r,z,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,ASCALE=0.01,HSCALE=0.0
     #
     # routine to return the integer bin numbers based on dimension mapping
     # 
-    X = (r_to_xi(r,ascale=ASCALE,cmap=CMAP) - rmin)/dR
+    X = (r_to_xi(r,CMAP,ASCALE) - rmin)/dR
     Y = (z_to_y(z,hscale=HSCALE) - zmin)/dZ
-    ix = int( np.floor((r_to_xi(r,ascale=ASCALE,cmap=CMAP) - rmin)/dR) )
+    ix = int( np.floor((r_to_xi(r,CMAP,ASCALE) - rmin)/dR) )
     iy = int( np.floor((z_to_y(z,hscale=HSCALE) - zmin)/dZ) )
     #
     # check the boundaries and set guards
@@ -428,7 +397,7 @@ def show_basis(eof_file,plot=False,sine=False):
     rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
-    xvals = xi_to_r(np.array([XMIN + i*dX for i in range(0,numx+1)]),ascale,cmap)
+    xvals = xi_to_r(np.array([XMIN + i*dX for i in range(0,numx+1)]),cmap,ascale)
     zvals =  y_to_z(np.array([YMIN + i*dY for i in range(0,numy+1)]),hscale)
 
     print('eof.show_basis: plotting %i azimuthal orders and %i radial orders...'%(MMAX,norder) )
