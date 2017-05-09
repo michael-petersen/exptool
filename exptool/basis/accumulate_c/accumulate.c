@@ -25,4 +25,33 @@ double r_to_xi(double r, int cmap, double scale)
     }
   }
 }
+
+
     
+double xi_to_r(double xi, int cmap, double scale)
+{
+  if (cmap) {
+    if (xi<-1.0) printf("xi < -1!");
+    if (xi>=1.0) printf("xi >= 1!");
+
+    return (1.0+xi)/(1.0 - xi) * scale;
+  } else {
+    return xi;
+  }
+
+}
+
+
+double d_xi_to_r(double xi, int cmap, double scale)
+{
+  if (cmap) {
+    if (xi<-1.0) printf("xi < -1!");
+    if (xi>=1.0) printf("xi >= 1!");
+
+    return 0.5*(1.0-xi)*(1.0-xi)/scale;
+  } else {
+    return 1.0;
+  }
+}
+
+
