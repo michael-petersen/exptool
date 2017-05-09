@@ -1,7 +1,0 @@
-_accumulate_c
-exptool
-exptool/analysis
-exptool/basis
-exptool/io
-exptool/orbits
-exptool/utils
