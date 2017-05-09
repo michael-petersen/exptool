@@ -34,6 +34,8 @@ double xi_to_r(double xi, int cmap, double scale)
     if (xi<-1.0) printf("xi < -1!");
     if (xi>=1.0) printf("xi >= 1!");
 
+    say_hello();
+
     return (1.0+xi)/(1.0 - xi) * scale;
   } else {
     return xi;
@@ -54,4 +56,8 @@ double d_xi_to_r(double xi, int cmap, double scale)
   }
 }
 
+void say_hello(void)
+{
+  printf("Hello!\n");
+    }
 
