@@ -14,12 +14,12 @@ import glob
 #https://github.com/blog/2104-working-with-submodules
     
 #accumulate C extension
-accumulate_c_src= glob.glob('exptool/basis/accumulate_c_ext/*.c')
+accumulate_c_src= glob.glob('exptool/basis/accumulate_c/*.c')
 
 # eventually put numpy header for arrays in here
-accumulate_include_dirs= ['exptool/basis/accumulate_c_ext']
+accumulate_include_dirs= ['exptool/basis/accumulate_c']
 
-accumulate_c= Extension('_accumulate_c',
+accumulate_c= Extension('exptool.basis._accumulate_c',
                              sources=accumulate_c_src,
                              #libraries=pot_libraries,
                              include_dirs=accumulate_include_dirs)
@@ -37,16 +37,15 @@ setup(name='exptool',
       author_email='mpete0@astro.umass.edu',
       license='New BSD',
       #long_description=long_description,
-      url='http://github.com/michael-petersen/exptool',
+      url='https://github.com/michael-petersen/exptool',
       package_dir = {'exptool/': ''},
       packages=['exptool','exptool/analysis','exptool/basis',
                 'exptool/io','exptool/orbits','exptool/utils'],
-      #package_data={'galpy/df_src':['data/*.sav'],
-      #              "": ["README.rst","README.dev","LICENSE","AUTHORS.rst"]},
+      package_data={'': ['README.md','LICENSE']},
       include_package_data=True,
       install_requires=['numpy>=1.7','scipy','matplotlib'],
-      #ext_package='exptool/basis',
       ext_modules=ext_modules,
+      classifiers = ["Programming Language :: Python", "Intended Audience :: Science/Research"]
       )
 
 

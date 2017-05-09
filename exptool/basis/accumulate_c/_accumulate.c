@@ -5,7 +5,7 @@
 
 /* Docstrings */
 static char module_docstring[] =
-    "This module provides an interface for calculating chi-squared using C.";
+    "Module to migrate some potential transformations to C";
 static char r_to_xi_docstring[] = 
 	"Transform r to xi";
 
@@ -23,9 +23,11 @@ static PyMethodDef module_methods[] = {
 /* Initialize the module */
 PyMODINIT_FUNC init_accumulate_c(void)
 {
-    PyObject *m = Py_InitModule3("_accumulate_c", module_methods, module_docstring);
-    if (m == NULL)
-        return;
+
+  (void)Py_InitModule3("_accumulate_c", module_methods, module_docstring);
+  //PyObject *m = Py_InitModule3("_accumulate_c", module_methods, module_docstring);
+  //if (m == NULL)
+  //    return;
 
     /* Load `numpy` functionality. */
     //import_array();
