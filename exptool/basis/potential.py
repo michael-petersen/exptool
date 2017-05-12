@@ -318,8 +318,8 @@ class Fields():
         fzdisk = diskfz
         fzhalo = -1.* ( halofr*(zval/r3val) + haloft*( (r2val*r2val)/(r3val*r3val*r3val)) )
 
-        
-        return fxdisk,fxhalo,fydisk,fyhalo,fzdisk,fzhalo,diskp,halop
+        # this is now returning the total potential in both disk and halo case
+        return fxdisk,fxhalo,fydisk,fyhalo,fzdisk,fzhalo,diskp,(halop + halop0)
 
     
     def rotation_curve(self,rvals=np.linspace(0.,0.1,100)):
