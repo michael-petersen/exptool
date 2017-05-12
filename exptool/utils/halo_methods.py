@@ -8,31 +8,36 @@ import numpy as np
 from scipy import interpolate
 
 
+
 '''
+###########################################################################
+# methods
+
+parse_slgrid(file)
+     take spherical cache and get basic quantities
+
+read_cached_table(file)
+     take spherical cache, get basic quantities and tables (returned a matrices)
+
+read_sph_model_table(file)
+     take 1d model table and convert using mappings
+
+init_table(modelfile,numr,rmin,rmax)
+     generate 1d model table for fitting use
+
+
+###########################################################################
+# examples
+
 import halo_methods
-
-
-sph_file = '/scratch/mpetersen/Disk001/.slgrid_sph_cache'
 
 sph_file = '/scratch/mpetersen/Disk001/SLGridSph.cache.run001'
 model_file = '/scratch/mpetersen/Disk001/SLGridSph.model'
 
 
 lmax,nmax,numr,cmap,rmin,rmax,scale = halo_methods.parse_slgrid(sph_file,verbose=0)
-
-
 lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file,verbose=0,retall=True)
-
 xi,rarr,p0,d0 = halo_methods.init_table(model_file,numr,rmin,rmax,cmap=cmap,scale=scale)
-
-
-halo_methods.r_to_xi(0.01,cmap,scale)
-
-halo_methods.d_xi_to_r(0.01,cmap,scale)
-
-
-out = spheresl.get_halo_dens_pot_force(0.01, lmax, nmax, evtable, eftable, xi, d0, p0, cmap=cmap, scale=scale)
-
 
 
 
@@ -113,58 +118,6 @@ def read_cached_table(file,verbose=0,retall=True):
         return ltable,evtable,eftable
 
 
-def xi_to_r(xi,cmap,scale):
-    
-    if (cmap==1):
-        if (xi<-1.0): print "xi < -1!" 
-        if (xi>=1.0): print "xi >= 1!"
-            
-        ret = (1.0 + xi)/(1.0 - xi) * scale;
-            
-    if (cmap==2):
-        ret = np.exp(xi);
-    if (cmap==0):
-        if (xi<0.0): print "xi < 0!"
-        ret = xi;
-        
-    return ret
-
-
-def r_to_xi(r,cmap,scale):
-    
-    if (cmap==1):
-        if (r<0.0): print "radius < 0!"
-        ret =  (r/scale-1.0)/(r/scale+1.0);
-            
-    if (cmap==2):
-        if (r<=0.0): print "radius <= 0!"
-        ret = np.log(r);
-        
-    if (cmap==0):
-        ret = r;
-        
-    return ret;
-
-
-def d_xi_to_r(xi,cmap,scale):
-    
-    if (cmap==1):
-        if (xi<-1.0): print "xi < -1!" 
-        if (xi>=1.0): print "xi >= 1!"
-            
-        ret = 0.5*(1.0-xi)*(1.0-xi)/scale;
-        
-    if (cmap==2):
-        ret = np.exp(-xi);
-        
-    if (cmap==0):
-        if (xi<0.0): print "xi < 0!"
-        ret = 1.0;
-        
-    return ret
-
-
-    
 
 
 

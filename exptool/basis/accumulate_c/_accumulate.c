@@ -7,6 +7,9 @@
 static char module_docstring[] = "Module to migrate some potential transformations to C";
 static char r_to_xi_docstring[] = "Transform r to xi";
 static char xi_to_r_docstring[] = "Transform xi to r";
+static char z_to_y_docstring[] = "Transform z to y";
+static char y_to_z_docstring[] = "Transform y to z";
+
 static char d_xi_to_r_docstring[] = "Transform derivative of xi to derivative of r";
 
 
@@ -14,6 +17,8 @@ static char d_xi_to_r_docstring[] = "Transform derivative of xi to derivative of
 static PyObject *accumulate_r_to_xi(PyObject *self, PyObject *args);
 static PyObject *accumulate_xi_to_r(PyObject *self, PyObject *args);
 static PyObject *accumulate_d_xi_to_r(PyObject *self, PyObject *args);
+static PyObject *accumulate_z_to_y(PyObject *self, PyObject *args);
+static PyObject *accumulate_y_to_z(PyObject *self, PyObject *args);
 
 
 /* Module specification */
@@ -21,6 +26,8 @@ static PyMethodDef module_methods[] = {
     {"r_to_xi", accumulate_r_to_xi, METH_VARARGS, r_to_xi_docstring},
     {"xi_to_r", accumulate_xi_to_r, METH_VARARGS, xi_to_r_docstring},
     {"d_xi_to_r", accumulate_d_xi_to_r, METH_VARARGS, d_xi_to_r_docstring},
+    {"z_to_y", accumulate_z_to_y, METH_VARARGS, z_to_y_docstring},
+    {"y_to_z", accumulate_y_to_z, METH_VARARGS, y_to_z_docstring},
     {NULL, NULL, 0, NULL}
 };
 
@@ -78,6 +85,37 @@ static PyObject *accumulate_d_xi_to_r(PyObject *self, PyObject *args)
 	return NULL;
 
 	double result = d_xi_to_r(xi,cmap,scale);
+
+	ret = PyFloat_FromDouble(result);
+	return ret;
+}
+
+
+static PyObject *accumulate_z_to_y(PyObject *self, PyObject *args)
+{
+    double z;
+    int cmap;
+    PyObject * ret;
+
+    if (!PyArg_ParseTuple(args, "di", &z, &cmap))
+	return NULL;
+
+	double result = z_to_y(z,cmap);
+
+	ret = PyFloat_FromDouble(result);
+	return ret;
+}
+
+static PyObject *accumulate_y_to_z(PyObject *self, PyObject *args)
+{
+    double y;
+    int cmap;
+    PyObject * ret;
+
+    if (!PyArg_ParseTuple(args, "di", &y, &cmap))
+	return NULL;
+
+	double result = y_to_z(y,cmap);
 
 	ret = PyFloat_FromDouble(result);
 	return ret;

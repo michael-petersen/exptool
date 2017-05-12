@@ -23,6 +23,11 @@ from exptool.utils import utils
 from exptool.utils import halo_methods
 from exptool.io import psp_io
 
+# pull in C routines
+from exptool.basis._accumulate_c import r_to_xi,xi_to_r
+
+
+
 # special math imports
 from scipy.special import gammaln
 
@@ -58,7 +63,7 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, s
     pot_mat = np.zeros([lmax+1,nmax+1])
     force_mat = np.zeros([lmax+1,nmax+1])
 
-    x = halo_methods.r_to_xi(x,cmap,scale);
+    x = r_to_xi(x,cmap,scale);
     
     if (cmap==1):
         if (x<-1.0): x=-1.0;
@@ -77,7 +82,7 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, s
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x - xi[indx])/(dxi);
     
-    fac = halo_methods.d_xi_to_r(x,cmap,scale)/dxi;
+    fac = d_xi_to_r(x,cmap,scale)/dxi;
     
     for l in range(0,lmax+1):
 
@@ -105,7 +110,7 @@ def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap, scale):#, int w
     numr = len(d0)
     mat = np.zeros([lmax+1,nmax+1])
     #if (which || !cmap):
-    x = halo_methods.r_to_xi(x,cmap,scale);
+    x = r_to_xi(x,cmap,scale);
     #
     if (cmap==1):
         if (x<-1.0): x=-1.0;
@@ -144,7 +149,7 @@ def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
     numr = p0.shape[0]
     mat = np.zeros([lmax+1,nmax+1])
     
-    x = halo_methods.r_to_xi(x,cmap,scale);
+    x = r_to_xi(x,cmap,scale);
     
     if (cmap==1):
         if (x<-1.0): x=-1.0;
@@ -161,7 +166,7 @@ def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
         
     p = (x - xi[indx])/dxi;
         
-    fac = halo_methods.d_xi_to_r(x,cmap,scale)/dxi;
+    fac = d_xi_to_r(x,cmap,scale)/dxi;
     
     for l in range(0,lmax+1):
         
@@ -194,7 +199,7 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
 
     numr = p0.shape[0]
     
-    x = halo_methods.r_to_xi(x_in,cmap,scale);
+    x = r_to_xi(x_in,cmap,scale);
     
     #print x
     if (cmap==1):
@@ -207,7 +212,7 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
     
     dxi = xi[1]-xi[0]
 
-    fac = halo_methods.d_xi_to_r(x,cmap,scale)/dxi;
+    fac = d_xi_to_r(x,cmap,scale)/dxi;
 
     indx = int(np.floor( (x-np.min(xi))/(dxi) ))
     #print indx
@@ -255,7 +260,7 @@ def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
 
     numr = p0.shape[0]
     
-    x = halo_methods.r_to_xi(x_in,cmap,scale);
+    x = r_to_xi(x_in,cmap,scale);
     
     #print x
     if (cmap==1):
@@ -298,7 +303,7 @@ def get_halo_pot(x, l, n, evtable, eftable, xi, p0, cmap, scale):#, int which):
     #
     #if (which || !cmap):
     numr = len(p0)
-    x = halo_methods.r_to_xi(x,cmap,scale);
+    x = r_to_xi(x,cmap,scale);
     #print x
     if (cmap==1):
         if (x<-1.0): x=-1.0;
