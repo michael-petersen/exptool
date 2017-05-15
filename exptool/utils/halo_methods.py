@@ -7,6 +7,11 @@
 import numpy as np
 from scipy import interpolate
 
+# pull in exptool C routines
+from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
+
+
+
 
 
 '''
