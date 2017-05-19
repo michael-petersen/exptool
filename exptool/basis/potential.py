@@ -464,7 +464,9 @@ class Fields():
         wake['fP'] = fp.reshape([thline.shape[0],rline.shape[0]])
         wake['fZ'] = fz.reshape([thline.shape[0],rline.shape[0]])
 
-
+        wake['Rline'] = rline
+        wake['Tline'] = tline
+        
         self.wake = wake
 
 
