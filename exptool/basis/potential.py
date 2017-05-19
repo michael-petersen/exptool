@@ -305,13 +305,14 @@ class Fields():
         if r3val < np.min(self.xihalo):
             halofp = 0.
             diskfp = 0.
-        
-        frhalo = -1.*(r2val*halofr + zval*halofp)/r3val
+
+        # convert halo to cylindrical coordinates
+        frhalo = -1.*(r2val*halofr + zval*haloft)/r3val
                 
-        fphalo = -1.*(zval*halofr - r2val*halofp)/r3val
+        fzhalo = -1.*(zval*halofr - r2val*haloft)/r3val
 
         # this is now returning the total potential in both disk and halo case
-        return diskfr,frhalo,diskfp,-1.*haloft,diskfz,fphalo,diskp,(halop + halop0)
+        return diskfr,frhalo,diskfp,-1.*halofp,diskfz,fzhalo,diskp,(halop + halop0)
 
 
             
@@ -372,12 +373,16 @@ class Fields():
 
     
     def rotation_curve(self,rvals=np.linspace(0.,0.1,100)):
+        '''
+        returns the rotation curve alone the x axis for quick and dirty viewing. rotate potential first if desired!
+
+        '''
 
         disk_force = np.zeros_like(rvals)
         halo_force = np.zeros_like(rvals)
 
         for indx,rval in enumerate(rvals):
-            disk_force[indx],halo_force[indx],a,b,c,d,e,f = Fields.return_forces_cart(self,rval,0.0,0.0)
+            disk_force[indx],halo_force[indx],a,b,c,d,e,f = Fields.return_forces_cyl(self,rval,0.0,0.0)
 
         self.rvals = rvals
         self.disk_rotation = (rvals*abs(disk_force))**0.5
@@ -389,6 +394,8 @@ class Fields():
     def compute_axis_potential(self,rvals=np.linspace(0.,0.1,100)):
         '''
         returns the potential along the major axis
+
+        this is kind of dumb and needs a revamp. Throwing away tons of information.
 
         '''
 
@@ -404,47 +411,49 @@ class Fields():
         self.total_pot = disk_pot+halo_pot
 
 
+    def make_force_grid(self,rline = np.linspace(0.00022,0.1,100),thline = np.linspace(0.00022,2.*np.pi,50)):
+        #EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False):
+        '''
+        make_eof_wake: evaluate a simple grid of points along an axis
 
-    def make_force_grid(self,rline=np.linspace(0.00022,0.1,100),thline=np.linspace(0.00022,2.*np.pi,50)):
+        inputs
+        ---------
+        EOFObj: 
 
-        self.rline = rline
-        self.thline = thline
-        self.rgrid,self.thgrid = np.meshgrid(rline,thline)
+
+        '''
+
+        
+        rgrid,thgrid = np.meshgrid(rline,thline)
         
         
         P = psp_io.particle_holder()
-        P.xpos = (self.rgrid*np.cos(self.thgrid)).reshape(-1,)
-        P.ypos = (self.rgrid*np.sin(self.thgrid)).reshape(-1,)
-        P.zpos = np.zeros(self.rgrid.size)
-        P.mass = np.ones(self.rgrid.size) # mass doesn't matter for evaluations, just get field values
-        
-        p0,p,fr,fp,fz,r = eof.compute_forces(P,self.EOF.eof_file,self.EOF.cos,self.EOF.sin)
-
-        den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file)
-        
-        #
-        # guard against center interpolation problems
-        potr[np.where( potr < 0.0)] = np.min(abs(potr))
-        #
-        
-        self.cvel_star = ((r*-fr)**0.5).reshape([len(self.thline),len(self.rline)])
-
-        # transform to cylindrical r
-        r3vals = (P.zpos**2. + rr**2.)**0.5
-        halo_rforce = (rr*potr + P.zpos*potp)/r3vals
-        
-        self.cvel_halo = ((rr*halo_rforce)**0.5).reshape([len(thline),len(rline)])
-        self.cvel_total = (((r*-fr)+(rr*halo_rforce))**0.5).reshape([len(thline),len(rline)])
-        #
-        #
-        
-        self.cvel_halo[np.where( np.isnan(self.cvel_halo))] = 0.0
-        self.cvel_total[np.where( np.isnan(self.cvel_total))] = 0.0
+        P.xpos = (rgrid*np.cos(thgrid)).reshape(-1,)
+        P.ypos = (rgrid*np.cos(thgrid)).reshape(-1,)
+        P.zpos = np.zeros(rgrid.size)
+        P.mass = np.zeros(rgrid.size)
 
         
+        p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P, self.EOF.cos, self.EOF.sin ,m1=0,m2==self.disk_use_m,eof_file=self.EOF.eof_file,density=True)
 
+        den0,den1,pot0,pot1,potr,pott,potp,rr = eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file,l1=0,l2=self.halo_use_l)
 
+        halo_rforce = ( rgrid.reshape(-1,)*potr + P.zpos*pott )/( rr*2. + P.zpos**2.)**0.5
 
+        wake = {}
+        wake['R'] = rgrid
+        wake['T'] = thgrid
+
+        wake['P'] = (p+pot1).reshape([rline.shape[0],thline.shape[0]])
+        wake['D'] = (d+den0+den1).reshape([rline.shape[0],thline.shape[0]])
+        wake['tfR'] = (fr+halo_rforce).reshape([rline.shape[0],thline.shape[0]])
+        wake['dfR'] = fr.reshape([rline.shape[0],thline.shape[0]])
+        wake['dfR'] = halo_rforce.reshape([rline.shape[0],thline.shape[0]])
+
+        wake['fP'] = fp.reshape([rline.shape[0],thline.shape[0]])
+        wake['fZ'] = fz.reshape([rline.shape[0],thline.shape[0]])
+
+        self.wake = wake
 
 
 class EnergyKappa():

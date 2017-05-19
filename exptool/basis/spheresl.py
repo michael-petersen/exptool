@@ -1316,7 +1316,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
 
 
 
-def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline = np.linspace(-0.03,0.03,75),zoffset=0.,coord='Y',axis=False):
+def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False,cyl=False):
     '''
     make_sl_wake: evaluate a simple grid of points along an axis
 
@@ -1368,6 +1368,9 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     den0,den1,pot0,pot1,potr,pott,potp,rr = eval_particles(P,coefs_in*halofac,SLObj.sph_file,SLObj.model_file,l1=l1,l2=l2)
     #
     #
+
+    # do a conversion to cylindrical?
+    
     wake = {}
     wake['X'] = xgrid
     wake['Y'] = ygrid
