@@ -429,7 +429,7 @@ class Fields():
         
         P = psp_io.particle_holder()
         P.xpos = (rgrid*np.cos(thgrid)).reshape(-1,)
-        P.ypos = (rgrid*np.cos(thgrid)).reshape(-1,)
+        P.ypos = (rgrid*np.sin(thgrid)).reshape(-1,)
         P.zpos = np.zeros(rgrid.size)
         P.mass = np.zeros(rgrid.size)
 
@@ -438,22 +438,12 @@ class Fields():
 
         den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file,l1=0,l2=self.halo_use_l)
 
-        halo_rforce = ( rgrid.reshape(-1,)*potr + P.zpos*pott )/( rr*2. + P.zpos**2.)**0.5
+        halo_rforce = ( rr*potr + P.zpos*pott )/( rr**2. + P.zpos**2.)**0.5
 
         wake = {}
         wake['R'] = rgrid
         wake['T'] = thgrid
 
-        wake['P'] = (p+pot1).reshape([rline.shape[0],thline.shape[0]])
-        wake['D'] = (d+den0+den1).reshape([rline.shape[0],thline.shape[0]])
-        wake['tfR'] = (fr+halo_rforce).reshape([rline.shape[0],thline.shape[0]])
-        wake['dfR'] = fr.reshape([rline.shape[0],thline.shape[0]])
-        wake['hfR'] = halo_rforce.reshape([rline.shape[0],thline.shape[0]])
-
-        wake['fP'] = fp.reshape([rline.shape[0],thline.shape[0]])
-        wake['fZ'] = fz.reshape([rline.shape[0],thline.shape[0]])
-
-        # test
         wake['P'] = (p+pot1).reshape([thline.shape[0],rline.shape[0]])
         wake['D'] = (d+den0+den1).reshape([thline.shape[0],rline.shape[0]])
         wake['tfR'] = (fr+halo_rforce).reshape([thline.shape[0],rline.shape[0]])
@@ -465,6 +455,7 @@ class Fields():
 
 
         self.wake = wake
+
 
 
 class EnergyKappa():

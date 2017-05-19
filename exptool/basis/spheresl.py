@@ -1335,8 +1335,6 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     zline = xline*zaspect
     xgrid,ygrid = np.meshgrid(xline,zline)
 
-    rgrid  = (xgrid*xgrid + ygrid*ygrid)**0.5
-
     if axis:
         zline = np.array([0.])
         xgrid = xline[np.where(xline>=0.)[0]]
@@ -1371,8 +1369,8 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     #
 
     # do a conversion to cylindrical?
-    halo_rforce = ( rgrid.reshape(-1,)*potr + P.zpos*pott )/( rr*2. + P.zpos**2.)**0.5
-    halo_zforce = ( P.zpos*potr - rgrid.reshape(-1,)*pott )/( rr*2. + P.zpos**2.)**0.5
+    halo_rforce = ( rr*potr + P.zpos*pott )/( rr*2. + P.zpos**2.)**0.5
+    halo_zforce = ( P.zpos*potr - rr*pott )/( rr*2. + P.zpos**2.)**0.5
 
     
     wake = {}
