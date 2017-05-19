@@ -411,7 +411,7 @@ class Fields():
         self.total_pot = disk_pot+halo_pot
 
 
-    def make_force_grid(self,rline = np.linspace(0.00022,0.1,100),thline = np.linspace(0.00022,2.*np.pi,50)):
+    def make_force_grid(self,rline = np.linspace(0.00022,0.1,100),thline = np.linspace(0.00022,2.*np.pi,50),even=False):
         #EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False):
         '''
         make_eof_wake: evaluate a simple grid of points along an axis
@@ -433,8 +433,19 @@ class Fields():
         P.zpos = np.zeros(rgrid.size)
         P.mass = np.zeros(rgrid.size)
 
+        # the only way to do even-only calculation with these is to wipe out the odd terms from the coefficients (do-able)
+
+        # for disk
+        cos_coefs_in = np.copy(self.EOF.cos)
+        sin_coefs_in = np.copy(self.EOF.sin)
+        #
+        if even:
+            for i in range(1,self.EOF.mmax,2):
+                cos_coefs_in[i] = np.zeros(self.EOF.nmax)
+                sin_coefs_in[i] = np.zeros(self.EOF.nmax)
+
         
-        p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, self.EOF.cos, self.EOF.sin ,m1=0,m2=self.disk_use_m,eof_file=self.EOF.eof_file,density=True)
+        p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in ,m1=0,m2=self.disk_use_m,eof_file=self.EOF.eof_file,density=True)
 
         den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file,l1=0,l2=self.halo_use_l)
 
@@ -446,8 +457,8 @@ class Fields():
 
         wake['P'] = (p+pot1).reshape([thline.shape[0],rline.shape[0]])
         wake['D'] = (d+den0+den1).reshape([thline.shape[0],rline.shape[0]])
-        wake['tfR'] = (fr+halo_rforce).reshape([thline.shape[0],rline.shape[0]])
-        wake['dfR'] = fr.reshape([thline.shape[0],rline.shape[0]])
+        wake['tfR'] = (-1.*fr+halo_rforce).reshape([thline.shape[0],rline.shape[0]])
+        wake['dfR'] = (-1.*fr).reshape([thline.shape[0],rline.shape[0]])
         wake['hfR'] = halo_rforce.reshape([thline.shape[0],rline.shape[0]])
 
         wake['fP'] = fp.reshape([thline.shape[0],rline.shape[0]])
