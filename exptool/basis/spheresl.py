@@ -1335,6 +1335,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     zline = xline*zaspect
     xgrid,ygrid = np.meshgrid(xline,zline)
 
+    rgrid  = (xgrid*xgrid + ygrid*ygrid)**0.5
 
     if axis:
         zline = np.array([0.])

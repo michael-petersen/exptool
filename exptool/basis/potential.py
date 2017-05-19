@@ -448,10 +448,21 @@ class Fields():
         wake['D'] = (d+den0+den1).reshape([rline.shape[0],thline.shape[0]])
         wake['tfR'] = (fr+halo_rforce).reshape([rline.shape[0],thline.shape[0]])
         wake['dfR'] = fr.reshape([rline.shape[0],thline.shape[0]])
-        wake['dfR'] = halo_rforce.reshape([rline.shape[0],thline.shape[0]])
+        wake['hfR'] = halo_rforce.reshape([rline.shape[0],thline.shape[0]])
 
         wake['fP'] = fp.reshape([rline.shape[0],thline.shape[0]])
         wake['fZ'] = fz.reshape([rline.shape[0],thline.shape[0]])
+
+        # test
+        wake['P'] = (p+pot1).reshape([thline.shape[0],rline.shape[0]])
+        wake['D'] = (d+den0+den1).reshape([thline.shape[0],rline.shape[0]])
+        wake['tfR'] = (fr+halo_rforce).reshape([thline.shape[0],rline.shape[0]])
+        wake['dfR'] = fr.reshape([thline.shape[0],rline.shape[0]])
+        wake['hfR'] = halo_rforce.reshape([thline.shape[0],rline.shape[0]])
+
+        wake['fP'] = fp.reshape([thline.shape[0],rline.shape[0]])
+        wake['fZ'] = fz.reshape([thline.shape[0],rline.shape[0]])
+
 
         self.wake = wake
 
