@@ -1370,26 +1370,29 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     #
 
     # do a conversion to cylindrical?
+    halo_rforce = ( rgrid.reshape(-1,)*potr + P.zpos*pott )/( rr*2. + P.zpos**2.)**0.5
+    halo_zforce = ( P.zpos*potr - rgrid.reshape(-1,)*pott )/( rr*2. + P.zpos**2.)**0.5
+
     
     wake = {}
     wake['X'] = xgrid
     wake['Y'] = ygrid
 
     if zline.shape[0] > 1:
-        wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
-        wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
-        wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
-        wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
-        wake['fP'] = fp.reshape([xline.shape[0],zline.shape[0]])
-        wake['fZ'] = fz.reshape([xline.shape[0],zline.shape[0]])
+        wake['P'] = (pot0+pot1).reshape([xline.shape[0],zline.shape[0]])
+        wake['D'] = (den0+den1).reshape([xline.shape[0],zline.shape[0]])
+        wake['fR'] = halo_rforce.reshape([xline.shape[0],zline.shape[0]])
+        wake['R'] = rr.reshape([xline.shape[0],zline.shape[0]])
+        wake['fP'] = potp.reshape([xline.shape[0],zline.shape[0]])
+        wake['fZ'] = halo_zforce.reshape([xline.shape[0],zline.shape[0]])
 
     else:
-        wake['P'] = p
-        wake['D'] = d
-        wake['fR'] = fr
-        wake['R'] = R
-        wake['fP'] = fp
-        wake['fZ'] = fz
+        wake['P'] = pot0+pot1
+        wake['D'] = den0+den1
+        wake['fR'] = halo_rforce
+        wake['R'] = rr
+        wake['fP'] = potp
+        wake['fZ'] = halo_zforce
 
         
     return wake

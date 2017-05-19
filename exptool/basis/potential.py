@@ -434,9 +434,9 @@ class Fields():
         P.mass = np.zeros(rgrid.size)
 
         
-        p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P, self.EOF.cos, self.EOF.sin ,m1=0,m2=self.disk_use_m,eof_file=self.EOF.eof_file,density=True)
+        p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, self.EOF.cos, self.EOF.sin ,m1=0,m2=self.disk_use_m,eof_file=self.EOF.eof_file,density=True)
 
-        den0,den1,pot0,pot1,potr,pott,potp,rr = eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file,l1=0,l2=self.halo_use_l)
+        den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file,l1=0,l2=self.halo_use_l)
 
         halo_rforce = ( rgrid.reshape(-1,)*potr + P.zpos*pott )/( rr*2. + P.zpos**2.)**0.5
 
