@@ -264,11 +264,60 @@ class Fields():
 
 
 
+    def return_forces_cyl(self,xval,yval,zval,rotpos=0.0):
+        
+        try:
+            x = self.no_odd
+
+        except:
+            print 'Fields.return_forces_cart: applying default potential parameters.'
+            Fields.set_field_parameters(self)
+
+
+        r2val = (xval*xval + yval*yval)**0.5  + 1.e-10
+        r3val = (r2val*r2val + zval*zval)**0.5  + 1.e-10
+        costh = zval/r3val
+        phival = np.arctan2(yval,xval)
+
+
+        #
+        # disk force call
+        diskfr,diskfp,diskfz,diskp,diskp0 = eof.force_eval(r2val, zval, phival + rotpos, \
+                                                      self.EOF.cos, self.EOF.sin, \
+                                                      self.potC, self.rforceC, self.zforceC,\
+                                                      self.potS, self.rforceS, self.zforceS,\
+                                                      rmin=self.XMIN,dR=self.dX,zmin=self.YMIN,dZ=self.dY,numx=self.numx,numy=self.numy,fac = 1.0,\
+                                                      MMAX=self.disk_use_m,NMAX=self.disk_use_n,\
+                                                      #MMAX=self.mmax,NMAX=self.norder,\
+                                                      ASCALE=self.ascale,HSCALE=self.hscale,CMAP=self.cmapdisk,no_odd=self.no_odd,perturb=False)
+        #
+        # halo force call
+        halofr,haloft,halofp,halop,halop0 = spheresl.force_eval(r3val, costh, phival + rotpos, \
+                                                   self.halofac*self.SL.expcoef,\
+                                                   self.xihalo,self.p0halo,self.d0halo,self.cmaphalo,self.scalehalo,\
+                                                   self.halo_use_l,self.halo_use_n,\
+                                                   #self.lmaxhalo,self.nmaxhalo,\
+                                                   self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
+                                                   
+        # recommended guards against bizarre phi forces
+
+        # do we need any other guards?
+        if r3val < np.min(self.xihalo):
+            halofp = 0.
+            diskfp = 0.
+        
+        frhalo = -1.*(r2val*halofr + zval*halofp)/r3val
+                
+        fphalo = -1.*(zval*halofr - r2val*halofp)/r3val
+
+        # this is now returning the total potential in both disk and halo case
+        return diskfr,frhalo,diskfp,-1.*haloft,diskfz,fphalo,diskp,(halop + halop0)
+
+
+            
+
     def return_forces_cart(self,xval,yval,zval,rotpos=0.0):
         
-        # to be dealt with elsewhere
-        # ,no_odd=False,halomonopole=False,diskmonopole=False,truncate_disk_n=1000
-
         try:
             x = self.no_odd
 
@@ -354,6 +403,45 @@ class Fields():
         self.halo_pot = halo_pot
         self.total_pot = disk_pot+halo_pot
 
+
+
+    def make_force_grid(self,rline=np.linspace(0.00022,0.1,100),thline=np.linspace(0.00022,2.*np.pi,50)):
+
+        self.rline = rline
+        self.thline = thline
+        self.rgrid,self.thgrid = np.meshgrid(rline,thline)
+        
+        
+        P = psp_io.particle_holder()
+        P.xpos = (self.rgrid*np.cos(self.thgrid)).reshape(-1,)
+        P.ypos = (self.rgrid*np.sin(self.thgrid)).reshape(-1,)
+        P.zpos = np.zeros(self.rgrid.size)
+        P.mass = np.ones(self.rgrid.size) # mass doesn't matter for evaluations, just get field values
+        
+        p0,p,fr,fp,fz,r = eof.compute_forces(P,self.EOF.eof_file,self.EOF.cos,self.EOF.sin)
+
+        den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file)
+        
+        #
+        # guard against center interpolation problems
+        potr[np.where( potr < 0.0)] = np.min(abs(potr))
+        #
+        
+        self.cvel_star = ((r*-fr)**0.5).reshape([len(self.thline),len(self.rline)])
+
+        # transform to cylindrical r
+        r3vals = (P.zpos**2. + rr**2.)**0.5
+        halo_rforce = (rr*potr + P.zpos*potp)/r3vals
+        
+        self.cvel_halo = ((rr*halo_rforce)**0.5).reshape([len(thline),len(rline)])
+        self.cvel_total = (((r*-fr)+(rr*halo_rforce))**0.5).reshape([len(thline),len(rline)])
+        #
+        #
+        
+        self.cvel_halo[np.where( np.isnan(self.cvel_halo))] = 0.0
+        self.cvel_total[np.where( np.isnan(self.cvel_total))] = 0.0
+
+        
 
 
 
