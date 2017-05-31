@@ -1454,49 +1454,34 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
 
 
 def reorganize_eof_dict(EOFDict):
+
+    # extract size of basis
+    mmax = EOFDict[0].mmax
+    nmax = EOFDict[0].nmax
+    
     # reorganize
-    dipole_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
-    quadrupole_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
-    #
-    octopole_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
-    four_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
-    five_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
-    six_sum = np.zeros([np.array(EOFDict.keys()).shape[0],12])
-    #
-    monopole_tally = np.zeros([np.array(EOFDict.keys()).shape[0],12])
-    monopole_sum = np.zeros(np.array(EOFDict.keys()).shape[0])
+    coef_sums = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0],nmax])
     time_order = np.zeros(np.array(EOFDict.keys()).shape[0])
-    #
-    num = 0
+    
+    keynum = 0
     for keyval in EOFDict.keys():
-        for j in range(0,12):
-            dipole_sum[num,j] = EOFDict[keyval].cos[1,j]**2. + EOFDict[keyval].sin[1,j]**2.
-            quadrupole_sum[num,j] = EOFDict[keyval].cos[2,j]**2. + EOFDict[keyval].sin[2,j]**2.
-            octopole_sum[num,j] = EOFDict[keyval].cos[3,j]**2. + EOFDict[keyval].sin[3,j]**2.
-            four_sum[num,j] = EOFDict[keyval].cos[4,j]**2. + EOFDict[keyval].sin[4,j]**2.
-            five_sum[num,j] = EOFDict[keyval].cos[5,j]**2. + EOFDict[keyval].sin[5,j]**2.
-            six_sum[num,j] = EOFDict[keyval].cos[6,j]**2. + EOFDict[keyval].sin[6,j]**2.
-            monopole_tally[num,j] = EOFDict[keyval].cos[0,j]**2.
-        time_order[num] = EOFDict[keyval].time
-        monopole_sum[num] = np.sum(EOFDict[keyval].cos[0]**2.)
-        num += 1
+        for mm in range(0,mmax+1):
+            for nn in range(0,nmax):
+                coef_sums[mm,keynum,nn] = EOFDict[keyval].cos[mm,nn]**2. + EOFDict[keyval].sin[mm,nn]**2.
+        #
+        time_order[keynum] = EOFDict[keyval].time
+        keynum += 1
+
+        
     # assemble into dictionary
     CDict = {}
     CDict['time']   = time_order[time_order.argsort()]
-    CDict['total0'] = monopole_tally[time_order.argsort(),:]
-    CDict['total1'] = dipole_sum[time_order.argsort(),:]
-    CDict['total2'] = quadrupole_sum[time_order.argsort(),:]
-    CDict['total3'] = octopole_sum[time_order.argsort(),:]
-    CDict['total4'] = four_sum[time_order.argsort(),:]
-    CDict['total5'] = five_sum[time_order.argsort(),:]
-    CDict['total6'] = six_sum[time_order.argsort(),:]
-    CDict['sum0'] = np.sum(monopole_tally,axis=1)[time_order.argsort()]
-    CDict['sum1'] = np.sum(dipole_sum,axis=1)[time_order.argsort()]
-    CDict['sum2'] = np.sum(quadrupole_sum,axis=1)[time_order.argsort()]
-    CDict['sum3'] = np.sum(octopole_sum,axis=1)[time_order.argsort()]
-    CDict['sum4'] = np.sum(four_sum,axis=1)[time_order.argsort()]
-    CDict['sum5'] = np.sum(five_sum,axis=1)[time_order.argsort()]
-    CDict['sum6'] = np.sum(six_sum,axis=1)[time_order.argsort()]
+    CDict['total'] = {}
+    CDict['sum'] = {}
+    for mm in range(0,mmax+1):
+        CDict['total'][mm] = coef_sums[mm,time_order.argsort(),:]
+        CDict['sum'][mm] = np.sum(coef_sums[mm],axis=1)[time_order.argsort()]
+    
     return CDict
 
 
@@ -1507,13 +1492,13 @@ def calculate_eof_phase(EOFDict):
 
 
     '''
-    mmax=EOFDict[np.array(EOFDict.keys())[0]].mmax
-    nmax=EOFDict[np.array(EOFDict.keys())[0]].nmax
-    #
+    mmax=EOFDict[0].mmax
+    nmax=EOFDict[0].nmax
+    
     phases = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0],nmax])
     netphases = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0]])
     time_order = np.zeros(np.array(EOFDict.keys()).shape[0])
-    #
+    
     num = 0
     for keyval in EOFDict.keys():
         for mterm in range(1,mmax+1):
@@ -1523,28 +1508,31 @@ def calculate_eof_phase(EOFDict):
             netphases[mterm,num] = np.arctan2(np.sum(EOFDict[keyval].sin[mterm,:]),np.sum(EOFDict[keyval].cos[mterm,:]))
         time_order[num] = EOFDict[keyval].time
         num += 1
-    #
+    
     DC = {}
     DC['time'] = time_order[time_order.argsort()]
-    #
-    keys = ['phase'+str(int(x)) for x in range(1,mmax+1)]
-    #
-    for indx,key in enumerate(keys):
-        DC[key] = phases[indx+1,time_order.argsort(),:]
-        DC['net'+key] = netphases[indx+1,time_order.argsort()]
-    #
-    skeys = ['speed'+str(int(x)) for x in range(1,mmax+1)]
-    #
-    for indx,skey in enumerate(skeys):
-
+    DC['phase'] = {}
+    DC['netphase'] = {}
+    DC['speed'] = {}
+    DC['netspeed'] = {}
+    
+    
+    for mm in range(1,mmax+1):
+        DC['phase'][mm] = phases[mm,time_order.argsort(),:]
+        DC['netphase'][mm] = netphases[mm,time_order.argsort()]
+    
+    for mm in range(1,mmax+1):
+        
         # if desired, could put in blocks for unreasonable values here?
         #goodphase = np.where( DC[keys[indx]][:,nterm] )
+
         
-        DC[skey] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
-        for nterm in range(0,nmax):
-            DC[skey][:,nterm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC[keys[indx]][:,nterm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
-        DC['net'+skey] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['net'+keys[indx]],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
-    #
+        DC['speed'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
+        for nn in range(0,nmax):
+            DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['phase'][mm][:,nterm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+        DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+
+        
     return DC
 
 
