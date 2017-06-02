@@ -1486,7 +1486,7 @@ def reorganize_eof_dict(EOFDict):
 
 
 
-def calculate_eof_phase(EOFDict,filter=True):
+def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1.5*np.pi):
     '''
     working phase calculations
 
@@ -1513,8 +1513,13 @@ def calculate_eof_phase(EOFDict,filter=True):
     DC['time'] = time_order[time_order.argsort()]
     DC['phase'] = {}
     DC['netphase'] = {}
+    DC['unphase'] = {}
     DC['speed'] = {}
     DC['netspeed'] = {}
+
+
+    # direction will range from 0. (completely clockwise) to 1. (completely counterclockwise)
+    DC['direction'] = {}
     
     
     for mm in range(1,mmax+1):
@@ -1524,20 +1529,38 @@ def calculate_eof_phase(EOFDict,filter=True):
     for mm in range(1,mmax+1):
         
         # if desired, could put in blocks for unreasonable values here?
-        #goodphase = np.where( DC[keys[indx]][:,nterm] )
+        #goodphase = np.where( DC['phase'][:,nterm] )
 
         
         DC['speed'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
+        DC['unphase'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
+        DC['direction'][mm] = np.zeros(nmax)
+        
         for nn in range(0,nmax):
 
+            # detect clockwise vs. counter
+
+            DC['direction'][mm][nn] = np.where( (np.ediff1d(DC['phase'][mm][:,nn]) > 0.))[0].size/DC['phase'][mm][:,nn].size
+
+            if DC['direction'][mm][nn] >= 0.5:
+                clock = False
+            else:
+                clock = True
+                
+
+            DC['unphase'][mm][:,nn] = utils.unwrap_phase(DC['phase'][mm][:,nn],tol=tol,clock=False)
+
             if filter:
-            
-                DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['phase'][mm][:,nn],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
-            DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+                DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(DC['unphase'][mm][:,nn],smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
 
             else:
+                DC['speed'][mm][:,nn] = np.ediff1d(DC['unphase'][mm][:,nn],to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
 
-                DC['speed'][mm][:,nn] = np.ediff1d(utils.unwrap_phase(DC['phase'][mm][:,nn],tol=-1.5*np.pi,clock=False),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+
+        if filter:
+            DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            
+        else:
             DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
         
     return DC
