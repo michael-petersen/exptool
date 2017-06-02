@@ -1486,7 +1486,7 @@ def reorganize_eof_dict(EOFDict):
 
 
 
-def calculate_eof_phase(EOFDict):
+def calculate_eof_phase(EOFDict,filter=True):
     '''
     working phase calculations
 
@@ -1501,11 +1501,11 @@ def calculate_eof_phase(EOFDict):
     
     num = 0
     for keyval in EOFDict.keys():
-        for mterm in range(1,mmax+1):
-            for nterm in range(0,nmax):
-                phases[mterm,num,nterm] = np.arctan2(EOFDict[keyval].sin[mterm,nterm],EOFDict[keyval].cos[mterm,nterm])
+        for mm in range(1,mmax+1):
+            for nn in range(0,nmax):
+                phases[mm,num,nn] = np.arctan2(EOFDict[keyval].sin[mm,nn],EOFDict[keyval].cos[mm,nn])
             #
-            netphases[mterm,num] = np.arctan2(np.sum(EOFDict[keyval].sin[mterm,:]),np.sum(EOFDict[keyval].cos[mterm,:]))
+            netphases[mm,num] = np.arctan2(np.sum(EOFDict[keyval].sin[mm,:]),np.sum(EOFDict[keyval].cos[mm,:]))
         time_order[num] = EOFDict[keyval].time
         num += 1
     
@@ -1529,9 +1529,16 @@ def calculate_eof_phase(EOFDict):
         
         DC['speed'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
         for nn in range(0,nmax):
-            DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['phase'][mm][:,nterm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
-        DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
 
+            if filter:
+            
+                DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['phase'][mm][:,nn],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),101,1),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+
+            else:
+
+                DC['speed'][mm][:,nn] = np.ediff1d(utils.unwrap_phase(DC['phase'][mm][:,nn],tol=-1.5*np.pi,clock=False),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
         
     return DC
 
