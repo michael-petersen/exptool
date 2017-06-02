@@ -10,7 +10,17 @@
 #
 #
 #
+'''  _______..______    __    __   _______ .______       _______     _______. __      
+    /       ||   _  \  |  |  |  | |   ____||   _  \     |   ____|   /       ||  |     
+   |   (----`|  |_)  | |  |__|  | |  |__   |  |_)  |    |  |__     |   (----`|  |     
+    \   \    |   ___/  |   __   | |   __|  |      /     |   __|     \   \    |  |     
+.----)   |   |  |      |  |  |  | |  |____ |  |\  \----.|  |____.----)   |   |  `----.
+|_______/    | _|      |__|  |__| |_______|| _| `._____||_______|_______/    |_______|
+spheresl (part of exptool.basis)
+    Implementation of Martin Weinberg's SphereSL routines for EXP simulation analysis
 
+
+'''
 # general python imports
 import numpy as np
 import time

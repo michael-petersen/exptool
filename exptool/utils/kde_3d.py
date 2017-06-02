@@ -1,9 +1,16 @@
 """
-#
-# kde_3d: gaussian kernel density estimation in two or three dimensions
-#
+ __  ___  _______   _______      ____    _______  
+|  |/  / |       \ |   ____|    |___ \  |       \ 
+|  '  /  |  .--.  ||  |__         __) | |  .--.  |
+|    <   |  |  |  ||   __|       |__ <  |  |  |  |
+|  .  \  |  '--'  ||  |____      ___) | |  '--'  |
+|__|\__\ |_______/ |_______|____|____/  |_______/ 
+                          |______|                
+kde_3d (part of exptool.utils)
+      gaussian kernel density estimation in two or three dimensions
 
-#    makes use os sparse matrices
+
+#    makes use of sparse matrices
 
 A faster gaussian kernel density estimate (KDE).
 Intended for computing the KDE on a regular grid (different use case than 
@@ -14,7 +21,7 @@ scipy's original scipy.stats.kde.gaussian_kde()).
 ( from http://pastebin.com/LNdYCZgw
 and http://stackoverflow.com/questions/18921419/implementing-a-2d-fft-based-kernel-density-estimator-in-python-and-comparing-i )
 
-
+Heavily modified by MSP
 
 """
 __license__ = 'MIT License <http://www.opensource.org/licenses/mit-license.php>'
