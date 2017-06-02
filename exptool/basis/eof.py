@@ -1,3 +1,15 @@
+#
+# this is
+# _______   ______    _______ 
+#|   ____| /  __  \  |   ____|
+#|  |__   |  |  |  | |  |__   
+#|   __|  |  |  |  | |   __|  
+#|  |____ |  `--'  | |  |     
+#|_______| \______/  |__|
+#
+#
+#
+
 
 # 08-17-16: bug found in accumulate() where call to get_pot() didn't pass MMAX,NMAX
 # 08-19-16: cmap consistency added
@@ -6,8 +18,27 @@
 
 # 08-29-16: added density consistency, still to be fixed in some places
 
+# 06-02-17: did you know that __doc__ is a thing? also added variance computation ability
+
 '''
-USAGE EXAMPLE
+ _______   ______    _______ 
+|   ____| /  __  \  |   ____|
+|  |__   |  |  |  | |  |__   
+|   __|  |  |  |  | |   __|  
+|  |____ |  `--'  | |  |     
+|_______| \______/  |__|
+eof (part of exptool.basis)
+    Implementation of Martin Weinberg's EmpOrth9thd routines for EXP simulation analysis
+
+
+member definitions
+-----------------------
+eof_params             : extract basic parameters from a cachefile
+accumulate
+
+
+usage examples
+-----------------------
 
 
 #
@@ -44,7 +75,7 @@ from exptool.basis._accumulate_c import r_to_xi,xi_to_r
 #
 def eof_params(file,verbose=0):
     '''
-    eof_params
+    eof_params: extract basic parameters from a cachefile
 
     inputs
     --------
@@ -341,21 +372,61 @@ def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx
 
 
 
-def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0,no_odd=False):
-    #
-    # take all the particles and stuff them into the basis
-    #
+def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0,no_odd=False,VAR=False):
+    '''
+    
+    accumulate: cycle through particles and return potential-tabulated coefficients
+
+    inputs
+    --------------
+    ParticleInstance :
+    potC             :
+    potS             :
+    MMAX             :
+    NMAX             :
+    XMIN             :
+    dX               :
+    YMIN             :
+    dY               :
+    NUMX             :
+    NUMY             :
+    ASCALE           :
+    HSCALE           :
+    CMAP             :
+    verbose          : (optional, default 0)
+    no_odd           : (optional, default False)
+    VAR              : (optional, default False)
+
+
+    outputs
+    ---------------
+    accum_cos        :
+    accum_sin        :
+
+    (if VAR):
+        accum_cos2   :
+        accum_sin2   :
+    
+
+    '''
+    
     norm = -4.*np.pi
+    
     #
     # set up particles
     #
     norb = len(ParticleInstance.mass)
+    
     #
     # set up accumulation arrays
     #
     accum_cos = np.zeros([MMAX+1,NMAX])
     accum_sin = np.zeros([MMAX+1,NMAX])
-    #
+
+    if VAR:
+        accum_cos2 = np.zeros([MMAX+1,NMAX])
+        accum_sin2 = np.zeros([MMAX+1,NMAX])
+    
     for n in range(0,norb):
         
         if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): utils.print_progress(n,norb,'eof.accumulate')
@@ -385,8 +456,18 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         accum_cos += (norm * ParticleInstance.mass[n] * mcos * vc)
         
         accum_sin += (norm * ParticleInstance.mass[n] * msin * vs)
-                             
-    return accum_cos,accum_sin
+
+        if VAR:
+
+            accum_cos2 += (norm * ParticleInstance.mass[n] * mcos * vc) * (norm * ParticleInstance.mass[n] * mcos * vc)
+        
+            accum_sin2 += (norm * ParticleInstance.mass[n] * msin * vs) * (norm * ParticleInstance.mass[n] * msin * vs)
+            
+    if VAR:
+        return accum_cos,accum_sin,accum_cos2,accum_sin2
+
+    else:
+        return accum_cos,accum_sin
 
 
 
@@ -1531,6 +1612,8 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
         # if desired, could put in blocks for unreasonable values here?
         #goodphase = np.where( DC['phase'][:,nterm] )
 
+        # what about a power limit? only calculate position for certain power values?
+
         
         DC['speed'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
         DC['unphase'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
@@ -1540,7 +1623,7 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
 
             # detect clockwise vs. counter
 
-            DC['direction'][mm][nn] = np.where( (np.ediff1d(DC['phase'][mm][:,nn]) > 0.))[0].size/DC['phase'][mm][:,nn].size
+            DC['direction'][mm][nn] = float(np.where( (np.ediff1d(DC['phase'][mm][:,nn]) > 0.))[0].size)/float(DC['phase'][mm][:,nn].size)
 
             if DC['direction'][mm][nn] >= 0.5:
                 clock = False
@@ -1548,7 +1631,7 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
                 clock = True
                 
 
-            DC['unphase'][mm][:,nn] = utils.unwrap_phase(DC['phase'][mm][:,nn],tol=tol,clock=False)
+            DC['unphase'][mm][:,nn] = utils.unwrap_phase(DC['phase'][mm][:,nn],tol=tol,clock=clock)
 
             if filter:
                 DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(DC['unphase'][mm][:,nn],smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
@@ -1558,11 +1641,60 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
 
 
         if filter:
-            DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
             
         else:
-            DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=False),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
         
     return DC
+
+
+
+
+
+def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
+    '''
+    compute_variance : break out of variance computation on coefficients
+
+    inputs
+    -------------
+    ParticleInstance
+    accum_cos
+    accum_sin
+    accum_cos2
+    accum_sin2
+
+    outputs
+    -------------
+    varC
+    varS
+    facC
+    facS
+    
+
+    '''    
+    
+    wgt = 1./(np.sum(ParticleInstance.mass))
+    nrm = wgt*wgt;
+    srm = 1./float(ParticleInstance.mass.size)
+
+    
+    totC = accum_cos*wgt
+    totS = accum_sin*wgt
+
+    
+    sqrC = totC*totC
+    sqrS = totS*totS
+
+    
+    varC = accum_cos2*nrm - srm*sqrC
+    varS = accum_sin2*nrm - srm*sqrS
+    
+    facC = sqrC/(varC/(float(ParticleInstance.mass.size)+1.) + sqrC + 1.0e-10)
+    facS = sqrS/(varS/(float(ParticleInstance.mass.size)+1.) + sqrS + 1.0e-10)
+    
+    return varC,varS,facC,facS
+    
+
 
 
