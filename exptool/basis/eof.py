@@ -1425,6 +1425,9 @@ def parse_components(simulation_directory,simulation_name,output_number):
             # set up a dictionary based on the component name
             ComponentDetails[PSP.comp_titles[comp_num]] = {}
 
+            # set up flag for expansion type
+            ComponentDetails[PSP.comp_titles[comp_num]]['expansion'] = 'cylinder'
+
             # population dictionary with desirables
             ComponentDetails[PSP.comp_titles[comp_num]]['nbodies'] = PSP.comp_nbodies[comp_num]
 

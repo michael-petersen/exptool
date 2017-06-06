@@ -13,6 +13,22 @@
 #                  should also set up dictionary dump by default, could just engineer in at the end?
 
 
+'''
+.______     _______..______       __    ______   
+|   _  \   /       ||   _  \     |  |  /  __  \  
+|  |_)  | |   (----`|  |_)  |    |  | |  |  |  | 
+|   ___/   \   \    |   ___/     |  | |  |  |  | 
+|  |   .----)   |   |  |         |  | |  `--'  | 
+| _|   |_______/    | _|    _____|__|  \______/  
+                           |______|
+psp_io
+      input and output of Martin Weinberg's PSP files
+
+
+
+
+'''
+
 import time
 import numpy as np
 import os
@@ -21,7 +37,7 @@ from exptool.analysis import trapping
 
 
 class Input():
-
+    '''
     #!
     #! input class to read PSP files
     #!
@@ -71,7 +87,7 @@ class Input():
     # component_read
     # orbit_map
     # orbit_resolve
-
+    '''
 
     def __init__(self, infile, comp=None, nout=None, verbose=0, orbit_list=None, infile_list=None, validate=True):
 

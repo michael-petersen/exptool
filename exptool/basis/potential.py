@@ -434,15 +434,26 @@ class Fields():
         self.total_pot = disk_pot+halo_pot
 
 
-    def make_force_grid(self,rline = np.linspace(0.00022,0.1,100),thline = np.linspace(0.00022,2.*np.pi,50),even=False):
-        #EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False):
+    def make_force_grid(self,rline = np.linspace(0.00022,0.1,100),thline = np.linspace(0.00022,2.*np.pi,50)):
         '''
         make_eof_wake: evaluate a simple grid of points along an axis
 
         inputs
         ---------
-        EOFObj: 
-
+        self   : Fields instance
+        rline  :
+        thline :
+        
+        returns
+        ---------
+        wake   : dictionary with the following keys
+           R
+           T
+           P
+           D
+           tfR
+           dfR
+           hfR
 
         '''
 
@@ -462,7 +473,7 @@ class Fields():
         cos_coefs_in = np.copy(self.EOF.cos)
         sin_coefs_in = np.copy(self.EOF.sin)
         #
-        if even:
+        if self.no_odd:
             for i in range(1,self.EOF.mmax,2):
                 cos_coefs_in[i] = np.zeros(self.EOF.nmax)
                 sin_coefs_in[i] = np.zeros(self.EOF.nmax)
@@ -493,6 +504,12 @@ class Fields():
         self.wake = wake
 
 
+
+
+
+
+
+        
 
 class EnergyKappa():
 
