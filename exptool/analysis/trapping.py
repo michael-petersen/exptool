@@ -18,11 +18,6 @@ trapping.py (part of exptool)
 '''
 
 
-# exptool imports
-from exptool.io import psp_io
-from exptool.utils import kmeans
-from exptool.utils import utils
-
 # general imports
 import time
 import numpy as np
@@ -35,6 +30,13 @@ from scipy.interpolate import UnivariateSpline
 import itertools
 from multiprocessing import Pool, freeze_support
 import multiprocessing
+
+
+
+# exptool imports
+from exptool.io import psp_io
+from exptool.utils import kmeans
+from exptool.utils import utils
 
 
 def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
