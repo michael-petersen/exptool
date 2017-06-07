@@ -6,29 +6,43 @@
 
 #  10-25-16: some redundancies noticed (bar_fourier_compute) and should be unified
 #  12-08-16: cleanup. needs to be merged with neutrapping.
+'''
+.___________..______          ___      .______   .______    __  .__   __.   _______ 
+|           ||   _  \        /   \     |   _  \  |   _  \  |  | |  \ |  |  /  _____|
+`---|  |----`|  |_)  |      /  ^  \    |  |_)  | |  |_)  | |  | |   \|  | |  |  __  
+    |  |     |      /      /  /_\  \   |   ___/  |   ___/  |  | |  . `  | |  | |_ | 
+    |  |     |  |\  \----./  _____  \  |  |      |  |      |  | |  |\   | |  |__| | 
+    |__|     | _| `._____/__/     \__\ | _|      | _|      |__| |__| \__|  \______| 
+trapping.py (part of exptool)
 
+'''
+
+
+# exptool imports
 import exptool.io.psp_io
 import exptool.utils.kmeans
 import exptool.utils.utils
 
+# general imports
 import time
 import numpy as np
 import datetime
-
-
 import os
 from scipy import interpolate
 from scipy.interpolate import UnivariateSpline
 
+# multiprocessing imports
 import itertools
 from multiprocessing import Pool, freeze_support
 import multiprocessing
 
 
 def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
+    '''
     #
     # simple fourier method to calculate where the particles are in relation to the bar
     #
+    '''
     R = (ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
     TH = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
     loR = np.where( R < rcut)[0]
@@ -55,6 +69,7 @@ def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
     
 
 def find_barangle(time,BarInstance,interpolate=True):
+    '''
     #
     # use a bar instance to match the output time to a bar position
     #
@@ -62,6 +77,7 @@ def find_barangle(time,BarInstance,interpolate=True):
     #
     #    but feels like it only goes one direction?
     #
+    '''
     sord = 0 # should this be a variable?
     
     if (interpolate):
@@ -90,13 +106,15 @@ def find_barangle(time,BarInstance,interpolate=True):
 
 
 def find_barpattern(intime,BarInstance,smth_order=2):
+    '''
     #
     # use a bar instance to match the output time to a bar pattern speed
     #
     #    simple differencing--may want to be careful with this.
     #    needs a guard for the end points
     #
-
+    '''
+    
     # grab the derivative at whatever smoothing order
     BarInstance.frequency_and_derivative(smth_order=smth_order)
     
@@ -124,6 +142,11 @@ def find_barpattern(intime,BarInstance,smth_order=2):
 
 
 class BarTransform():
+    '''
+    BarTransform : class to do the work to calculate the bar position and transform particles
+
+
+    '''
 
     def __init__(self,ParticleInstanceIn,bar_angle=None,rel_bar_angle=0.,maxr=1.):
 
@@ -191,10 +214,12 @@ class BarTransform():
 
 
 class BarDetermine():
-
+    '''
     #
     # class to find the bar
     #
+
+    '''
 
     def __init__(self,**kwargs):
 
@@ -413,6 +438,7 @@ class ApsFinding():
     #
 
     '''
+    ApsFinding: a class to compute trapping
 
     A standard use would be
 
@@ -681,7 +707,7 @@ def reduce_aps_dictionary(TrappingInstance,norb):
 
 
 
-def process_kmeans(ApsArray,indx=-1,k=2):
+def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
     #
     # very robust kmeans implementation
     #
@@ -695,20 +721,39 @@ def process_kmeans(ApsArray,indx=-1,k=2):
     try:
         
         # these may be better served as maxima
-        clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
-        clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+        if ~maxima:
+            clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+            clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
         
-        # mean cluster center in the x dimension. could also do largest, or smallest
-        clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+            # mean cluster center in the x dimension (preferred trapping direction).
+            clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+
+        else:
+            clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+            clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+        
+            # maximum x dimension extent for cluster center (not sensitive to non-bar)
+            clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+
+        
     except:
         K = kmeans.KPlusPlus(2,X=ApsArray)
         K.init_centers()
         K.find_centers(method='++')
         kmeans_plus_flag = 1
+        
         try:
-            clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
-            clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
-            clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+
+            if ~maxima:
+                clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+                clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+                clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+
+            else:
+                clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+                clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+                clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
+            
         except:
             #
             # would like a more intelligent way to diagnose
@@ -727,6 +772,11 @@ def process_kmeans(ApsArray,indx=-1,k=2):
     
 
 def transform_aps(ApsArray,BarInstance):
+    '''
+    transform_aps : simple transformation for the aps array, offloaded for clarity.
+    
+    stuck in one direction, watch out
+    '''
     bar_positions = find_barangle(ApsArray[:,0],BarInstance)
     X = np.zeros([len(ApsArray[:,1]),2])
     X[:,0] = ApsArray[:,1]*np.cos(bar_positions) - ApsArray[:,2]*np.sin(bar_positions)
@@ -807,6 +857,11 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                    opening_angle=np.pi/8.,rfreq_limit=22.5,\
                    sigmax_limit=0.001,t_thresh=1.5,\
                    verbose=0):
+    '''
+    do_kmeans_dict
+
+
+    '''
     #
     norb = TrappingInstanceDict['norb']
     # this needs to be adaptable
