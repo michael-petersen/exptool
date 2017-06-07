@@ -19,9 +19,9 @@ trapping.py (part of exptool)
 
 
 # exptool imports
-import exptool.io.psp_io
-import exptool.utils.kmeans
-import exptool.utils.utils
+from exptool.io import psp_io
+from exptool.utils import kmeans
+from exptool.utils import utils
 
 # general imports
 import time
