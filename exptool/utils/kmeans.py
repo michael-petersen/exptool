@@ -7,6 +7,10 @@
 import random
 import numpy as np
 
+import matplotlib.pyplot as plt
+import matplotlib
+
+
 class KMeans():
     
     def __init__(self, K, X=None, N=0):
@@ -51,7 +55,7 @@ class KMeans():
             clus = self.clusters
             K = self.K
             for m, clu in clus.items():
-                cs = cm.spectral(1.*m/self.K)
+                cs = matplotlib.cm.spectral(1.*m/self.K)
                 plt.plot(mu[m][0], mu[m][1], 'o', marker='*', \
                          markersize=12, color=cs)
                 plt.plot(zip(*clus[m])[0], zip(*clus[m])[1], '.', \

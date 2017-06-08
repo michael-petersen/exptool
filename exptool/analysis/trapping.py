@@ -914,7 +914,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
 
     returns
     -----------
-    
+    np.array([trapping_array_x1,trapping_array_x2])
 
     
     '''
@@ -942,6 +942,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         # transform to bar frame
         X = transform_aps(TrappingInstanceDict[indx],BarInstance)
         #
+        
         orbit_dist = []
         for midpoint in range(0,len(X)):
             relative_aps_time = time_sequence - time_sequence[midpoint]
@@ -967,7 +968,9 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                 orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x])
             #
             #
-        DD = np.array(orbit_dist)
+            
+        DD = np.array(orbit_dist) # 0:time, 1:theta_n, 2:sigma_x
+        
         #nDD = abs(np.ediff1d(DD[:,1],to_begin=1.0))
         #
         tDD = 1./(abs(np.ediff1d(DD[:,0],to_begin=100.0))+1.e-8)
@@ -980,9 +983,12 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         #     4. delta(theta_n) vs time (volitility, disabled for speed now)
         theta_func = interpolate.interp1d(DD[:,0],DD[:,1], kind='nearest',fill_value=1.4)      #1
         
-        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)
-        frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.4)
-        sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.4)
+        frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.4)       #2
+        
+        sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.4) #3
+
+        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)            #4
+
         #
         #
         # apply trapping rules
