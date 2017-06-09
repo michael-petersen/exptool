@@ -709,7 +709,7 @@ def reduce_aps_dictionary(TrappingInstance,norb):
 def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
     '''
     #
-    # very robust kmeans implementation
+    # robust kmeans implementation
     #
     #    -can be edited for speed
     #    -confined to two dimensions
@@ -756,7 +756,9 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
             # maximum x dimension extent for cluster center (not sensitive to non-bar)
             clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
-        
+        theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+
+    # failure on basic kmeans
     except:
         K = kmeans.KPlusPlus(2,X=ApsArray)
         K.init_centers()
@@ -774,23 +776,28 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
                 clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
                 clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
                 clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
-            
+
+        theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+
+        # failure mode for advanced kmeans
         except:
+            
             #
             # would like a more intelligent way to diagnose
             #if indx >= 0:
             #    print 'Orbit %i even failed in Kmeans++!!' %indx
-            clusterstd_x = -1.
-            clusterstd_y = -1.
-            clustermean = -1.
+            clusterstd_x = np.nan
+            clusterstd_y = np.nan
+            clustermean = np.nan
+            theta_n = np.nan
             kmeans_plus_flag = 2
-            # if this fails, it will return 1s in the standard deviation arrays
+
     
-    theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-             
     
     return theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag
-    
+
+
+
 
 def transform_aps(ApsArray,BarInstance):
     '''
