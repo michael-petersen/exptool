@@ -15,6 +15,20 @@
     |__|     | _| `._____/__/     \__\ | _|      | _|      |__| |__| \__|  \______| 
 trapping.py (part of exptool)
 
+
+CLASSES:
+BarTransform
+BarDetermine
+ApsFinding
+ComputeTrapping (under construction)
+
+
+TODO:
+
+Current work is on the kmeans implementations for generalize for all simulations
+
+
+
 '''
 
 
@@ -839,6 +853,8 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
     x_position
     sigma_x
     sigma_y
+
+    note--all are set to np.nan if unclassifiable for some reason
                           
     '''
     norb = TrappingInstanceDict['norb']
@@ -848,10 +864,14 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
     x_position = np.zeros(norb)
     sigma_x = np.zeros(norb)
     sigma_y = np.zeros(norb)
-    
+
+    # keep track of base statistics
     skipped_for_aps = 0
     skipped_for_res = 0
     sent_to_kmeans_plus = 0
+    failed_kmeans_plus = 0
+
+    t1 = time.time()
 
     
     for indx in range(0,norb):
@@ -861,11 +881,15 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         # block loop completely if too few aps
         if len(TrappingInstanceDict[indx][:,0]) < sbuffer:
             skipped_for_aps += 1
-            #cluster_dictionary[indx] = None
+
+            theta_20[indx] = np.nan
+            r_frequency[indx] = np.nan
+            x_positio[indx] = np.nan
+            sigma_x[indx] = np.nan
+            sigma_y[indx] = np.nan
+            
             continue
 
-        # transform to bar frame
-        X = transform_aps(TrappingInstanceDict[indx],BarInstance)
 
         # find the closest aps
         relative_aps_time = abs(TrappingInstanceDict[indx][:,0] - desired_time)
@@ -874,13 +898,26 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         # block loop if furthest aps is above some time threshold
         if relative_aps_time[closest_aps[-1]] > t_thresh:
             skipped_for_res += 1
-            #cluster_dictionary[indx] = None
+
+            theta_20[indx] = np.nan
+            r_frequency[indx] = np.nan
+            x_positio[indx] = np.nan
+            sigma_x[indx] = np.nan
+            sigma_y[indx] = np.nan
+            
             continue
+
+
+        # transform to bar frame
+        X = transform_aps(TrappingInstanceDict[indx],BarInstance)
 
         # do k-means
         theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],maxima=maxima)
 
-        sent_to_kmeans_plus += kmeans_plus_flag
+        if kmeans_plus_flag == 1: sent_to_kmeans_plus += 1
+
+        if kmeans_plus_flag == 2: failed_kmeans_plus += 1
+
         # set the values for each orbit
         theta_20[indx] = theta_n
 
@@ -891,9 +928,14 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         sigma_x[indx] = clusterstd_x
         sigma_y[indx] = clusterstd_y
 
+
+    if (verbose > 1): print 'K-means took %3.2f seconds (%3.2f ms per orbit)' %(t2, t2/norb*1000)
+
     print 'skipped_for_aps',skipped_for_aps
     print 'skipped_for_res',skipped_for_res
     print 'sent_to_kmeans_plus',sent_to_kmeans_plus
+    print 'failed_kmeans_plus',failed_kmeans_plus
+
 
     return theta_20,r_frequency,x_position,sigma_x,sigma_y
 
@@ -1059,6 +1101,7 @@ def multi_compute_trapping(holding,nprocs,BarInstance,\
                    opening_angle=np.pi/8.,rfreq_limit=22.5,\
                    sigmax_limit=0.001,t_thresh=1.5,\
                    verbose=0):
+                   
     pool = Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = BarInstance
@@ -1067,13 +1110,16 @@ def multi_compute_trapping(holding,nprocs,BarInstance,\
     fifth_arg = rfreq_limit
     sixth_arg = sigmax_limit
     seventh_arg = t_thresh
+    
     eighth_arg = [0 for i in range(0,nprocs)]
     eighth_arg[0] = verbose
+    
     a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),eighth_arg))
-    #
+    
     # clean up to exit
     pool.close()
-    pool.join()  
+    pool.join()
+    
     return a_vals
 
 
@@ -1083,23 +1129,29 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    opening_angle=np.pi/8.,rfreq_limit=22.5,\
                    sigmax_limit=0.001,t_thresh=1.5,\
                    verbose=0):
-    #
+    
     nprocs = multiprocessing.cpu_count()
     holding = redistribute_aps(TrappingInstanceDict,nprocs)
+    
     if (verbose > 0):
         print 'Beginning kmeans, using %i processors.' %nprocs
+    
     t1 = time.time()
     freeze_support()
-    #x1_arrays,x2_arrays = multi_compute_trapping(holding,nprocs,BarInstance,opening_angle=opening_angle,rfreqlim=rfreqlim)
+
     trapping_arrays = multi_compute_trapping(holding,nprocs,BarInstance,\
                    sbuffer=sbuffer,\
                    opening_angle=opening_angle,rfreq_limit=rfreq_limit,\
                    sigmax_limit=sigmax_limit,t_thresh=t_thresh,\
                    verbose=verbose)
+                   
     print 'Total trapping calculation took %3.2f seconds, or %3.2f milliseconds per orbit.' %(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict))
+
     x1_master = re_form_trapping_arrays(trapping_arrays,0)
     x2_master = re_form_trapping_arrays(trapping_arrays,1)
+    
     return x1_master,x2_master
+
 
 
 def re_form_trapping_arrays(array,array_number):
