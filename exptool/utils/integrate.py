@@ -26,7 +26,7 @@ from exptool.orbits import orbit
 import numpy as np
 import time
 
-verbose = True
+#verbose = True
 
 '''
 WISHLIST
@@ -55,7 +55,7 @@ def clock_transform(xarray,yarray,thetas):
 
 
 
-def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=False,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1):
+def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=False,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1,verbose=0):
     '''
 
 
