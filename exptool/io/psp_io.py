@@ -28,10 +28,15 @@ psp_io
 
 
 '''
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 
 import time
 import numpy as np
 import os
+
+
+
 
 #from exptool.analysis import trapping
 
@@ -147,7 +152,7 @@ class Input():
 
                 if not (self.comp):
                     mode = 0
-                    print 'psp_io.Input: Component must be defined to proceed with orbit resolution.'
+                    print('psp_io.Input: Component must be defined to proceed with orbit resolution.')
 
             if validate==True:
 
@@ -157,14 +162,14 @@ class Input():
                 Input.psp_read_headers(self)
         
                 if self.verbose>=1:
-                    print 'psp_io.Input: The time is %3.3f, with %i components and %i total bodies.' %(self.time,self.ncomp,self.ntot)
+                    print('psp_io.Input: The time is {0:3.2f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
 
                     if self.verbose >= 2:
 
                         comp_num = 0
                         while comp_num < self.ncomp:
                             
-                            print 'psp_io.Input: Component %s, using %s force calculation.' %(self.comp_titles[comp_num],self.comp_expansions[comp_num])
+                            print('psp_io.Input: Component {0:20s}, using {0:20s} force calculation.'.format(self.comp_titles[comp_num],self.comp_expansions[comp_num]))
 
                             comp_num += 1
             
@@ -172,7 +177,7 @@ class Input():
                 
                     
         except:
-            print 'psp_io.Input: The master infile is not defined (or does not exist). Master infile required to proceed.'
+            print('psp_io.Input: The master infile is not defined (or does not exist). Master infile required to proceed.')
             mode = 0
 
 
@@ -199,7 +204,7 @@ class Input():
         if mode == 2:
 
             if self.verbose >= 1:
-                print 'psp_io.Input: Orbit Resolution Initialized...'
+                print('psp_io.Input: Orbit Resolution Initialized...')
       
             #
             # drop into orbit retrieval mode
@@ -208,7 +213,7 @@ class Input():
 
 
         if mode == 0:
-            print 'psp_io.Input: Exiting with error.'
+            print('psp_io.Input: Exiting with error.')
             # would be great to put some error code handling in here
 
             
@@ -221,7 +226,7 @@ class Input():
         Input.psp_read_headers(self)
         
         if self.verbose>=1:
-            print 'psp_io.psp_full_read: The time is %3.3f, with %i components and %i total bodies.' %(self.time,self.ncomp,self.ntot)
+            print('psp_io.Input: The time is {0:3.2f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
 
         #
         # select component to output
@@ -263,7 +268,7 @@ class Input():
 
             
             if self.verbose >= 2:
-                print 'psp_io.psp_full_read: PSP file read in %3.2f seconds' %(time.time()-master_time)
+                print('psp_io.psp_full_read: PSP file read in {0:3.2f} seconds'.format(time.time()-master_time))
 
 
 
@@ -285,7 +290,7 @@ class Input():
         while present_comp < self.ncomp:
             
             if self.verbose >= 4:
-                print 'psp_io.psp_read_headers: Examining component %i' %(present_comp)
+                print('psp_io.psp_read_headers: Examining component {0:1d}'.format(present_comp))
                 
             # read the component header
             Input.component_header_read(self,present_comp)
@@ -305,13 +310,13 @@ class Input():
             try:
                 self.which_comp = np.where(np.array(self.comp_titles) == self.comp)[0][0]
             except:
-                print 'psp_io.select_component: No matching component!'
+                print('psp_io.select_component: No matching component!')
                 self.which_comp = None
         else:
             self.which_comp = None
 
             if self.verbose > 0:
-                print 'psp_io.select_component: Proceeding without selecting component.'
+                print('psp_io.select_component: Proceeding without selecting component.')
 
 
 
@@ -457,8 +462,6 @@ class Input():
             #
             out = np.memmap(self.infile,dtype=self.readtype,shape=(1,int(self.comp_nbodies[self.which_comp])),offset=int(self.comp_pos_data[self.which_comp]),order='F',mode='r')
 
-            #print np.array(out['f0'][0])[self.OLIST]
-            #print out['f0'][0][self.OLIST]
 
             self.mass = out['f0'][0][self.OLIST]
             self.xpos = out['f1'][0][self.OLIST]
@@ -492,11 +495,11 @@ class Input():
         head = self.comp_string[self.which_comp]
         [comptitle,expansion,EJinfo,basisinfo] = [q for q in head.split(':')]
 
-        print 'component: ',self.comp_titles[self.which_comp]
-        print 'bodies: ',self.comp_nbodies[self.which_comp]
-        print 'expansion: ',expansion.strip()
-        print 'ej info: ',EJinfo
-        print 'basis info: ',basisinfo
+        print('component: ',self.comp_titles[self.which_comp])
+        print('bodies: ',self.comp_nbodies[self.which_comp])
+        print('expansion: ',expansion.strip())
+        print('ej info: ',EJinfo)
+        print('basis info: ',basisinfo)
 
         #
         # could develop a more user-friendly output for these
@@ -525,7 +528,7 @@ class Input():
         self.nbodies = len(self.OLIST)
 
         if self.verbose >= 1:
-            print 'psp_io.orbit_map: Orbit map accepted with %i bodies.' %self.nbodies
+            print('psp_io.orbit_map: Orbit map accepted with {0:1d} bodies.'.format(self.nbodies))
 
     def timestep_map(self):
 
@@ -544,7 +547,7 @@ class Input():
         self.ILIST = np.array(ilist)
 
         if self.verbose >= 1:
-            print 'psp_io.timestep_map: Filename map accepted with %i files (timesteps).' %len(self.ILIST)
+            print('psp_io.timestep_map: Filename map accepted with {0:1d} files (timesteps).'.format(len(self.ILIST)))
 
         
     def orbit_resolve(self):
@@ -562,7 +565,7 @@ class Input():
         self.f.close()
 
         if self.verbose>=1:
-            print 'psp_io.orbit_resolve: The time is %3.3f, with %i components and %i total bodies.' %(self.time,self.ncomp,self.ntot)
+            print('psp_io.Input: The time is {0:3.2f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
 
         #
         # select component to output
@@ -599,10 +602,10 @@ class Input():
             #
             self.f = open(file,'rb')
 
-            [time] = np.fromfile(self.f, dtype='<f8',count=1)
+            [ttime] = np.fromfile(self.f, dtype='<f8',count=1)
 
             if self.verbose>=4:
-                print 'Time: %3.3f' %(time)
+                print('Time: {0:4.3f}'.format(ttime))
 
             #
             # read and stuff arrays
@@ -642,7 +645,7 @@ class Input():
             del self.pote
 
         if self.verbose >= 2:
-                    print 'psp_io.orbit_resolve: Orbit(s) resolved in %3.2f seconds' %(time.time()-res_time_initial)
+                    print('psp_io.orbit_resolve: Orbit(s) resolved in {0:3.2f} seconds'.format(time.time()-res_time_initial))
 
 
 
@@ -846,13 +849,13 @@ def map_simulation_files(outfile,simulation_directory,simulation_name):
                 del PSPDump
 
             except:
-                print 'Bad file: ',simulation_directory+'OUT.'+simulation_name+'.%05i' %i
+                print('Bad file: ',simulation_directory+'OUT.'+simulation_name+'.{0:05d}'.format(i))
                 t = current_time
                 
             if t > current_time:
                 print >>f,simulation_directory+'OUT.'+simulation_name+'.%05i' %i
                 current_time = t
-                print current_time
+                print(current_time)
                 
         #
         f.close()
