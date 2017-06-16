@@ -543,8 +543,8 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
         #
         # compute spherical coordinates
         #
-        r2 = (xx*xx + yy*yy + zz*zz + 1.0e-10);
-        r = np.sqrt(r2) + 1.0e-10;
+        r2 = xx*xx + yy*yy + zz*zz
+        r = np.nanmax([np.sqrt(r2),1.0e-10]);
         costh = zz/r;
         phi = np.arctan2(yy,xx);
         

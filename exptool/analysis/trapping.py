@@ -25,11 +25,12 @@ ComputeTrapping (under construction)
 
 TODO:
 
-Current work is on the kmeans implementations for generalize for all simulations
-
-
+-Current work is on the kmeans implementations for generalize for all simulations
+-Python3 print to file
+-Filtering algorithms for bar determination
 
 '''
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 # general imports
@@ -67,7 +68,7 @@ def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
     bar_angle = 0.5*np.arctan2(B2,A2)
     
     if (verbose):
-        print 'Position angle is %4.3f . . .' %bar_angle
+        print('Position angle is {0:4.3f} . . .'.format(bar_angle))
         
     #
     # two steps:
@@ -243,10 +244,10 @@ class BarDetermine():
             try:
                 # check to see if bar file has already been created
                 self.read_bar(kwargs['file'])
-                print 'trapping.BarDetermine: BarInstance sucessfully read.'
+                print('trapping.BarDetermine: BarInstance sucessfully read.')
             
             except:
-                print 'trapping.BarDetermine: no compatible bar file found.'
+                print('trapping.BarDetermine: no compatible bar file found.')
                 
 
         return None
@@ -273,7 +274,7 @@ class BarDetermine():
         self.SLIST = np.array(s_list)
 
         if self.verbose >= 1:
-            print 'BarDetermine.parse_list: Accepted %i files.' %len(self.SLIST)
+            print('BarDetermine.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
 
     def cycle_files(self):
 
@@ -292,7 +293,7 @@ class BarDetermine():
 
 
         if self.verbose >= 2:
-                print 'Computed %i steps in %3.2f minutes, for an average of %3.2f seconds per step.' %( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) )
+                print('Computed {0:d} steps in {1:3.2f} minutes, for an average of {2:3.2f} seconds per step.'.format(( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) ))
 
 
     def bar_doctor_print(self):
@@ -349,7 +350,7 @@ class BarDetermine():
             
             if (verbose):
                 
-                print 'Cannot assure proper functionality of both order smoothing and low pass filtering.'
+                print('Cannot assure proper functionality of both order smoothing and low pass filtering.')
 
         self.deriv = np.zeros_like(self.pos)
         for i in range(1,len(self.pos)):
@@ -403,12 +404,14 @@ class BarDetermine():
         # print the barfile to file
         #
 
-        f = open(outfile,'w')
+        # this will be broken in python 3 compatibility
+        
+        #f = open(outfile,'w')
 
-        for i in range(0,len(self.time)):
-            print >>f,self.time[i],self.pos[i],self.deriv[i]
+        #for i in range(0,len(self.time)):
+        #    print >>f,self.time[i],self.pos[i],self.deriv[i]
 
-        f.close()
+        #f.close()
  
     def place_ellipse(self):
 
@@ -496,7 +499,7 @@ class ApsFinding():
         self.SLIST = np.array(s_list)
 
         if self.verbose >= 1:
-            print 'ApsFinding.parse_list: Accepted %i files.' %len(self.SLIST)
+            print('ApsFinding.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
 
     
     def determine_r_aps(self,filelist,comp,nout=10,out_directory='',threedee=False,return_aps=False):
@@ -601,7 +604,7 @@ class ApsFinding():
         f.close()
 
 
-        print 'trapping.ApsFinding.determine_r_aps: savefile is '+out_directory+'apshold'+tstamp+'.dat'
+        print('trapping.ApsFinding.determine_r_aps: savefile is '+out_directory+'apshold'+tstamp+'.dat')
 
         if (return_aps):
             ApsDict = ApsFinding.read_aps_file(self,out_directory+'apshold'+tstamp+'.dat')
@@ -929,12 +932,12 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         sigma_y[indx] = clusterstd_y
 
 
-    if (verbose > 1): print 'K-means took %3.2f seconds (%3.2f ms per orbit)' %(t2, t2/norb*1000)
+    if (verbose > 1): print('K-means took {0:3.2f} seconds ({1:3.2f} ms per orbit)'.format((t2, t2/norb*1000))
 
-    print 'skipped_for_aps',skipped_for_aps
-    print 'skipped_for_res',skipped_for_res
-    print 'sent_to_kmeans_plus',sent_to_kmeans_plus
-    print 'failed_kmeans_plus',failed_kmeans_plus
+    print('skipped_for_aps',skipped_for_aps)
+    print('skipped_for_res',skipped_for_res)
+    print('sent_to_kmeans_plus',sent_to_kmeans_plus)
+    print('failed_kmeans_plus',failed_kmeans_plus)
 
 
     return theta_20,r_frequency,x_position,sigma_x,sigma_y
@@ -975,7 +978,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
 
     t1 = time.time()
     
-    if (verbose > 0): print 'trapping.do_kmeans_dict: opening angle=%4.3f, OmegaR=%3.2f, sigma_x limit=%4.3f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sigmax_limit,sbuffer)
+    #if (verbose > 0): print('trapping.do_kmeans_dict: opening angle=%4.3f, OmegaR=%3.2f, sigma_x limit=%4.3f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sigmax_limit,sbuffer)
     
     for indx in range(0,norb):
         
@@ -1057,7 +1060,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         trapping_array_x1[indx,x1] = np.ones(len(x1))
         trapping_array_x2[indx,x2] = np.ones(len(x2))
     t2 = time.time()-t1
-    if (verbose > 1): print 'K-means took %3.2f seconds (%3.2f ms per orbit)' %(t2, t2/norb*1000)
+    if (verbose > 1): print('K-means took {0:3.2f} seconds ({1:3.2f} ms per orbit)'.format(t2, t2/norb*1000))
     return np.array([trapping_array_x1,trapping_array_x2])
 
 
@@ -1073,7 +1076,7 @@ def redistribute_aps(TrappingInstanceDict,divisions):
     holders = [{} for x in range(0,divisions)]
     average_part = int(np.floor(TrappingInstanceDict['norb'])/divisions)
     first_partition = TrappingInstanceDict['norb'] - average_part*(divisions-1)
-    print 'Each processor has %i particles.' %(average_part)#, first_partition
+    print('Each processor has {0:d} particles.'.format(average_part))#, first_partition
     low_particle = 0
     for i in range(0,divisions):
         end_particle = low_particle+average_part
@@ -1134,7 +1137,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     holding = redistribute_aps(TrappingInstanceDict,nprocs)
     
     if (verbose > 0):
-        print 'Beginning kmeans, using %i processors.' %nprocs
+        print('Beginning kmeans, using {0:d} processors.'.format(nprocs))
     
     t1 = time.time()
     freeze_support()
@@ -1145,7 +1148,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    sigmax_limit=sigmax_limit,t_thresh=t_thresh,\
                    verbose=verbose)
                    
-    print 'Total trapping calculation took %3.2f seconds, or %3.2f milliseconds per orbit.' %(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict))
+    print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
 
     x1_master = re_form_trapping_arrays(trapping_arrays,0)
     x2_master = re_form_trapping_arrays(trapping_arrays,1)
