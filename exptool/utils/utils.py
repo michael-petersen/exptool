@@ -25,6 +25,7 @@ savitzky_golay : smoothing using a savitzky_golay filter
 
 
 '''
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 import numpy as np
@@ -54,11 +55,11 @@ def print_progress(current_n,total_n,module):
     if last:
         bar = ('=' * int(20.)).ljust(20)
         percent = int(100)
-        print "%s: [%s] %s%%" % (module, bar, percent)
+        print('{0:20s}: [{1:20s}] {2:2d}%'.format(module, bar, percent))
         
     else:
-        sys.stdout.write("%s: [%s] %s%%\r" % (module, bar, percent))
-        sys.stdout.flush()
+        print('{0:20s}: [{1:20s}] {2:2d}%'.format(module, bar, percent),end='\r')
+        #sys.stdout.flush()
 
 
 

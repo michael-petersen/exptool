@@ -4,6 +4,8 @@
 #
 #  MSP 5.1.2016
 #
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 from scipy import interpolate
 
@@ -65,13 +67,13 @@ def parse_slgrid(file,verbose=0):
     scale = b[2]
     
     if verbose > 0:
-        print 'LMAX=',lmax
-        print 'NMAX=',nmax
-        print 'NUMR=',numr
-        print 'CMAP=',cmap
-        print 'RMIN=',rmin
-        print 'RMAX=',rmax
-        print 'SCALE=',scale
+        print('LMAX=',lmax)
+        print('NMAX=',nmax)
+        print('NUMR=',numr)
+        print('CMAP=',cmap)
+        print('RMIN=',rmin)
+        print('RMAX=',rmax)
+        print('SCALE=',scale)
 
     f.close()
     
@@ -109,7 +111,7 @@ def read_cached_table(file,verbose=0,retall=True):
         ltable[l] = np.fromfile(f, dtype=np.uint32,count=1)
         evtable[l,1:nmax+1] = np.fromfile(f,dtype='f8',count=nmax)
         for n in range(1,nmax+1):
-            if verbose==1: print l,n
+            if verbose==1: print(l,n)
             #
             # loops for different levels go here
             #

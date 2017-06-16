@@ -15,6 +15,8 @@ integrate.py: part of exptool
 
 
 '''
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 #
 # take a field instance and do an integration
 #
@@ -139,7 +141,7 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
         vyarray[step]   = vyarray[step-1]   + (0.5*(force_yarray[step-1]+force_yarray[step])    *dt)
         vzarray[step]   = vzarray[step-1]   + (0.5*(force_zarray[step-1]+force_zarray[step])    *dt)
     if verbose:
-        print '%4.3f seconds to integrate.' %(time.time()-t0)
+        print('{0:4.3f} seconds to integrate.'.format(time.time()-t0))
     # put into dictionary form
     OrbitDictionary = orbit.Orbits()
     OrbitDictionary['T'] = times
