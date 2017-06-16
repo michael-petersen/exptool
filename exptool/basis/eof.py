@@ -49,6 +49,8 @@ usage examples
 #
 
 '''
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 
 # general definitions
 import struct
@@ -122,16 +124,16 @@ def eof_params(file,verbose=0):
 
     if (verbose):
 
-        print 'eof.eof_params: The parameters for this EOF file are:'
-        print 'RMIN=%5.4f,RMAX=%5.4f' %(rmin,rmax)
-        print 'MMAX=%i' %mmax
-        print 'NORDER=%i' %norder
-        print 'NMAX=%i' %nmax
-        print 'NUMX,NUMY=%i,%i' %(numx,numy)
-        print 'DENS,CMAP=%i,%i' %(dens,cmap)
-        print 'ASCALE,HSCALE=%5.4f,%5.4f' %(ascale,hscale)
-        print 'CYLMASS=%5.4f' %cylmass
-        print 'TNOW=%5.4f' %tnow
+        print('eof.eof_params: The parameters for this EOF file are:')
+        print('RMIN={0:5.4f},RMAX={1:5.4f}'.format(rmin,rmax))
+        print('MMAX={0:d}'.format(mmax))
+        print('NORDER={0:d}'.format(norder))
+        print('NMAX={0:d}'.format(nmax))
+        print('NUMX,NUMY={0:d},{1:d}'.format(numx,numy))
+        print('DENS,CMAP={0:d},{1:d}'.format(dens,cmap))
+        print('ASCALE,HSCALE={0:5.4f},{1:5.4f}'.format(ascale,hscale))
+        print('CYLMASS={0:5.4f}'.format(cylmass))
+        print('TNOW={0:5.4f}'.format(tnow))
 
 
     f.close()
@@ -481,7 +483,7 @@ def show_basis(eof_file,plot=False,sine=False):
     xvals = xi_to_r(np.array([XMIN + i*dX for i in range(0,numx+1)]),cmap,ascale)
     zvals =  y_to_z(np.array([YMIN + i*dY for i in range(0,numy+1)]),hscale)
 
-    print('eof.show_basis: plotting %i azimuthal orders and %i radial orders...'%(MMAX,norder) )
+    print('eof.show_basis: plotting {0:d} azimuthal orders and {1:d} radial orders...'.format(MMAX,norder) )
 
     xgrid,zgrid = np.meshgrid(xvals,zvals)
 
@@ -1018,7 +1020,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False):
         
     else:
         # do the accumulation call, not implemented yet
-        print 'eof.compute_coefficients: This definition has not yet been generalized to take a single processor.'
+        print('eof.compute_coefficients: This definition has not yet been generalized to take a single processor.')
         a_cos = 0
         a_sin = 0
 
@@ -1139,7 +1141,7 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     
 
     if (verbose):
-        print 'eof.make_coefficients_multi: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
+        print('eof.make_coefficients_multi: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
 
     # start timer    
     t1 = time.time()
@@ -1148,8 +1150,8 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     a_coeffs = multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
     
     if (verbose):
-        print 'eof.make_coefficients_multi: Accumulation took %3.2f seconds, or %4.2f microseconds per orbit.' \
-          %(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass))
+        print ('eof.make_coefficients_multi: Accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'\
+          .format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
 
     # sum over processes
     scoefs = np.sum(np.array(a_coeffs),axis=0)
@@ -1209,12 +1211,19 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
 
 
 def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0):
+    
     holding = redistribute_particles(ParticleInstance,nprocs)
+    
     t1 = time.time()
     multiprocessing.freeze_support()
+    
     a_vals = multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=verbose)
-    if (verbose): print 'eof.find_forces_multi: Force Evaluation took %3.2f seconds, or %4.2f microseconds per orbit.' %(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass))
+    
+    if (verbose):
+        print('eof.find_forces_multi: Force Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
+              
     # accumulate over processes
+    
     p0,p,fr,fp,fz,r = mix_outputs(np.array(a_vals))
     return p0,p,fr,fp,fz,r
 
@@ -1338,7 +1347,7 @@ def save_eof_coefficients(outfile,EOF_Object,verbose=0):
     ndumps += 1
     ndumps.flush() # update the lead value
 
-    if verbose: print 'eof.save_eof_coefficients: coefficient file currently has %i dumps.' %ndumps
+    if verbose: print('eof.save_eof_coefficients: coefficient file currently has {0:d} dumps.'.format(ndumps))
 
     # seek to the correct position
     # EOF_Object must have the same size as previous dumps...
@@ -1354,7 +1363,7 @@ def restore_eof_coefficients(infile):
     try:
         f = open(infile,'rb')
     except:
-        print 'eof.restore_eof_coefficients: no infile of that name exists.'
+        print('eof.restore_eof_coefficients: no infile of that name exists.')
 
     f.seek(0)
     [ndumps] = np.fromfile(f,dtype='i4',count=1)
@@ -1444,7 +1453,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
                 ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = simulation_directory+basis_dict['eof_file']
                 
             except:
-                print('eof.parse_components: Component %s has no EOF file specified (setting None).' %PSP.comp_titles[comp_num])
+                print('eof.parse_components: Component {0:s} has no EOF file specified (setting None).'.format(PSP.comp_titles[comp_num]))
                 ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = None
 
     return ComponentDetails

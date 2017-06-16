@@ -59,7 +59,7 @@ def print_progress(current_n,total_n,module):
         
     else:
         print('{0:20s}: [{1:20s}] {2:2d}%'.format(module, bar, percent),end='\r')
-        #sys.stdout.flush()
+        sys.stdout.flush()
 
 
 

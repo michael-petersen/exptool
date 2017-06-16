@@ -21,6 +21,10 @@ spheresl (part of exptool.basis)
 
 
 '''
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+
+
 # general python imports
 import numpy as np
 import time
@@ -409,14 +413,14 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
     holding = redistribute_particles(PSPInput,nprocs)
 
     if (verbose):
-            print 'sl.compute_coefficients: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
+            print('sl.compute_coefficients: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
     
     t1 = time.time()
     freeze_support()
     
     a_coeffs = multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=verbose,no_odd=no_odd)
     
-    if (verbose > 0): print 'spheresl.compute_coefficients: accumulation took %3.2f seconds, or %4.2f microseconds per orbit.' %(time.time()-t1, 1.e6*(time.time()-t1)/len(PSPInput.mass))
+    if (verbose > 0): print('spheresl.compute_coefficients: accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(PSPInput.mass)))
 
     # sum over processes
     summed_coefs = np.sum(np.array(a_coeffs,dtype=object),axis=0)
@@ -458,11 +462,11 @@ def eval_particles(ParticleInstance,expcoef,sph_file,mod_file,nprocs=-1,verbose=
         freeze_support()
         #
         if (verbose):
-            print 'sl.eval_particles: %i processors, %i particles each.' %(nprocs,len(holding[0].mass))
+            print('sl.eval_particles: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
         a_vals = multi_all_eval_particles(holding,nprocs,expcoef,sph_file,mod_file,verbose)
         #
         if (verbose):
-            print 'spheresl.eval_particles: particle Evaluation took %3.2f seconds, or %4.2f microseconds per orbit.' %(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass))
+            print('spheresl.eval_particles: particle Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
         # sum over processes
         den0,den1,pot0,pot1,potr,pott,potp,rr = mix_outputs_sph(np.array(a_vals))
         
@@ -834,13 +838,13 @@ def all_eval(r, costh, phi, expcoef,\
     nmax_check = evtable.shape[1] - 1
 
     if lmax < lmax_check:
-      if verbose >=4: print 'spheresl.all_eval: reducing lmax.'
+      if verbose >=4: print('spheresl.all_eval: reducing lmax.')
       evtable = evtable[0:lmax+1,:]
       eftable = eftable[0:lmax+1,:,:]
       expcoef = expcoef[0:lmax+1,:]
 
     if nmax < nmax_check:
-      if verbose >=4: print 'spheresl.all_eval: reducing nmax.'
+      if verbose >=4: print('spheresl.all_eval: reducing nmax.')
       evtable = evtable[:,0:nmax+1]
       eftable = eftable[:,0:nmax+1]
       expcoef = expcoef[:,0,nmax+1]   
@@ -958,13 +962,13 @@ def force_eval(r, costh, phi, expcoef,\
     nmax_check = evtable.shape[1] - 1
 
     if lmax < lmax_check:
-      if verbose >=4: print 'spheresl.force_eval: reducing lmax.'
+      if verbose >=4: print('spheresl.force_eval: reducing lmax.')
       evtable = evtable[0:lmax+1,:]
       eftable = eftable[0:lmax+1,:,:]
       expcoef = expcoef[0:(lmax+1)*(lmax+1),:]
 
     if nmax < nmax_check:
-      if verbose >=4: print 'spheresl.force_eval: reducing nmax.'
+      if verbose >=4: print('spheresl.force_eval: reducing nmax.')
       evtable = evtable[:,0:nmax+1]
       eftable = eftable[:,0:nmax+1]
       expcoef = expcoef[:,0:nmax+1]   
@@ -1207,7 +1211,7 @@ def save_sl_coefficients(outfile,SL_Object,verbose=0):
     ndumps += 1
     ndumps.flush() # update the lead value
 
-    if verbose: print 'spheresl.save_sl_coefficients: coefficient file currently has %i dumps.' %ndumps
+    if verbose: print('spheresl.save_sl_coefficients: coefficient file currently has {0:d} dumps.'.format(ndumps))
 
     # seek to the correct position
     # SL_Object must have the same size as previous dumps... not checking if that is true (yet)
@@ -1223,7 +1227,7 @@ def restore_sl_coefficients(infile):
     try:
         f = open(infile,'rb')
     except:
-        print 'spheresl.restore_sl_coefficients: no infile of that name exists.'
+        print('spheresl.restore_sl_coefficients: no infile of that name exists.')
 
     f.seek(0)
     [ndumps] = np.fromfile(f,dtype='i4',count=1)
