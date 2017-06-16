@@ -293,7 +293,7 @@ class BarDetermine():
 
 
         if self.verbose >= 2:
-                print('Computed {0:d} steps in {1:3.2f} minutes, for an average of {2:3.2f} seconds per step.'.format(( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) ))
+                print('Computed {0:d} steps in {1:3.2f} minutes, for an average of {2:3.2f} seconds per step.'.format( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) ))
 
 
     def bar_doctor_print(self):
@@ -412,6 +412,7 @@ class BarDetermine():
         #    print >>f,self.time[i],self.pos[i],self.deriv[i]
 
         #f.close()
+        return None
  
     def place_ellipse(self):
 
@@ -932,7 +933,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         sigma_y[indx] = clusterstd_y
 
 
-    if (verbose > 1): print('K-means took {0:3.2f} seconds ({1:3.2f} ms per orbit)'.format((t2, t2/norb*1000))
+    if (verbose > 1): print('K-means took {0:3.2f} seconds ({1:3.2f} ms per orbit)'.format(t2, t2/norb*1000))
 
     print('skipped_for_aps',skipped_for_aps)
     print('skipped_for_res',skipped_for_res)
