@@ -7,15 +7,16 @@
 |_______||_______||_______||__| | _|   |_______/    |_______|____|__|      \______/   \______/  |_______|_______/    
                                                            |______|                                                  
 ellipse_tools.py: part of exptool
+          basic ellipse fitting tools
 
 
 
 
                                                            
 '''
-#
-# basic ellipse fitting tools
-#
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+
 
 
 from exptool.utils import kde_3d
@@ -56,7 +57,7 @@ for indx,val in enumerate(tvals):
     T = ellipse_tools.genEllipse()
     T.fitEllipse(P,rmax=0.05,loggy=True,generalize=False,resolution=101,ncbins=55,SN=50.)
     #T.fitEllipse(P,rmax=0.1,loggy=True,generalize=True,resolution=201,ncbins=85)
-    print '-------------------',O.ctime,val
+    print('-------------------',O.ctime,val)
     print 'Lengths: %4.3f, %4.3f' %(ellip_drop_below(T.A,T.B,drop=0.4),max_ellip(T.A,T.B))
     #print ellipse_tools.max_ellip_drop(T.A,T.B)
     #evals[indx] = ellip_drop_below(T.A,T.B,drop=0.4)
@@ -98,6 +99,8 @@ VRAD = (O.xpos*O.xvel + O.ypos*O.yvel)/R
 plt.scatter(R[0:20000],abs(VRAD[0:20000]),s=1.,color='black')
 
 '''
+
+
 
 #
 # ellipse definitions for fitting
@@ -276,7 +279,7 @@ class genEllipse:
 
                 else:
 
-                    print 'ellipse_tools.fitEllipse: Rejected for SN.'
+                    print('ellipse_tools.fitEllipse: Rejected for SN.')
 
         # trim the extras
         self.R = self.R[0:k]
@@ -320,7 +323,7 @@ class genEllipse:
         try:
             defined = (self.xarr[0] == self.xarr[1])
         except:
-            print 'ellipse_tools: genEllipse.fitEllipse() must be called prior to genEllipse.plot_contours().'
+            print('ellipse_tools: genEllipse.fitEllipse() must be called prior to genEllipse.plot_contours().')
             
         plt.contourf(self.xarr,self.yarr,self.posarr,36,cmap=cm.gnuplot)
 
@@ -358,7 +361,7 @@ def ellip_drop(A,B,drop=0.4):
         d = (1.-B[j-1]/A[j-1]) - (1.-B[j]/A[j])
         if d > drop:
             found = True
-            print 'INDEX VALUE is %i' %(j-1)
+            print('INDEX VALUE is {0:d}'.format(j-1))
         j += 1
         if j==len(A):
             found = True
@@ -489,13 +492,13 @@ class EllipseFinder():
 
     def print_usage(self):
 
-        print \
+        print(\
         "\n\n*****************Ellipse Fitting Tools*********************\n\
         \nMEMBER DEFINITIONS:\
         \n   *generate_flat_field(xpos,ypos,zpos,mass)\
         \n   *add_ellipse_field(xarr,yarr,posarr,check=1)\
         \n   *add_single_ellipse\
-        \n\n***********************************************************\n\n"
+        \n\n***********************************************************\n\n")
 
 
     def full_ellipse(self,IO_obj,xres=30,xbins=[0],normamass=False,numdens=False,logvals=False):
@@ -510,7 +513,7 @@ class EllipseFinder():
         # ToDo : add support for zpos to make slices.
 
         if xbins[0] == 0:
-            print 'EllipseFinder.generate_flat_field: xbins is not user specified. using default...'
+            print('ellipse_tools.EllipseFinder.generate_flat_field: xbins is not user specified. using default...')
             
             self.xbins = np.linspace(-np.max(xpos),np.max(xpos),xres)
 
@@ -539,7 +542,7 @@ class EllipseFinder():
         # ToDo : add support for zpos to make slices.
 
         if xbins[0] == 0:
-            print 'EllipseFinder.generate_flat_field: xbins is not user specified. using default...'
+            print('ellipse_tools.EllipseFinder.generate_flat_field: xbins is not user specified. using default...')
             
             self.xbins = np.linspace(-np.max(xpos),np.max(xpos),xres)
 
@@ -643,7 +646,7 @@ class EllipseFinder():
                 self.yarr = yarr
                 self.posarr = posarr
             except:
-                print 'EllipseFinder.add_ellipse_field: no valid arrays input.'
+                print('EllipseFinder.add_ellipse_field: no valid arrays input.')
                 return None
 
 
@@ -790,7 +793,7 @@ class EllipseFinder():
                         aval = np.max([a,b])               # force major axis
                         bval = np.min([a,b])               # force minor axis
         else:
-            print 'Invalid ellipse chosen.'
+            print('Invalid ellipse chosen.')
         return aval,bval,np.array(xxtot),np.array(yytot)
 
 '''

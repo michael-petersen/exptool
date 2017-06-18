@@ -9,40 +9,32 @@
 integrate.py: part of exptool
          integration technique(s)
 
+#
+# take a field instance and do an orbit integration
+#
 
 
 
 TODO:
 
--intelligent dt scaling
--flag to stop after X R periods
+
+1. new integrators
+2. new timestep criteria (intelligent dt scaling)
+3. flag to stop after X R periods
 
          
 
 '''
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-#
-# take a field instance and do an integration
-#
 
 from exptool.orbits import orbit
 
-
-
+# standard imports
 import numpy as np
 import time
 
 #verbose = True
-
-'''
-WISHLIST
-
-1. new integrators
-2. new timestep criteria
-
-
-'''
 
 
 def transform(xarray,yarray,thetas):
@@ -163,8 +155,10 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     
     
     if np.min(barpos) < 0.:
+        
         OrbitDictionary['TX'],OrbitDictionary['TY'] = transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
         OrbitDictionary['VTX'],OrbitDictionary['VTY'] = transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
+        
     else:
         OrbitDictionary['TX'],OrbitDictionary['TY'] = clock_transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
         OrbitDictionary['VTX'],OrbitDictionary['VTY'] = clock_transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
@@ -173,9 +167,6 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
 
 
 
-#
-# helper definitions to initialize orbits
-# 
 
 
 def gen_init_step(xpos,vtan,z0=0.0,zvel0=0.):
@@ -196,6 +187,65 @@ def gen_init_step(xpos,vtan,z0=0.0,zvel0=0.):
     '''
 
     return [xpos,0.0,z0],[0.0,vtan,zvel0]
+
+
+
+def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=10.,verbose=False):
+    '''
+    compute_timestep:
+       calculate a best timestep for an orbit using EXP criteria
+       (see multistep.cc)
+
+        dtd = eps* rscale/v_i    -- char. drift time scale
+        dtv = eps* min(v_i/a_i)  -- char. force time scale
+        dta = eps* phi/(v * a)   -- char. work time scale
+        dtA = eps* sqrt(phi/a^2) -- char. "escape" time scale
+
+        
+    inputs
+    --------------
+    FieldInstance  :
+    start_pos      :
+    start_vel      :
+    dyn_res        :  minimum number of substeps to resolve
+    #
+    returns
+    --------------
+    dt      
+    '''
+    #
+    eps = 1.e-10
+    #
+    vtot = np.sum(np.array(start_vel)**2.)**0.5  + eps
+    rtot = np.sum(np.array(start_pos)**2.)**0.5
+    #
+    #
+    dfx,hfx,dfy,hfy,dfz,hfz,dp,hp = FieldInstance.return_forces_cart(start_pos[0],start_pos[1],start_pos[2])
+    #
+    dtr = np.sum(np.array(start_pos)*np.array([(dfx+hfx),(dfy+hfy),(dfz*hfz)]))
+    #
+    atot = ((dfx+hfx)**2. + (dfy+hfy)**2. + (dfz*hfz)**2.0)**0.5 + eps
+    ptot = np.abs(dp+hp)
+    #
+    T = {}
+    #
+    T['dtd'] = 1.0/np.sqrt(vtot+eps);
+    T['dtv'] = np.sqrt(vtot/(atot+eps));
+    T['dta'] = ptot/(np.abs(dtr)+eps);
+    T['dtA'] = np.sqrt(ptot/(atot*atot+eps));
+    #
+    # now, grab the smallest and figure out how many sub-timesteps are needed.
+    #
+    time_criteria = [T[x] for x in T.keys()]
+    if verbose:
+        print('The chosen time criteria is {0:s}, dt={1:6.5f}'.format(T.keys()[np.argmin(time_criteria)],np.min(time_criteria)/dyn_res))
+    #    
+    #    
+    #
+    #
+    dt = np.min(time_criteria)/dyn_res
+    #
+    return dt
 
 
 
