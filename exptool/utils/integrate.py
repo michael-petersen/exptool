@@ -12,7 +12,12 @@ integrate.py: part of exptool
 
 
 
+TODO:
 
+-intelligent dt scaling
+-flag to stop after X R periods
+
+         
 
 '''
 from __future__ import absolute_import, division, print_function, unicode_literals
