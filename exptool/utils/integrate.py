@@ -143,9 +143,10 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
             rstep0 = (xarray[step-2]*xarray[step-2] + yarray[step-2]*yarray[step-2])
             rstep1 = (xarray[step-1]*xarray[step-1] + yarray[step-1]*yarray[step-1])
             rstep2 = (xarray[step]*xarray[step] + yarray[step]*yarray[step])
+            
             if (rstep1 > rstep0) & (rstep1 > rstep2):
                 n_aps += 1
-                print(n_aps)
+
         step += 1
         
     if verbose:
