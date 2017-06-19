@@ -19,8 +19,6 @@ TODO:
 
 
 1. new integrators
-2. new timestep criteria (intelligent dt scaling)
-3. flag to stop after X R periods
 
          
 
@@ -53,8 +51,7 @@ def clock_transform(xarray,yarray,thetas):
 
 
 
-
-def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=False,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1,verbose=0):
+def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=False,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1,verbose=0,force=False,ap_max=1000):
     '''
 
 
@@ -75,6 +72,9 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     halo_n          : (int)    if >=0, limit number of radial terms in halo
     disk_m          : (int)    if >=0, limit number of azimuthal terms in disk
     disk_n          : (int)    if >=0, limit number of radial terms in disk
+    verbose         : (bool)   if True, report timing diagnostics
+    force           : (bool)   if Tre, return force fields ('FX','FY','FZ')
+    ap_max          : (int)    maximum number of apsides to integrate through
 
     outputs
     --------------
@@ -85,30 +85,27 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     #
     # set Field parameters
     FieldInstance.set_field_parameters(no_odd=no_odd,halo_l=halo_l,halo_n=halo_n,disk_m=disk_m,disk_n=disk_n)
+
+    # start the timer
     t0 = time.time()
+    
     times = np.arange(0,nint,1)*dt
     barpos = 2.*np.pi*rotfreq*times
-    xarray = np.zeros(nint)
-    yarray = np.zeros(nint)
-    zarray = np.zeros(nint)
-    vxarray = np.zeros(nint)
-    vyarray = np.zeros(nint)
-    vzarray = np.zeros(nint)
-    force_xarray = np.zeros(nint)
-    force_yarray = np.zeros(nint)
-    force_zarray = np.zeros(nint)
-    potential = np.zeros(nint)
-    #
-    xarray[0] = initpos[0]
-    yarray[0] = initpos[1]
-    zarray[0] = initpos[2]
-    #
-    vxarray[0] = initvel[0]
-    vyarray[0] = initvel[1]
-    vzarray[0] = initvel[2]
-    #
+
+    # initialize blank arrays
+    xarray = np.zeros(nint); yarray = np.zeros(nint); zarray = np.zeros(nint)
+    
+    vxarray = np.zeros(nint); vyarray = np.zeros(nint); vzarray = np.zeros(nint)
+    
+    force_xarray = np.zeros(nint); force_yarray = np.zeros(nint); force_zarray = np.zeros(nint)
+
     pote = np.zeros(nint)
-    #
+
+    # initialize beginning values
+    xarray[0] = initpos[0]; yarray[0] = initpos[1]; zarray[0] = initpos[2]
+    
+    vxarray[0] = initvel[0]; vyarray[0] = initvel[1]; vzarray[0] = initvel[2]
+
     #
     # now step forward one, using leapfrog (drift-kick-drift) integrator?
     #    https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -119,50 +116,71 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     force_yarray[step-1] = dfy+hfy
     force_zarray[step-1] = dfz+hfz
     pote[step-1]         = dp+hp
-    #
-    #
-    for step in range(1,nint):
-        #print step 
+
+    # set up integration loop
+    n_aps = 0
+    while (n_aps < ap_max) & (step < nint):
+
+        # advance positions
         xarray[step]   = xarray[step-1]   + (vxarray[step-1]*dt  )  + (0.5*force_xarray[step-1]  * (dt**2.))
         yarray[step]   = yarray[step-1]   + (vyarray[step-1]*dt  )  + (0.5*force_yarray[step-1]  * (dt**2.))
         zarray[step]   = zarray[step-1]   + (vzarray[step-1]*dt  )  + (0.5*force_zarray[step-1]  * (dt**2.))
-        #print rarray[step]*np.cos(phiarray[step]),rarray[step]*np.sin(phiarray[step]),zarray[step]
-        #
+
+        # calculate new forces
         dfx,hfx,dfy,hfy,dfz,hfz,dp,hp = FieldInstance.return_forces_cart(xarray[step],yarray[step],zarray[step],rotpos=barpos[step])
         force_xarray[step] = dfx+hfx
         force_yarray[step] = dfy+hfy
         force_zarray[step] = dfz+hfz
         pote[step]         = dp+hp
-        #
+        
+        # advance velocities
         vxarray[step]   = vxarray[step-1]   + (0.5*(force_xarray[step-1]+force_xarray[step])    *dt)
         vyarray[step]   = vyarray[step-1]   + (0.5*(force_yarray[step-1]+force_yarray[step])    *dt)
         vzarray[step]   = vzarray[step-1]   + (0.5*(force_zarray[step-1]+force_zarray[step])    *dt)
+        
+        # check for completion of aps criteria
+        if step > 1:
+            rstep0 = (xarray[step-2]*xarray[step-2] + yarray[step-2]*yarray[step-2])
+            rstep1 = (xarray[step-1]*xarray[step-1] + yarray[step-1]*yarray[step-1])
+            rstep2 = (xarray[step]*xarray[step] + yarray[step]*yarray[step])
+            if (rstep1 > rstep0) & (rstep1 > rstep2):
+                n_aps += 1
+                print(n_aps)
+        step += 1
+        
     if verbose:
         print('{0:4.3f} seconds to integrate.'.format(time.time()-t0))
+        
     # put into dictionary form
     OrbitDictionary = orbit.Orbits()
-    OrbitDictionary['T'] = times
-    OrbitDictionary['X'] = xarray
-    OrbitDictionary['Y'] = yarray
-    OrbitDictionary['Z'] = zarray
-    OrbitDictionary['VX'] = vxarray
-    OrbitDictionary['VY'] = vyarray
-    OrbitDictionary['VZ'] = vzarray
-    OrbitDictionary['FX'] = force_xarray
-    OrbitDictionary['FY'] = force_yarray
-    OrbitDictionary['FZ'] = force_zarray
-    OrbitDictionary['P']  = pote
+    OrbitDictionary['T'] = times[0:step]
+    OrbitDictionary['X'] = xarray[0:step]
+    OrbitDictionary['Y'] = yarray[0:step]
+    OrbitDictionary['Z'] = zarray[0:step]
+    OrbitDictionary['VX'] = vxarray[0:step]
+    OrbitDictionary['VY'] = vyarray[0:step]
+    OrbitDictionary['VZ'] = vzarray[0:step]
+    OrbitDictionary['P']  = pote[0:step]
+    barpos = barpos[0:step]
     
     
+    if force:
+        OrbitDictionary['FX'] = force_xarray[0:step]
+        OrbitDictionary['FY'] = force_yarray[0:step]
+        OrbitDictionary['FZ'] = force_zarray[0:step]
+
+    
+    # do transformations, adaptively finding which way bar is rotating
     if np.min(barpos) < 0.:
-        
-        OrbitDictionary['TX'],OrbitDictionary['TY'] = transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
-        OrbitDictionary['VTX'],OrbitDictionary['VTY'] = transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
+          
+        OrbitDictionary['TX'],OrbitDictionary['TY'] = integrate.transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
+        OrbitDictionary['VTX'],OrbitDictionary['VTY'] = integrate.transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
         
     else:
-        OrbitDictionary['TX'],OrbitDictionary['TY'] = clock_transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
-        OrbitDictionary['VTX'],OrbitDictionary['VTY'] = clock_transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
         
+        OrbitDictionary['TX'],OrbitDictionary['TY'] = integrate.clock_transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
+        OrbitDictionary['VTX'],OrbitDictionary['VTY'] = integrate.clock_transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
+      
     return OrbitDictionary
 
 
@@ -190,7 +208,7 @@ def gen_init_step(xpos,vtan,z0=0.0,zvel0=0.):
 
 
 
-def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=10.,verbose=False):
+def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=100.,verbose=False):
     '''
     compute_timestep:
        calculate a best timestep for an orbit using EXP criteria
@@ -207,7 +225,7 @@ def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=10.,verbose=False
     FieldInstance  :
     start_pos      :
     start_vel      :
-    dyn_res        :  minimum number of substeps to resolve
+    dyn_res        :  minimum number of substeps to resolve (default: 100., likely overkill)
     #
     returns
     --------------
