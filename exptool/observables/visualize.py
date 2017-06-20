@@ -8,11 +8,21 @@
 #    03-29-2017 compare_dump and label improvements
 
 '''
+____    ____  __       _______. __    __       ___       __       __   ________   _______ 
+\   \  /   / |  |     /       ||  |  |  |     /   \     |  |     |  | |       /  |   ____|
+ \   \/   /  |  |    |   (----`|  |  |  |    /  ^  \    |  |     |  | `---/  /   |  |__   
+  \      /   |  |     \   \    |  |  |  |   /  /_\  \   |  |     |  |    /  /    |   __|  
+   \    /    |  | .----)   |   |  `--'  |  /  _____  \  |  `----.|  |   /  /----.|  |____ 
+    \__/     |__| |_______/     \______/  /__/     \__\ |_______||__|  /________||_______|
+visualize.py : part of exptool
+                      
 
 # WISHLIST:
--add position overlays to velocity or dispersion plots
+-add position overlays to velocity or dispersion plots (see velocity.py)
 -specify colorbar levels (for movie making)
 
+
+from exptool.observables import visualize
 
 fig = visualize.show_dump('/path/to/OUTFILE','comp')
 ax1,ax2,ax3,ax4 = fig.get_axes()

@@ -296,7 +296,7 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     #---- Make the kernel -------------------------------------------
 
     # First, determine how big the kernel needs to be
-    std_devs = np.diag(np.sqrt(cov))
+    std_devs = np.diag(np.sqrt(np.abs(cov)))
     kern_nx, kern_ny = np.round(scotts_factor * 2 * np.pi * std_devs)
 
     # Determine the bandwidth to use for the gaussian kernel
@@ -320,7 +320,7 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
         pass
 
 
-    kernel = kernel.reshape((kern_ny, kern_nx))
+    kernel = kernel.reshape((int(kern_ny), int(kern_nx)))
 
 
     #---- Produce the kernel density estimate --------------------------------
@@ -342,19 +342,31 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
 
 
 
-def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, weights=None, npower=6.,surfacedensity=False,opt_third=None,opt_third_constraint=None):
+def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, npower=6.,surfacedensity=False,**kwargs):#weights=None, opt_third=None,opt_third_constraint=None):
     #
     # quick wrapper to return x and y grids to go along with the kernel densities
     #
 
     # this is used to make an in-plane slice by passing abs(third_dimension)
-    if opt_third != None:
-        w = np.where( opt_third < opt_third_constraint)[0]
+    #print kwargs.keys()
+    
+    if 'weights' in kwargs.keys():
+        weights = kwargs['weights']
+        
+    else:
+        weights = None
+    
+    if 'opt_third' in kwargs.keys():
+        if 'opt_third_constraint' in kwargs.keys():
+        
+            w = np.where( kwargs['opt_third'] < kwargs['opt_third_constraint'])[0]
+
+        else: print('kde_3d.total_kde_two: opt_third_constraint required to use opt_third.')
 
         x = x[w]
         y = y[w]
 
-        if weights != None:
+        if 'weights' in kwargs.keys():
             weights = weights[w]
 
     #
