@@ -1347,7 +1347,7 @@ def save_eof_coefficients(outfile,EOF_Object,verbose=0):
     ndumps += 1
     ndumps.flush() # update the lead value
 
-    if verbose: print('eof.save_eof_coefficients: coefficient file currently has {0:d} dumps.'.format(ndumps))
+    if verbose: print('eof.save_eof_coefficients: coefficient file currently has {0:d} dumps.'.format(ndumps[0]))
 
     # seek to the correct position
     # EOF_Object must have the same size as previous dumps...
