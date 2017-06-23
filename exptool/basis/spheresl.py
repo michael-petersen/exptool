@@ -1211,7 +1211,7 @@ def save_sl_coefficients(outfile,SL_Object,verbose=0):
     ndumps += 1
     ndumps.flush() # update the lead value
 
-    if verbose: print('spheresl.save_sl_coefficients: coefficient file currently has {0:d} dumps.'.format(ndumps))
+    if verbose: print('spheresl.save_sl_coefficients: coefficient file currently has {0:d} dumps.'.format(ndumps[0]))
 
     # seek to the correct position
     # SL_Object must have the same size as previous dumps... not checking if that is true (yet)
