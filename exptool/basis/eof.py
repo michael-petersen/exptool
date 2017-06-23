@@ -480,7 +480,7 @@ def show_basis(eof_file,plot=False,sine=False):
     rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
-    xvals = xi_to_r(np.array([XMIN + i*dX for i in range(0,numx+1)]),cmap,ascale)
+    xvals = np.array([xi_to_r(XMIN + i*dX,cmap,ascale) for i in range(0,numx+1)])
     zvals =  y_to_z(np.array([YMIN + i*dY for i in range(0,numy+1)]),hscale)
 
     print('eof.show_basis: plotting {0:d} azimuthal orders and {1:d} radial orders...'.format(MMAX,norder) )
