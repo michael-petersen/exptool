@@ -1369,7 +1369,7 @@ def save_eof_coefficients(outfile,EOF_Object,verbose=0):
 
     # seek to the correct position
     # EOF_Object must have the same size as previous dumps...
-    f.seek(4 + (ndumps-1)*(16*(EOF_Object.mmax+1)*(EOF_Object.nmax)+224) )
+    f.seek(4 + (ndumps[0]-1)*(16*(EOF_Object.mmax+1)*(EOF_Object.nmax)+224) )
 
     eof_coefficients_to_file(f,EOF_Object)
 
