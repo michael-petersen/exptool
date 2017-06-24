@@ -281,10 +281,11 @@ def y_to_z(y,hscale):
     return hscale*np.sinh(y)
 
 
-#
-# particle accumulation definitions
-#
-def return_bins(r,z,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,ASCALE=0.01,HSCALE=0.001,CMAP=0):
+
+
+
+def return_bins(r,z,\
+                rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,ASCALE=0.01,HSCALE=0.001,CMAP=0):
     #
     # routine to return the integer bin numbers based on dimension mapping
     # 
@@ -310,44 +311,45 @@ def return_bins(r,z,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,ASCALE=0.01,HSCALE=0.0
 
 
 
-def get_pot(r,z,cos_array,sin_array,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.01,HSCALE=0.001,CMAP=0):
+def get_pot(r,z,cos_array,sin_array,\
+            rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,MMAX=6,NMAX=18,ASCALE=0.01,HSCALE=0.001,CMAP=0):
+    '''
     #
     # returns potential fields for C and S to calculate weightings during accumulation
     #
     #
+    '''
+    
     # find the corresponding bins
     X,Y,ix,iy = return_bins(r,z,rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
-    #
+    
     delx0 = ix + 1.0 - X;
     dely0 = iy + 1.0 - Y;
     delx1 = X - ix;
     dely1 = Y - iy;
-    #
+    
     c00 = delx0*dely0;
     c10 = delx1*dely0;
     c01 = delx0*dely1;
     c11 = delx1*dely1;
-    #
-    Vc = np.zeros([MMAX+1,NMAX])
-    Vs = np.zeros([MMAX+1,NMAX])
+    
+    #Vc = np.zeros([MMAX+1,NMAX])
+    #Vs = np.zeros([MMAX+1,NMAX])
     
     Vc = fac * ( cos_array[:,:,ix,iy] * c00 + cos_array[:,:,ix+1,iy] * c10 + cos_array[:,:,ix,iy+1] * c01 + cos_array[:,:,ix+1,iy+1] * c11 )
-    #
+    
     Vs = fac * ( sin_array[:,:,ix,iy] * c00 + sin_array[:,:,ix+1,iy] * c10 + sin_array[:,:,ix,iy+1] * c01 + sin_array[:,:,ix+1,iy+1] * c11 );
-    #for mm in range(0,MMAX+1):
-        #
-        #Vc[mm] = fac * ( cos_array[mm,:,ix,iy] * c00 + cos_array[mm,:,ix+1,iy] * c10 + cos_array[mm,:,ix,iy+1] * c01 + cos_array[mm,:,ix+1,iy+1] * c11 )
-        #
-        #if (mm>0):
-            #Vs[mm] = fac * ( sin_array[mm,:,ix,iy] * c00 + sin_array[mm,:,ix+1,iy] * c10 + sin_array[mm,:,ix,iy+1] * c01 + sin_array[mm,:,ix+1,iy+1] * c11 );
+
     return Vc,Vs
 
 
 def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18,ASCALE=0.01,HSCALE=0.001,CMAP=0):
-    #
-    # returns potential fields for single C and S order
-    #
-    #
+    '''
+    
+     returns potential fields for single C and S order
+    
+    
+    '''
     # find the corresponding bins
     X,Y,ix,iy = return_bins(r,z,rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
     
@@ -476,12 +478,28 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
 
 
 def show_basis(eof_file,plot=False,sine=False):
+    '''
+    show_basis: demonstration plots for eof_files
+
+    inputs
+    ------------
+    eof_file
+    plot
+    sine
+
+
+    returns
+    ------------
+    none
+
+
+    '''
     potC,rforceC,zforceC,densC,potS,rforceS,zforceS,densS = parse_eof(eof_file)
     rmin,rmax,numx,numy,MMAX,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
     xvals = np.array([xi_to_r(XMIN + i*dX,cmap,ascale) for i in range(0,numx+1)])
-    zvals =  y_to_z(np.array([YMIN + i*dY for i in range(0,numy+1)]),hscale)
+    zvals =  np.array([y_to_z(YMIN + i*dY,hscale) for i in range(0,numy+1)])
 
     print('eof.show_basis: plotting {0:d} azimuthal orders and {1:d} radial orders...'.format(MMAX,norder) )
 
