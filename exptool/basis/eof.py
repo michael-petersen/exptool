@@ -1681,6 +1681,22 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
 
 
 
+def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0):
+    '''
+    use phase calculations to print a new barfile based on some m order and n order from coefficients
+
+    '''
+    f = open(simulation_directory+simulation_name+'_m{}n{}_barpos.dat'.format(morder,norder),'w')
+    #
+    for indx in range(0,len(DCp['time'])):
+        print >>f,DCp['time'][indx],DCp['unphase'][morder][indx,norder],DCp['speed'][morder][indx,norder]
+    #
+    f.close()
+
+
+
+
+
 
 def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
     '''
@@ -1725,6 +1741,9 @@ def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
     
     return varC,varS,facC,facS
     
+
+
+
 
 
 
