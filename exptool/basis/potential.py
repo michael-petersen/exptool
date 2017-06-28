@@ -710,10 +710,13 @@ class EnergyKappa():
 #
 # this is EXCLUSIVELY temporary until a better format is decided on
 #
-def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file):
+def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_bonus=''):
     infile = simulation_directory+'OUT.'+simulation_name+'.%05i' %intime
     BarInstance = trapping.BarDetermine()
-    BarInstance.read_bar(simulation_directory+simulation_name+'_barpos.dat')
+    if bar_bonus == '':
+        BarInstance.read_bar(simulation_directory+simulation_name+'_barpos.dat')
+    else:
+        BarInstance.read_bar(simulation_directory+simulation_name+'_'+bar_bonus+'_barpos.dat')
     # reset the derivative
     BarInstance.frequency_and_derivative(spline_derivative=2)
     PSPDump = psp_io.Input(infile,validate=True)
