@@ -1689,7 +1689,7 @@ def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0
     f = open(simulation_directory+simulation_name+'_m{}n{}_barpos.dat'.format(morder,norder),'w')
     #
     for indx in range(0,len(DCp['time'])):
-        print >>f,DCp['time'][indx],DCp['unphase'][morder][indx,norder],DCp['speed'][morder][indx,norder]
+        print >>f,DCp['time'][indx],(1./float(morder))*DCp['unphase'][morder][indx,norder],(1./float(morder))*DCp['speed'][morder][indx,norder]
     #
     f.close()
 

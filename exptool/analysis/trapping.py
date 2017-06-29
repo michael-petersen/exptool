@@ -96,28 +96,28 @@ def find_barangle(time,BarInstance,interpolate=True):
     #
     '''
     sord = 0 # should this be a variable?
-    
+    #
     if (interpolate):
         bar_func = UnivariateSpline(BarInstance.time,-BarInstance.pos,s=sord)
-    
+    #
     try:
         indx_barpos = np.zeros([len(time)])
         for indx,timeval in enumerate(time):
-
+        #
             if (interpolate):
                 indx_barpos[indx] = bar_func(timeval)
-
-
+            #
+            #
             else:
                 indx_barpos[indx] = -BarInstance.pos[ abs(timeval-BarInstance.time).argmin()]
-            
+        #
     except:
         if (interpolate):
             indx_barpos = bar_func(time)
-
+    #
         else:
             indx_barpos = -BarInstance.pos[ abs(time-BarInstance.time).argmin()]
-        
+    #    
     return indx_barpos
 
 
