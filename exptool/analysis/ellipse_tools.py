@@ -31,75 +31,6 @@ from scipy.optimize import curve_fit
 
 import matplotlib.cm as cm
 
-'''
-import psp_io
-import ellipse_tools
-
-# Specify a simulation output
-#
-O = psp_io.Input('/Volumes/SIMSET/OUT.run064a.00000',comp='star')
-
-O = psp_io.Input('/Users/mpetersen/Research/NBody/Disk064a/OUT.run064a.00000',comp='star')
-
-
-O = psp_io.Input('/scratch/mpetersen/Disk013/OUT.run013p.00200',comp='star')
-
-tres=40
-tvals = np.linspace(0,1100,tres)
-evals = np.zeros(tres)
-ttvals = np.zeros(tres)
-
-for indx,val in enumerate(tvals):
-    O = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.%05i' %val,comp='star')
-    #
-    P = trapping.BarTransform(O)
-    #
-    T = ellipse_tools.genEllipse()
-    T.fitEllipse(P,rmax=0.05,loggy=True,generalize=False,resolution=101,ncbins=55,SN=50.)
-    #T.fitEllipse(P,rmax=0.1,loggy=True,generalize=True,resolution=201,ncbins=85)
-    print('-------------------',O.ctime,val)
-    print 'Lengths: %4.3f, %4.3f' %(ellip_drop_below(T.A,T.B,drop=0.4),max_ellip(T.A,T.B))
-    #print ellipse_tools.max_ellip_drop(T.A,T.B)
-    #evals[indx] = ellip_drop_below(T.A,T.B,drop=0.4)
-    evals[indx] = max_ellip(T.A,T.B)
-    ttvals[indx] = O.ctime
-
-
-
-
-O = psp_io.Input('/scratch/mpetersen/Disk064a/OUT.run064a.00338',comp='star')
-P = trapping.BarTransform(O)
-T = ellipse_tools.genEllipse()
-T.fitEllipse(P,rmax=0.05,loggy=True,generalize=False,resolution=101,ncbins=85)
-
-
-
-T.plot_contours(ellipses=False)
-T.plot_ellipse_diagnostics()
-
-
-#
-# Two methods to fit ellipses to a simulation output.
-#
-#     First, using standard ellipses
-
-# instantiate the class
-E = ellipse_tools.EllipseFinder()
-# make a field to fit ellipses to
-#E.generate_flat_field_kde(O.xpos,O.ypos,O.zpos,O.mass,xbins=np.linspace(-0.05,0.05,121),normamass=True,logvals=True)
-
-E.generate_flat_field_kde(P.xpos,P.ypos,P.zpos,P.mass,xbins=np.linspace(-0.05,0.05,121),normamass=True,logvals=True)
-
-
-R = (O.xpos**2. + O.ypos**2.)**0.5
-VTAN = (O.xpos*O.yvel - O.ypos*O.xvel)/R
-
-VRAD = (O.xpos*O.xvel + O.ypos*O.yvel)/R
-
-plt.scatter(R[0:20000],abs(VRAD[0:20000]),s=1.,color='black')
-
-'''
-
 
 
 #
@@ -107,7 +38,12 @@ plt.scatter(R[0:20000],abs(VRAD[0:20000]),s=1.,color='black')
 #
 
 def gen_ellipse(th,a,b,c):
-    # returns generalized ellipse in polar coordinates
+    '''
+    returns generalized ellipse in polar coordinates
+
+    for bar determination following Athanassoula 1990
+
+    '''
     xcomp = ( abs(np.cos(th))**c) / a**c
     ycomp = ( abs(np.sin(th))**c) / b**c
     gell =  ( (xcomp + ycomp) )**(-1./c)
@@ -116,7 +52,11 @@ def gen_ellipse(th,a,b,c):
 
 
 def fixed_ellipse(th,a,b):
-    # returns c=2 ellipse in polar coordinates
+    '''
+    returns c=2 ellipse in polar coordinates
+
+
+    '''
     xcomp = (( abs(np.cos(th))**2.0) / a**2.0 ) 
     ycomp = (( abs(np.sin(th))**2.0) / b**2.0 ) 
     gell =  ( (xcomp + ycomp) )**(-1./2.0)
@@ -126,7 +66,15 @@ def fixed_ellipse(th,a,b):
 
 
 def inside_ellipse(X,Y,A,B,C,rot=0.):
+    '''
+    inside_ellipse
+        determine whether a set of points is inside of an ellipse
+    
     # only tests in first quadrant for power safety
+
+
+
+    '''
     rX,rY = X*np.cos(rot)-Y*np.sin(rot),-X*np.sin(rot)-Y*np.cos(rot)
     ellipse_radius = ((abs(rX)/A)**C + (abs(rY)/B)**C)
     yes_ellipse = np.where(ellipse_radius < 1.0)[0]
@@ -146,7 +94,7 @@ class genEllipse:
     '''
 
     #
-    # least-squares (and soon to be Fourier) fitting of generalized ellipses
+    # least-squares (and soon to be Fourier?) fitting of generalized ellipses
     #
 
     '''
@@ -166,7 +114,6 @@ class genEllipse:
         if weights=='mass':
             kde_weights = O.mass
 
-        #resolution = 264
         extent = np.max([abs(O.xpos),abs(O.ypos)])
 
         desired_resolution = (2.*rmax)/resolution
@@ -355,6 +302,10 @@ class genEllipse:
 
 
 def ellip_drop(A,B,drop=0.4):
+    '''
+    given a list of axis lengths, calculate the length of the bar based on some specified ellipticity drop
+
+    '''
     found = False
     j = 2
     while found==False:
@@ -371,6 +322,10 @@ def ellip_drop(A,B,drop=0.4):
 
 
 def ellip_drop_below(A,B,drop=0.4):
+    '''
+    where does the ellipticity first drop below some value?
+
+    '''
     d = (1.-B/A)
     lessthan = np.where( d >= drop )[0]
     if len(lessthan) > 0:
@@ -388,9 +343,11 @@ def max_ellip_drop(A,B):
     edrop = np.ediff1d((1.-B/A),to_end=0.)
     return A[ np.where(np.min(edrop)==edrop)[0]]
 
-        
+
+
+
 #
-# MUNOZ13 metrics
+# MUNOZ13 proposes several bar length metrics, reproduced here:
 #
 def max_ellip(A,B):
     e = (1.-B/A)
@@ -425,12 +382,17 @@ def pa_change(A,B,change=10.):
 
 
 class SOEllipse(object):
-
+    '''
     #
     # Conic Ellipse fitter
     #     exploiting the quadratic curve nature of the ellipse
     #
+
+    advantages: fast
+
+    disadvantages: does not have flexibility
     
+    '''
     @staticmethod
     def fitEllipse(x,y):
         #
