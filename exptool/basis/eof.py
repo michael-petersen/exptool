@@ -1601,6 +1601,9 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
     '''
     working phase calculations
 
+    TODO:
+       - check how robust calculations are
+
 
     '''
     mmax=EOFDict[0].mmax
@@ -1684,6 +1687,8 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
 def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0):
     '''
     use phase calculations to print a new barfile based on some m order and n order from coefficients
+
+    must have phase calculations already complete, using format above.
 
     '''
     f = open(simulation_directory+simulation_name+'_m{}n{}_barpos.dat'.format(morder,norder),'w')
