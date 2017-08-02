@@ -195,6 +195,12 @@ class Orbits(dict):
 
 
     def compute_quantities(self):
+        '''
+        add energy and angular momentum to an orbit instance
+
+        *needs an error check for orbit instance
+
+        '''
 
         v2 = self['VX']*self['VX'] + self['VY']*self['VY'] + self['VZ']*self['VZ']
         self['E'] = v2 + self['P']
@@ -203,6 +209,12 @@ class Orbits(dict):
 
 
     def polar_coordinates(self):
+        '''
+        add polar coordinates to an orbit instance
+
+        *needs an error check for orbit instance
+
+        '''
 
         self['Rp'] = np.power(self['X']*self['X'] + self['Y']*self['Y'],0.5)
         self['Phi'] = np.arctan2(self['Y'],self['X'])
