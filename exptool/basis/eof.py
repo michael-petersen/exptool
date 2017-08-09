@@ -686,8 +686,24 @@ def force_eval(r, z, phi, \
 
     # make numpy array for the sine and cosine terms
     morder = np.tile(np.arange(1.,MMAX+1.,1.),(NMAX,1)).T
-    ccos = np.cos(phi*morder)
-    ssin = np.sin(phi*morder)
+
+    if len(phi) > 0:
+
+        # verify length is that of MMAX
+        if len(phi) != MMAX:
+            print('eof.force_eval: varying phi detected, with mismatched lengths. breaking...')
+            
+            break
+
+        else:
+            phiarr = np.tile(phi,(NMAX,1)).T
+            
+            ccos = np.cos(phiarr*morder)
+            ssin = np.sin(phiarr*morder)
+            
+    else:
+        ccos = np.cos(phi*morder)
+        ssin = np.sin(phi*morder)
 
     # make a mask to only do the even terms?
     if (no_odd):

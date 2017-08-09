@@ -993,6 +993,29 @@ def force_eval(r, costh, phi, expcoef,\
     #
     pot0 = np.sum(fac1 * expcoef[0]*potd[0]);
     potr = np.sum(fac1 * expcoef[0]*dpot[0]);
+
+
+    # build matrix for phi terms
+    morder = np.tile(np.arange(1.,lmax+1.,1.),(nmax,1)).T
+
+    if len(phi) > 0:
+
+        # verify length is that of MMAX
+        if len(phi) != lmax:
+            print('spheresl.force_eval: varying phi detected, with mismatched lengths. breaking...')
+            
+            break
+
+        else:
+            phiarr = np.tile(phi,(nmax,1)).T
+            
+            cosm = np.cos(phiarr*morder)
+            sinm = np.sin(phiarr*morder)
+            
+    else:
+        cosm = np.cos(phi*morder)
+        sinm = np.sin(phi*morder)
+
     
     pot1 = 0.0;
     pott = 0.0;
@@ -1022,12 +1045,11 @@ def force_eval(r, costh, phi, expcoef,\
               moffset+=1;
               
         else:
-              cosm = np.cos(phi*m);
-              sinm = np.sin(phi*m);
-              pot1 += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
-              potr += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * dpot[l]*cosm + expcoef[loffset+moffset+1] * dpot[l]*sinm ));
-              pott += np.sum(fac1*dlegs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
-              potp += np.sum(fac1* legs[l][m] * m * (-expcoef[loffset+moffset] * potd[l]*sinm + expcoef[loffset+moffset+1] * potd[l]*cosm ));
+
+              pot1 += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm[l] + expcoef[loffset+moffset+1] * potd[l]*sinm[l] ));
+              potr += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * dpot[l]*cosm[l] + expcoef[loffset+moffset+1] * dpot[l]*sinm[l] ));
+              pott += np.sum(fac1*dlegs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm[l] + expcoef[loffset+moffset+1] * potd[l]*sinm[l] ));
+              potp += np.sum(fac1* legs[l][m] * m * (-expcoef[loffset+moffset] * potd[l]*sinm[l] + expcoef[loffset+moffset+1] * potd[l]*cosm[l] ));
               moffset +=2;
               
       loffset+=(2*l+1)
