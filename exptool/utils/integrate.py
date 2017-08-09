@@ -51,7 +51,9 @@ def clock_transform(xarray,yarray,thetas):
 
 
 
-def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=False,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1,verbose=0,force=False,ap_max=1000):
+def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
+                       rotfreq=0.,no_odd=False,\
+                       halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1,verbose=0,force=False,ap_max=1000):
     '''
 
 
@@ -90,7 +92,16 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,rotfreq=0.,no_odd=F
     t0 = time.time()
     
     times = np.arange(0,nint,1)*dt
-    barpos = 2.*np.pi*rotfreq*times
+
+    if len(rotfreq) == 0:
+        barpos = 2.*np.pi*rotfreq*times
+    else:
+        # this always accepted a sequence! just forcing it now.
+
+        if len(rotfreq) != nint:
+            print("integrate.leapfrog_integrate: The size of rotfreq does not match the integration length.")
+
+            barpos = 2.*np.pi*rotfreq*times
 
     # initialize blank arrays
     xarray = np.zeros(nint); yarray = np.zeros(nint); zarray = np.zeros(nint)

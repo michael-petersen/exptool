@@ -299,9 +299,17 @@ def show_dump(infile,comp,type='pos',transform=True,\
     right_edge = 0.78
     width_share = (right_edge-left_edge)*width_share
     bottom_edge = 0.2
+
+    # the face on figure
     ax1 = fig.add_axes([left_edge,bottom_edge,(wfac-1.)*width_share,(wfac-1.)*width_share])
+
+    # the YZ plane (right panel)
     ax2 = fig.add_axes([left_edge+(wfac-1.)*width_share,bottom_edge,width_share,(wfac-1.)*width_share])
+
+    # the XZ plane (upper panel)
     ax3 = fig.add_axes([left_edge,bottom_edge+(wfac-1.)*width_share,(wfac-1.)*width_share,width_share])
+
+    # the colorbar
     ax4 = fig.add_axes([right_edge+0.03,bottom_edge,0.02,wfac*width_share])
 
         
@@ -353,6 +361,12 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
     ax3.set_ylabel('Z',size=30)
     ax3.yaxis.labelpad = 18
+
+    short_infile = infile.split('/')[-1]
+    breakdown = short_infile.split('.')
+
+    #print(breakdown[1]+' '+breakdown[2]+': T={0:4.3f}'.format(PSPDump.time))
+    ax3.set_title(breakdown[1]+' '+breakdown[2]+': T={0:4.3f}'.format(PSPDump.time),size=18)
     
     return fig
 

@@ -710,7 +710,26 @@ class EnergyKappa():
 #
 # this is EXCLUSIVELY temporary until a better format is decided on
 #
-def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_bonus=''):
+def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_bonus='',nhalo=1000000):
+    '''
+    input
+    -----------------------------------
+    simulation_directory     :
+    simulation_name          :
+    intime                   :
+    eof_file                 :
+    sph_file                 :
+    model_file               :
+    bar_bonus=''             :
+    nhalo=1000000            :
+
+    returns
+    ----------------------------------
+    F                        :
+    pattern                  :
+    rotfreq                  :
+
+    '''
     infile = simulation_directory+'OUT.'+simulation_name+'.%05i' %intime
     BarInstance = trapping.BarDetermine()
     if bar_bonus == '':
@@ -722,7 +741,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
     PSPDump = psp_io.Input(infile,validate=True)
     pattern = trapping.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
     rotfreq = pattern/(2.*np.pi)
-    F = Fields(infile,eof_file,sph_file,model_file,nhalo=1000000,transform=True,no_odd=False,centering=True,mutual_center=True)
+    F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=True,no_odd=False,centering=True,mutual_center=True)
     F.total_coefficients()
     F.prep_tables()
     #F.set_field_parameters()
