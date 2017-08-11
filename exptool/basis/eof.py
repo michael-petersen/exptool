@@ -693,7 +693,6 @@ def force_eval(r, z, phi, \
         if len(phi) != MMAX:
             print('eof.force_eval: varying phi detected, with mismatched lengths. breaking...')
             
-            break
 
         else:
             phiarr = np.tile(phi,(NMAX,1)).T
