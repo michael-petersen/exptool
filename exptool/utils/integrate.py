@@ -93,8 +93,9 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
     
     times = np.arange(0,nint,1)*dt
 
-    if len(rotfreq) == 0:
+    if np.array(rotfreq).size == 1:
         barpos = 2.*np.pi*rotfreq*times
+        
     else:
         # this always accepted a sequence! just forcing it now.
 
