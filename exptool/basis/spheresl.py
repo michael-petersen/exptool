@@ -1004,7 +1004,6 @@ def force_eval(r, costh, phi, expcoef,\
         if len(phi) != lmax:
             print('spheresl.force_eval: varying phi detected, with mismatched lengths. breaking...')
             
-            break
 
         else:
             phiarr = np.tile(phi,(nmax,1)).T
