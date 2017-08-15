@@ -93,16 +93,9 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
     
     times = np.arange(0,nint,1)*dt
 
-    if np.array(rotfreq).size == 1:
-        barpos = 2.*np.pi*rotfreq*times
-        
-    else:
-        # this always accepted a sequence! just forcing it now.
 
-        if len(rotfreq) != nint:
-            print("integrate.leapfrog_integrate: The size of rotfreq does not match the integration length.")
-
-            barpos = 2.*np.pi*rotfreq*times
+    # this needs a guard for mismatched size at some point
+    barpos = 2.*np.pi*rotfreq*times
 
     # initialize blank arrays
     xarray = np.zeros(nint); yarray = np.zeros(nint); zarray = np.zeros(nint)
