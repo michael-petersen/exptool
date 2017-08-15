@@ -998,7 +998,7 @@ def force_eval(r, costh, phi, expcoef,\
     # build matrix for phi terms
     morder = np.tile(np.arange(1.,lmax+1.,1.),(nmax,1)).T
 
-    if len(phi) > 0:
+    try:
 
         # verify length is that of MMAX
         if len(phi) != lmax:
@@ -1011,7 +1011,7 @@ def force_eval(r, costh, phi, expcoef,\
             cosm = np.cos(phiarr*morder)
             sinm = np.sin(phiarr*morder)
             
-    else:
+    except:
         cosm = np.cos(phi*morder)
         sinm = np.sin(phi*morder)
 

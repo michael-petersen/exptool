@@ -687,7 +687,7 @@ def force_eval(r, z, phi, \
     # make numpy array for the sine and cosine terms
     morder = np.tile(np.arange(1.,MMAX+1.,1.),(NMAX,1)).T
 
-    if len(phi) > 0:
+    try:
 
         # verify length is that of MMAX
         if len(phi) != MMAX:
@@ -700,7 +700,8 @@ def force_eval(r, z, phi, \
             ccos = np.cos(phiarr*morder)
             ssin = np.sin(phiarr*morder)
             
-    else:
+    except:
+        # this assumes scalar is being passed
         ccos = np.cos(phi*morder)
         ssin = np.sin(phi*morder)
 
