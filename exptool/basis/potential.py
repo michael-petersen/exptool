@@ -111,7 +111,7 @@ class Fields():
 
             print('potential.Fields.total_coefficients: Computing centering (centering=True)')
 
-            
+            # this should be adaptable at some point
             ncenter = 10000
 
             # rank order particles
@@ -158,7 +158,16 @@ class Fields():
             PSPDumpHaloTransformed.xpos -= self.xcen_halo
             PSPDumpHaloTransformed.ypos -= self.ycen_halo
             PSPDumpHaloTransformed.zpos -= self.zcen_halo
-            
+
+
+        else:
+            self.xcen_disk = 0.
+            self.ycen_disk = 0.
+            self.zcen_disk = 0.
+
+            self.xcen_halo = 0.
+            self.ycen_halo = 0.
+            self.zcen_halo = 0.
                      
         #
         # compute coefficients
@@ -505,8 +514,241 @@ class Fields():
 
 
 
+    def save_field(self,filename=''):
+        '''
+        save_field
+        ----------------
+        print field quantities to file to restore quickly
+
+        inputs
+        ----------------
+        self
+        filename   : default to add file number
 
 
+        outputs
+        ---------------
+
+        '''
+
+        if filename=='':
+            print('potential.Fields.save_field: No filename specified.')
+            
+        f = open(filename,'wb')
+        
+        #####################################################
+        # global parameters
+        #self.infile
+        np.array([self.infile],dtype='S100').tofile(f)
+
+        #self.eof_file
+        np.array([self.eof_file],dtype='S100').tofile(f)
+
+        #self.sph_file
+        np.array([self.sph_file],dtype='S100').tofile(f)
+
+        #self.model_file
+        np.array([self.model_file],dtype='S100').tofile(f)
+
+        #[infile,eof_file,sph_file,model_file] = np.fromfile(f,dtype='S100',count=4)
+
+        #self.nhalo
+        np.array([self.nhalo],dtype='i4').tofile(f)
+
+        #self.transform
+        np.array([self.transform],dtype='i4').tofile(f)
+
+        #self.no_odd
+        np.array([self.no_odd],dtype='i4').tofile(f)
+
+        #self.centering
+        np.array([self.centering],dtype='i4').tofile(f)
+
+        #self.mutual_center
+        np.array([self.mutual_center],dtype='i4').tofile(f)
+
+        #self.verbose
+        np.array([self.verbose],dtype='i4').tofile(f)
+
+        #[nhalo,transform,no_odd,centering,mutual_center,verbose] = np.fromfile(f,dtype='i4',count=6)
+        
+        #self.time
+        np.array([self.time],dtype='f4').tofile(f)
+
+        #[time] = np.fromfile(f,dtype='f4',count=1)
+
+        
+        ####################################################
+        # EOF parameters
+
+        #self.numx
+        np.array([self.numx],dtype='i4').tofile(f)
+     
+        #self.numy
+        np.array([self.numy],dtype='i4').tofile(f)
+
+        #self.mmax
+        np.array([self.mmax],dtype='i4').tofile(f)
+
+        #self.norder
+        np.array([self.norder],dtype='i4').tofile(f)
+
+        #self.cmapdisk
+        np.array([self.cmapdisk],dtype='i4').tofile(f)
+        
+        #[numx,numy,mmax,norder,cmapdisk] = np.fromfile(f,dtype='i4',count=5)
+
+
+        #self.ascale
+        np.array([self.ascale],dtype='f4').tofile(f)
+
+        #self.hscale
+        np.array([self.hscale],dtype='f4').tofile(f)
+
+        #self.XMIN
+        np.array([self.XMIN],dtype='f4').tofile(f)
+
+        #self.dX
+        np.array([self.dX],dtype='f4').tofile(f)
+
+        #self.YMIN
+        np.array([self.YMIN],dtype='f4').tofile(f)
+
+        #self.dY
+        np.array([self.dY],dtype='f4').tofile(f)
+
+        #[ascale,hscale,XMIN,dX,YMIN,dY] = np.fromfile(f,dtype='f4',count=6)
+
+        #self.EOF.cos
+        #self.EOF.sin
+        np.array(self.EOF.cos.reshape(-1,),dtype='f8').tofile(f)
+        np.array(self.EOF.sin.reshape(-1,),dtype='f8').tofile(f)
+        # 8 bytes X 2 arrays x (m+1) x n = 16(m+1)n bytes
+
+        #EOF.cos = (np.fromfile(f,dtype='f8',count=(mmax+1)*norder)).reshape([(mmax+1),norder])
+        #EOF.sin = (np.fromfile(f,dtype='f8',count=(mmax+1)*norder)).reshape([(mmax+1),norder])
+   
+
+        #self.potC
+        np.array(self.potC.reshape(-1,),dtype='f8').tofile(f)
+        # 8 bytes x (numx+1) x (numy+1) = 8(numx+1)(numy+1) bytes
+        #potC = (np.fromfile(f,dtype='f8',count=(mmax+1)*norder)).reshape([(mmax+1),norder])
+    
+        #self.rforceC
+        np.array(self.rforceC.reshape(-1,),dtype='f8').tofile(f)
+
+        #self.zforceC
+        np.array(self.zforceC.reshape(-1,),dtype='f8').tofile(f)
+
+        #self.densC
+        np.array(self.densC.reshape(-1,),dtype='f8').tofile(f)
+
+        #self.potS
+        np.array(self.potS.reshape(-1,),dtype='f8').tofile(f)
+
+        #self.rforceS
+        np.array(self.rforceS.reshape(-1,),dtype='f8').tofile(f)
+
+        #self.zforceS
+        np.array(self.zforceS.reshape(-1,),dtype='f8').tofile(f)
+
+        #self.densS
+        np.array(self.densS.reshape(-1,),dtype='f8').tofile(f)
+
+
+        #########################################
+        # SL parameters
+        #self.halofac
+        np.array([self.halofac],dtype='f4').tofile(f)
+
+        #self.cmaphalo
+        np.array([self.cmaphalo],dtype='i4').tofile(f)
+               
+        #self.scalehalo
+        np.array([self.scalehalo],dtype='f4').tofile(f)
+
+        #self.lmaxhalo
+        np.array([self.lmaxhalo],dtype='i4').tofile(f)
+
+        #self.nmaxhalo
+        np.array([self.nmaxhalo],dtype='i4').tofile(f)
+
+        #[halofac,cmaphalo,scalehalo,lmaxhalo,nmaxhalo] = np.fromfile(f,dtype='i4',count=5)
+
+        #self.xihalo
+        np.array(self.xihalo.reshape(-1,),dtype='f8').tofile(f)
+        
+        #self.p0halo
+        np.array(self.p0halo.reshape(-1,),dtype='f8').tofile(f)
+        
+        #self.d0halo
+        np.array(self.d0halo.reshape(-1,),dtype='f8').tofile(f)
+        
+        #self.evtablehalo
+        np.array(self.evtablehalo.reshape(-1,),dtype='f8').tofile(f)
+        
+        #self.eftablehalo
+        np.array(self.eftablehalo.reshape(-1,),dtype='f8').tofile(f)
+    
+        #self.SL.expcoef
+        np.array(self.SL.expcoef.reshape(-1,),dtype='f8').tofile(f)
+        # 8 bytes X 2 arrays x (m+1) x n = 16(m+1)n bytes to end of array
+    
+
+
+        f.close()
+
+        
+
+
+def restore_field(filename=''):
+    '''
+    restore_field
+    ----------------
+    read in a Fields instance
+
+
+    '''
+    f = open(filename,'rb')
+
+    ###########################
+    # global block
+    [infile,eof_file,sph_file,model_file] = np.fromfile(f,dtype='S100',count=4)
+    [nhalo,transform,no_odd,centering,mutual_center,verbose] = np.fromfile(f,dtype='i4',count=6)
+    [time] = np.fromfile(f,dtype='f4',count=1)
+    
+    # of course, this can not take a blank instantiation, so we must read in the global parameters before calling
+    #infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,centering=False,mutual_center=False,verbose=1)
+    F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=no_odd,centering=centering,mutual_center=mutual_center,verbose=verbose)
+
+    # still not clear this will take
+    F.time = time
+
+    ######################
+    # EOF block
+    [F.numx,F.numy,F.mmax,F.norder,F.cmapdisk] = np.fromfile(f,dtype='i4',count=5)
+    [F.ascale,F.hscale,F.XMIN,F.dX,F.YMIN,F.dY] = np.fromfile(f,dtype='f4',count=6)
+
+    F.EOF = eof.EOF_Object()
+    F.EOF.cos = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder)).reshape([(F.mmax+1),F.norder])
+    F.EOF.sin = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder)).reshape([(F.mmax+1),F.norder])
+
+    F.potC = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+    F.rforceC = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+    F.zforceC = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+    F.densC = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+
+    F.potS = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+    F.rforceS = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+    F.zforceS = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+    F.densS = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
+
+    ######################
+    # SL block
+    [halofac,cmaphalo,scalehalo,lmaxhalo,nmaxhalo] = np.fromfile(f,dtype='i4',count=5)
+
+    
+    f.close()
 
 
         
@@ -710,7 +952,7 @@ class EnergyKappa():
 #
 # this is EXCLUSIVELY temporary until a better format is decided on
 #
-def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_bonus='',nhalo=1000000):
+def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_bonus='',nhalo=1000000,transform=False):
     '''
     input
     -----------------------------------
@@ -732,20 +974,31 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
     '''
     infile = simulation_directory+'OUT.'+simulation_name+'.%05i' %intime
     BarInstance = trapping.BarDetermine()
-    if bar_bonus == '':
-        BarInstance.read_bar(simulation_directory+simulation_name+'_barpos.dat')
-    else:
-        BarInstance.read_bar(simulation_directory+simulation_name+'_'+bar_bonus+'_barpos.dat')
+
+    if transform:
+        if bar_bonus == '':
+            BarInstance.read_bar(simulation_directory+simulation_name+'_barpos.dat')
+        else:
+            BarInstance.read_bar(simulation_directory+simulation_name+'_'+bar_bonus+'_barpos.dat')
+            
     # reset the derivative
-    BarInstance.frequency_and_derivative(spline_derivative=2)
-    PSPDump = psp_io.Input(infile,validate=True)
-    pattern = trapping.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
-    rotfreq = pattern/(2.*np.pi)
-    F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=True,no_odd=False,centering=True,mutual_center=True)
+        BarInstance.frequency_and_derivative(spline_derivative=2)
+    
+        PSPDump = psp_io.Input(infile,validate=True)
+    
+        pattern = trapping.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
+    
+        rotfreq = pattern/(2.*np.pi)
+
+    else:
+        pattern = 0.
+        rotfreq = 0.
+    
+    F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=False,centering=True,mutual_center=True)
+
     F.total_coefficients()
     F.prep_tables()
-    #F.set_field_parameters()
-    #
+
     return F,pattern,rotfreq
 
 

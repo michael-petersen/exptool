@@ -1028,7 +1028,36 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
 ############################################################################################
 
 
-def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False):
+def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1):
+    '''
+    compute_coefficients:
+         take a PSP input file and eof_file and compute the cofficients
+
+
+    inputs
+    ---------------------------
+    PSPInput       :
+    eof_file       :
+    verbose        :
+    no_odd         :
+    nprocs_max     :
+ 
+
+    returns
+    --------------------------
+    EOF_Out        :
+       .time       :
+       .dump       :
+       .comp       :
+       .nbodies    :
+       .eof_file   :
+       .cos        :
+       .sin        :
+       .mmax       :
+       .nmax       :
+
+
+    '''
 
     EOF_Out = EOF_Object()
     EOF_Out.time = PSPInput.time
@@ -1036,8 +1065,14 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False):
     EOF_Out.comp = PSPInput.comp
     EOF_Out.nbodies = PSPInput.mass.size
     EOF_Out.eof_file = eof_file
-    
+
+    # it would be nice to set up an override for laptop running here
     nprocs = multiprocessing.cpu_count()
+
+    if nprocs_max > 0:            # is maximum set?
+        if nprocs > nprocs_max:   # is found number greater than desired number?
+            nprocs = nprocs_max   # reset to desired number
+
     
     if verbose > 1:
         rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file,verbose=1)
@@ -1708,10 +1743,13 @@ def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0
 
     '''
     f = open(simulation_directory+simulation_name+'_m{}n{}_barpos.dat'.format(morder,norder),'w')
-    #
+    
     for indx in range(0,len(DCp['time'])):
-        print >>f,DCp['time'][indx],(1./float(morder))*DCp['unphase'][morder][indx,norder],(1./float(morder))*DCp['speed'][morder][indx,norder]
-    #
+
+        # now compatible with Python3
+        print(DCp['time'][indx],(1./float(morder))*DCp['unphase'][morder][indx,norder],(1./float(morder))*DCp['speed'][morder][indx,norder],end="\n",file=f)
+
+    
     f.close()
 
 
