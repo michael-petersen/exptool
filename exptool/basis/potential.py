@@ -88,7 +88,7 @@ class Fields():
                 print 'potential.Fields.total_coefficients: Using bar_angle %4.3f' %PSPDumpDiskTransformed.bar_angle
                 
         else:
-            PSPDumpDiskTransformed = PSPDumpDisk
+            PSPDumpDiskTransformed = np.copy(PSPDumpDisk)
 
 
 
