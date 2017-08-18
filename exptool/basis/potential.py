@@ -760,18 +760,14 @@ def restore_field(filename=''):
     [infile,eof_file,sph_file,model_file] = np.fromfile(f,dtype='S100',count=4)
     [nhalo,transform,no_odd,centering,mutual_center,verbose] = np.fromfile(f,dtype='i4',count=6)
     [time] = np.fromfile(f,dtype='f4',count=1)
-    
-    # of course, this can not take a blank instantiation, so we must read in the global parameters before calling
-    #infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,centering=False,mutual_center=False,verbose=1)
-    F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=no_odd,centering=centering,mutual_center=mutual_center,verbose=verbose)
 
-    # still not clear this will take
-    F.time = time
+    F = potential.Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=no_odd,centering=centering,mutual_center=mutual_center,verbose=verbose)
 
-    ######################
+
+    ###########################
     # EOF block
-    [F.numx,F.numy,F.mmax,F.norder,F.cmapdisk] = np.fromfile(f,dtype='i4',count=5)
-    [F.ascale,F.hscale,F.XMIN,F.dX,F.YMIN,F.dY] = np.fromfile(f,dtype='f4',count=6)
+    [F.numx,F.numy,F.mmax,F.norder,F.cmapdisk,F.densdisk] = np.fromfile(f,dtype='i4',count=6)
+    [F.rmindisk,F.rmaxdisk,F.ascale,F.hscale,F.XMIN,F.dX,F.YMIN,F.dY,F.xcen_disk,F.ycen_disk,F.zcen_disk] = np.fromfile(f,dtype='f4',count=11)
 
     F.EOF = eof.EOF_Object()
     F.EOF.cos = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder)).reshape([(F.mmax+1),F.norder])
@@ -787,11 +783,30 @@ def restore_field(filename=''):
     F.zforceS = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
     F.densS = (np.fromfile(f,dtype='f8',count=(F.mmax+1)*F.norder*(F.numx+1)*(F.numy+1))).reshape([(F.mmax+1),F.norder,(F.numx+1),(F.numy+1)])
 
-    ######################
+    #############################
     # SL block
-    [halofac,cmaphalo,scalehalo,lmaxhalo,nmaxhalo] = np.fromfile(f,dtype='i4',count=5)
+    [F.halofac,F.rminhalo,F.rmaxhalo,F.scalehalo,F.xcen_halo,F.ycen_halo,F.zcen_halo] = np.fromfile(f,dtype='f4',count=7)
 
-    
+    [F.numrhalo,F.cmaphalo,F.lmaxhalo,F.nmaxhalo] = np.fromfile(f,dtype='i4',count=4)
+
+    F.xihalo = (np.fromfile(f,dtype='f8',count=F.numrhalo))
+    F.p0halo = (np.fromfile(f,dtype='f8',count=F.numrhalo))
+    F.d0halo = (np.fromfile(f,dtype='f8',count=F.numrhalo))
+    F.ltable = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)))
+
+    F.evtablehalo = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.nmaxhalo+1))).reshape([(F.lmaxhalo+1),(F.nmaxhalo+1)])
+    F.eftablehalo = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.nmaxhalo+1)*(F.numrhalo))).reshape([(F.lmaxhalo+1),(F.nmaxhalo+1),(F.numrhalo)])
+
+    F.SL = spheresl.SL_Object()
+    F.SL.expcoef = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.lmaxhalo+1)*(F.nmaxhalo+1))).reshape([(F.lmaxhalo+1)*(F.lmaxhalo+1),(F.nmaxhalo+1)])
+
+    F.disk_use_m = F.mmax
+    F.disk_use_n = F.norder
+
+    F.halo_use_l = F.lmaxhalo
+    F.halo_use_n = F.nmaxhalo
+
+    # should restore to point just after F.prep_tables()
     f.close()
 
 
