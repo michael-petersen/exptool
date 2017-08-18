@@ -761,7 +761,7 @@ def restore_field(filename=''):
     [nhalo,transform,no_odd,centering,mutual_center,verbose] = np.fromfile(f,dtype='i4',count=6)
     [time] = np.fromfile(f,dtype='f4',count=1)
 
-    F = potential.Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=no_odd,centering=centering,mutual_center=mutual_center,verbose=verbose)
+    F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=no_odd,centering=centering,mutual_center=mutual_center,verbose=verbose)
 
 
     ###########################
