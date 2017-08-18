@@ -809,6 +809,7 @@ def restore_field(filename=''):
     # should restore to point just after F.prep_tables()
     f.close()
 
+    return F
 
         
 
