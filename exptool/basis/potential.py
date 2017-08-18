@@ -103,7 +103,7 @@ class Fields():
             PSPDumpHaloTransformed = trapping.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
             
         else:
-            PSPDumpHaloTransformed = PSPDumpHalo
+            PSPDumpHaloTransformed = np.copy(PSPDumpHalo) # this is BAD! it requires way too much memory
 
         #
         # do centering
@@ -148,6 +148,8 @@ class Fields():
                 self.xcen_halo = np.sum(PSPDumpHaloTransformed.xpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
                 self.ycen_halo = np.sum(PSPDumpHaloTransformed.ypos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
                 self.zcen_halo = np.sum(PSPDumpHaloTransformed.zpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
+
+
             print('potential.Fields.total_coefficients: (x,y,z) = {0:6.5f},{1:6.5f},{2:6.5f}'\
                   .format(float(self.xcen_disk),float(self.ycen_disk),float(self.zcen_disk)))
 
@@ -595,9 +597,18 @@ class Fields():
 
         #self.cmapdisk
         np.array([self.cmapdisk],dtype='i4').tofile(f)
-        
-        #[numx,numy,mmax,norder,cmapdisk] = np.fromfile(f,dtype='i4',count=5)
 
+        #self.densdisk
+        np.array([self.densdisk],dtype='i4').tofile(f)
+
+        
+        #[numx,numy,mmax,norder,cmapdisk,densdisk] = np.fromfile(f,dtype='i4',count=6)
+
+        #self.rmindisk
+        np.array([self.rmindisk],dtype='f4').tofile(f)
+
+        #self.rmaxdisk
+        np.array([self.rmaxdisk],dtype='f4').tofile(f)
 
         #self.ascale
         np.array([self.ascale],dtype='f4').tofile(f)
@@ -617,7 +628,16 @@ class Fields():
         #self.dY
         np.array([self.dY],dtype='f4').tofile(f)
 
-        #[ascale,hscale,XMIN,dX,YMIN,dY] = np.fromfile(f,dtype='f4',count=6)
+        #self.xcen_disk = 0.
+        np.array([self.xcen_disk],dtype='f4').tofile(f)
+        
+        #self.ycen_disk = 0.
+        np.array([self.ycen_disk],dtype='f4').tofile(f)
+
+        #self.zcen_disk = 0.
+        np.array([self.zcen_disk],dtype='f4').tofile(f)
+
+        #[rmindisk,rmaxdisk,ascale,hscale,XMIN,dX,YMIN,dY,xcen_disk,ycen_disk,zcen_disk] = np.fromfile(f,dtype='f4',count=11)
 
         #self.EOF.cos
         #self.EOF.sin
@@ -661,28 +681,52 @@ class Fields():
         #self.halofac
         np.array([self.halofac],dtype='f4').tofile(f)
 
-        #self.cmaphalo
-        np.array([self.cmaphalo],dtype='i4').tofile(f)
-               
+        #self.rminhalo
+        np.array([self.rminhalo],dtype='f4').tofile(f)
+
+        #self.rmaxhalo
+        np.array([self.rmaxhalo],dtype='f4').tofile(f)
+
         #self.scalehalo
         np.array([self.scalehalo],dtype='f4').tofile(f)
 
+        #self.xcen_halo = 0.
+        np.array([self.xcen_halo],dtype='f4').tofile(f)
+        
+        #self.ycen_halo = 0.
+        np.array([self.ycen_halo],dtype='f4').tofile(f)
+
+        #self.zcen_halo = 0.
+        np.array([self.zcen_halo],dtype='f4').tofile(f)
+
+        #[halofac,rminhalo,rmaxhalo,scalehalo,xcen_halo,ycen_halo,zcen_halo] = np.fromfile(f,dtype='f4',count=7)
+    
+        #self.numrhalo
+        np.array([self.numrhalo],dtype='i4').tofile(f)
+
+        #self.cmaphalo
+        np.array([self.cmaphalo],dtype='i4').tofile(f)
+               
         #self.lmaxhalo
         np.array([self.lmaxhalo],dtype='i4').tofile(f)
 
         #self.nmaxhalo
         np.array([self.nmaxhalo],dtype='i4').tofile(f)
 
-        #[halofac,cmaphalo,scalehalo,lmaxhalo,nmaxhalo] = np.fromfile(f,dtype='i4',count=5)
+        #[numrhalo,cmaphalo,lmaxhalo,nmaxhalo] = np.fromfile(f,dtype='i4',count=4)
 
         #self.xihalo
         np.array(self.xihalo.reshape(-1,),dtype='f8').tofile(f)
+        #xihalo = (np.fromfile(f,dtype='f8',count=numrhalo))
         
         #self.p0halo
         np.array(self.p0halo.reshape(-1,),dtype='f8').tofile(f)
         
         #self.d0halo
         np.array(self.d0halo.reshape(-1,),dtype='f8').tofile(f)
+
+        #self.ltablehalo
+        np.array(self.ltablehalo.reshape(-1,),dtype='f8').tofile(f)
         
         #self.evtablehalo
         np.array(self.evtablehalo.reshape(-1,),dtype='f8').tofile(f)
