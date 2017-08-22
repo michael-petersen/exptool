@@ -424,6 +424,12 @@ class Fields():
         self.total_rotation = (rvals*(abs(halo_force)+abs(disk_force)))**0.5
 
 
+    def resonance_positions(self):
+        '''
+        calculate simple resonance lines for modeling purposes
+
+        '''
+
     
     def compute_axis_potential(self,rvals=np.linspace(0.,0.1,100)):
         '''
