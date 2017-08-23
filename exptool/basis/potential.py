@@ -406,7 +406,7 @@ class Fields():
         return fxdisk,fxhalo,fydisk,fyhalo,fzdisk,fzhalo,diskp,(halop + halop0)
 
     
-    def rotation_curve(self,rvals=np.linspace(0.,0.1,100)):
+    def rotation_curve(self,rvals=np.linspace(0.0001,0.1,100)):
         '''
         returns the rotation curve alone the x axis for quick and dirty viewing. rotate potential first if desired!
 
@@ -424,11 +424,31 @@ class Fields():
         self.total_rotation = (rvals*(abs(halo_force)+abs(disk_force)))**0.5
 
 
-    def resonance_positions(self):
+    def resonance_positions(self,rvals=np.linspace(0.0001,0.1,100)):
         '''
         calculate simple resonance lines for modeling purposes
 
         '''
+
+        disk_force = np.zeros_like(rvals)
+        halo_force = np.zeros_like(rvals)
+
+        for indx,rval in enumerate(rvals):
+            disk_force[indx],halo_force[indx],a,b,c,d,e,f = Fields.return_forces_cyl(self,rval,0.0,0.0)
+
+        self.rvals = rvals
+
+        # circular frequency
+        self.omega = ((abs(halo_force)+abs(disk_force))/rvals)**0.5
+
+        # radial frequency
+        # do the derivative
+        spl = UnivariateSpline(rvals, self.omega, k=3, s=0)
+        ddphi = spl.derivative()(rvals)
+
+        self.kappa = ( 3.*self.omega**2. + ddphi)**0.5
+
+
 
     
     def compute_axis_potential(self,rvals=np.linspace(0.,0.1,100)):
