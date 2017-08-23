@@ -297,6 +297,14 @@ class Fields():
         if disk_n > -1: self.disk_use_n = disk_n
 
 
+    def reset_field_parameters(self):
+
+        self.no_odd = False
+        self.halo_use_l = self.lmaxhalo
+        self.halo_use_n = self.nmaxhalo
+        self.disk_use_m = self.mmax
+        self.disk_use_n = self.norder
+    
 
     def return_forces_cyl(self,xval,yval,zval,rotpos=0.0):
         
@@ -406,12 +414,40 @@ class Fields():
         return fxdisk,fxhalo,fydisk,fyhalo,fzdisk,fzhalo,diskp,(halop + halop0)
 
     
-    def rotation_curve(self,rvals=np.linspace(0.0001,0.1,100)):
+    def rotation_curve(self,rvals=np.linspace(0.0001,0.1,100),mono=False):
         '''
         returns the rotation curve alone the x axis for quick and dirty viewing. rotate potential first if desired!
 
+
+        inputs
+        --------------
+        self           :                            the Field instance
+        rvals          : (default=sampling to 0.1)  what rvalues to evaluate
+        mono           : (default=False)            use only the monopole?
+
+        returns
+        --------------
+        additions to self--
+
+        disk_rotation  :                            disk contribution to the rotation curve
+        halo_rotation  :                            halo contribution to the rotation curve
+        total_rotation :                            the total rotation curve
+
         '''
 
+        
+        '''
+        if mono == True:
+            tmp_halo = self.halo_use_l
+            tmp_disk = self.disk_use_m
+
+            # zero out to get monopole only
+            self.halo_use_l = 0
+            self.disk_use_m = 0
+
+
+
+        
         disk_force = np.zeros_like(rvals)
         halo_force = np.zeros_like(rvals)
 
@@ -424,11 +460,41 @@ class Fields():
         self.total_rotation = (rvals*(abs(halo_force)+abs(disk_force)))**0.5
 
 
-    def resonance_positions(self,rvals=np.linspace(0.0001,0.1,100)):
+        if mono == True:
+            # reset values
+            self.halo_use_l = tmp_halo
+            self.disk_use_m = tmp_disk
+
+
+
+    def resonance_positions(self,rvals=np.linspace(0.0001,0.1,100),mono=False):
         '''
         calculate simple resonance lines for modeling purposes
 
+        inputs
+        --------------
+        self   :                            the Field instance
+        rvals  : (default=sampling to 0.1)  what rvalues to evaluate
+        mono   : (default=False)            use only the monopole?
+
+        returns
+        --------------
+        additions to self--
+
+        rvals
+        omega
+        kappa
+
         '''
+
+        if mono == True:
+            tmp_halo = self.halo_use_l
+            tmp_disk = self.disk_use_m
+
+            # zero out to get monopole only
+            self.halo_use_l = 0
+            self.disk_use_m = 0
+
 
         disk_force = np.zeros_like(rvals)
         halo_force = np.zeros_like(rvals)
@@ -448,9 +514,13 @@ class Fields():
 
         self.kappa = ( 3.*self.omega**2. + ddphi)**0.5
 
+        if mono == True:
+            # reset values
+            self.halo_use_l = tmp_halo
+            self.disk_use_m = tmp_disk
 
 
-    
+
     def compute_axis_potential(self,rvals=np.linspace(0.,0.1,100)):
         '''
         returns the potential along the major axis
