@@ -433,8 +433,6 @@ class Fields():
         halo_rotation  :                            halo contribution to the rotation curve
         total_rotation :                            the total rotation curve
 
-        '''
-
         
         '''
         if mono == True:
