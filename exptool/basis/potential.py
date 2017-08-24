@@ -435,6 +435,16 @@ class Fields():
 
         
         '''
+
+        try:
+            x = self.no_odd
+
+        except:
+            print 'Fields.return_forces_cart: applying default potential parameters.'
+            Fields.set_field_parameters(self)
+
+
+
         if mono == True:
             tmp_halo = self.halo_use_l
             tmp_disk = self.disk_use_m
@@ -484,6 +494,15 @@ class Fields():
         kappa
 
         '''
+
+        try:
+            x = self.no_odd
+
+        except:
+            print 'Fields.return_forces_cart: applying default potential parameters.'
+            Fields.set_field_parameters(self)
+
+
 
         if mono == True:
             tmp_halo = self.halo_use_l
