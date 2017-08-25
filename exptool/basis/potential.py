@@ -68,6 +68,8 @@ class Fields():
 
         self.verbose = verbose
 
+        
+
         # do the total coefficient calculation?
         #Fields.total_coefficients(self)
 
@@ -88,6 +90,7 @@ class Fields():
                 print 'potential.Fields.total_coefficients: Using bar_angle %4.3f' %PSPDumpDiskTransformed.bar_angle
                 
         else:
+            # there is a problem here...not clear why
             PSPDumpDiskTransformed = np.copy(PSPDumpDisk)
 
 
@@ -179,6 +182,8 @@ class Fields():
         
         self.SL = spheresl.compute_coefficients(PSPDumpHaloTransformed,self.sph_file,self.model_file,verbose=self.verbose,no_odd=self.no_odd)
 
+
+        
 
     def prep_tables(self):
 

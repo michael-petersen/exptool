@@ -286,27 +286,53 @@ def y_to_z(y,hscale):
 
 def return_bins(r,z,\
                 rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,ASCALE=0.01,HSCALE=0.001,CMAP=0):
+    '''
     #
     # routine to return the integer bin numbers based on dimension mapping
-    # 
+    #
+    inputs
+    ---------------------
+    r
+    z
+    rmin=0
+    dR=0
+    zmin=0
+    dZ=0
+    numx=0
+    numy=0
+    ASCALE=0.01
+    HSCALE=0.001
+    CMAP=0
+
+    returns
+    ---------------------
+
+    '''
+    # want to allow for this to take vectors...
+    
     X = (r_to_xi(r,CMAP,ASCALE) - rmin)/dR
     Y = (z_to_y(z,hscale=HSCALE) - zmin)/dZ
     ix = int( np.floor((r_to_xi(r,CMAP,ASCALE) - rmin)/dR) )
     iy = int( np.floor((z_to_y(z,hscale=HSCALE) - zmin)/dZ) )
     #
     # check the boundaries and set guards
+    
     if ix < 0:
         ix = 0
         X = 0
+        
     if ix >= numx:
         ix = numx - 1
         X = numx - 1
+        
     if iy < 0:
         iy = 0
         Y = 0
+        
     if iy >= numy:
         iy = numy - 1
         Y = numy - 1
+        
     return X,Y,ix,iy
 
 
