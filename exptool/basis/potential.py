@@ -90,8 +90,8 @@ class Fields():
                 print 'potential.Fields.total_coefficients: Using bar_angle %4.3f' %PSPDumpDiskTransformed.bar_angle
                 
         else:
-            # there is a problem here...not clear why
-            PSPDumpDiskTransformed = np.copy(PSPDumpDisk)
+            # let's reread for safety
+            PSPDumpDiskTransformed = psp_io.Input(self.infile,comp='star')
 
 
 
@@ -106,7 +106,7 @@ class Fields():
             PSPDumpHaloTransformed = trapping.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
             
         else:
-            PSPDumpHaloTransformed = np.copy(PSPDumpHalo) # this is BAD! it requires way too much memory
+            PSPDumpHaloTransformed = PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
 
         #
         # do centering
