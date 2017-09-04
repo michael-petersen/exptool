@@ -55,6 +55,29 @@ class Fields():
 
     '''
     def __init__(self,infile,eof_file,sph_file,model_file,nhalo=1000000,transform=False,no_odd=False,centering=False,mutual_center=False,verbose=1):
+        '''
+        __init__
+
+
+        inputs
+        --------------------
+        infile
+        eof_file
+        sph_file
+        model_file
+        nhalo=1000000
+        transform=False
+        no_odd=False
+        centering=False
+        mutual_center=False
+        verbose=1
+
+
+        returns
+        -------------------
+        self, now set up with basic parameters
+
+        '''
 
         self.infile = infile
         self.eof_file = eof_file
@@ -74,6 +97,23 @@ class Fields():
         #Fields.total_coefficients(self)
 
     def total_coefficients(self):
+        '''
+        total_coefficients
+
+
+        inputs
+        -----------------
+        self
+
+
+        returns
+        -----------------
+        self
+            time
+            
+
+
+        '''
 
 
         # read in the files
@@ -95,12 +135,14 @@ class Fields():
 
 
 
+        # read in both partial and full halo to figure out the halofactor
         PSPDumpHaloT = psp_io.Input(self.infile,comp='dark')
 
         PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
 
 
         self.halofac = float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
+
         
         if self.transform:
             PSPDumpHaloTransformed = trapping.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
@@ -124,11 +166,12 @@ class Fields():
 
             cparticles = rrank.argsort()[0:ncenter]
 
+            # use the specified particles to calculate the center of mass in each dimension
             self.xcen_disk = np.sum(PSPDumpDiskTransformed.xpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
             self.ycen_disk = np.sum(PSPDumpDiskTransformed.ypos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
             self.zcen_disk = np.sum(PSPDumpDiskTransformed.zpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
 
-            # pinned to same position?
+            # pinned both components to same position?
             if self.mutual_center:
 
                 print('potential.Fields.total_coefficients: Using computed disk center for halo (mutual_center=True)')
@@ -140,6 +183,7 @@ class Fields():
 
 
             else:
+                
 
                 # rank order particles
                 rrank = (PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
@@ -186,6 +230,12 @@ class Fields():
         
 
     def prep_tables(self):
+        '''
+        prep_tables
+            reads the cached files to set up tables for accumulation
+
+
+        '''
 
         try:
             x = self.EOF.eof_file
