@@ -469,7 +469,7 @@ class Fields():
         return fxdisk,fxhalo,fydisk,fyhalo,fzdisk,fzhalo,diskp,(halop + halop0)
 
     
-    def rotation_curve(self,rvals=np.linspace(0.0001,0.1,100),mono=False):
+    def rotation_curve(self,rvals=np.linspace(0.0001,0.1,100),mono=False,angle=0.):
         '''
         returns the rotation curve alone the x axis for quick and dirty viewing. rotate potential first if desired!
 
@@ -515,7 +515,7 @@ class Fields():
         halo_force = np.zeros_like(rvals)
 
         for indx,rval in enumerate(rvals):
-            disk_force[indx],halo_force[indx],a,b,c,d,e,f = Fields.return_forces_cyl(self,rval,0.0,0.0)
+            disk_force[indx],halo_force[indx],a,b,c,d,e,f = Fields.return_forces_cyl(self,rval,angle,0.0)
 
         self.rvals = rvals
         self.disk_rotation = (rvals*abs(disk_force))**0.5
@@ -692,12 +692,13 @@ class Fields():
 
         inputs
         ----------------
-        self
+        self       : the Field instance
         filename   : default to add file number
 
 
         outputs
         ---------------
+        printed field file, to be read with potential.restore_field(filename)
 
         '''
 
@@ -931,6 +932,8 @@ def restore_field(filename=''):
 
     F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=no_odd,centering=centering,mutual_center=mutual_center,verbose=verbose)
 
+    # somehow this doesn't get carried over normally?
+    F.time = time
 
     ###########################
     # EOF block
