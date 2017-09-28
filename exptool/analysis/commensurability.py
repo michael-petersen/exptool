@@ -25,6 +25,18 @@ from exptool.utils import kde_3d
 from exptool.utils import utils
 
 
+# also check the scipy
+from scipy.interpolate import UnivariateSpline
+from scipy.ndimage import filters
+import scipy.ndimage.filters
+
+# need a check here to see if this will actually import and a clause if not
+from skimage.morphology import skeletonize
+
+
+
+
+
 
 
 # read in orbit integrations
@@ -108,6 +120,70 @@ for j in range(0,len(res)):
 
 
 '''
+
+
+
+def map_skeleton(Rarr,Varr,Aarr,sigma=(3.,3.),ridge_cutoff=0.5):
+    
+    area_map = 256.*Aarr.T/(np.pi*Rarr.T*Rarr.T)
+
+    #
+    # only do the needed derivatives
+    #
+    #rp_00 = filters.gaussian_filter(area_map,sigma,order=0)      # r
+    #rp_01 = filters.gaussian_filter(area_map,sigma,order=(0,1))  # ry
+    #rp_10 = filters.gaussian_filter(area_map,sigma,order=(1,0))  # rx
+    rp_11 = filters.gaussian_filter(area_map,sigma,order=(1,1))  # rxy
+    rp_20 = filters.gaussian_filter(area_map,sigma,order=(2,0))  # rxx
+    rp_02 = filters.gaussian_filter(area_map,sigma,order=(0,2))  # ryy
+    
+    #
+    # set up the hessian
+    #
+    hess = np.array([[rp_20.T,rp_11.T],[rp_11.T,rp_02.T]]).T
+
+    #
+    # solve the eigenvalue problem
+    #
+    w, v = np.linalg.eig(hess)
+    
+    #
+    # find maximum eigenvalue
+    # 
+    ridge_map = np.max(w,axis=2)
+    
+    #
+    # now threshold the map
+    #
+    threshold_map = np.zeros_like(ridge_map)
+    good_values = np.where(ridge_map > ridge_cutoff)
+    threshold_map[good_values] = 1.
+    
+    skeleton = skeletonize(threshold_map)
+
+    #
+    # zero out bad values
+    #
+    ridge_trace = np.zeros_like(ridge_map)
+    good_values = np.where(skeleton < 0.002)
+    ridge_trace[good_values] = np.nan
+    
+    
+    return ridge_trace
+    
+    
+def print_skeleton(infile,pskel,Rarr,Varr):
+
+    f = open(infile,'w')
+
+    pp = np.flipud(pskel).reshape(-1,)
+    ccc = (Rarr.T).reshape(-1,)
+    ddd = (Varr.T).reshape(-1,)
+
+    for indx in range(0,len(pp)):
+        print >>f,ccc[indx],ddd[indx],pp[indx]
+    
+    f.close()
 
 
 
