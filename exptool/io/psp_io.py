@@ -373,9 +373,10 @@ class Input():
         #head = (np.fromfile(self.f, dtype='a'+str(infostringlen),count=1)).encode('utf-8')
         head = (np.fromfile(self.f, dtype=np.dtype((np.bytes_, infostringlen)),count=1))#
         
-        head_normal = (head[0].decode())
+        headStr = (head[0].decode())
+        #headStr = str( head, encoding='utf8' )
         
-        [comptitle,expansion,EJinfo,basisinfo] = [q for q in head_normal.split(':')]
+        [comptitle,expansion,EJinfo,basisinfo] = [q for q in headStr.split(':')]
 
         self.comp_pos_data[present_comp] = self.f.tell()            # save where the data actually begins
 
@@ -388,7 +389,7 @@ class Input():
         self.comp_basis[present_comp] = basisinfo
         self.comp_niatr[present_comp] = niatr
         self.comp_ndatr[present_comp] = ndatr
-        self.comp_string[present_comp] = head_normal
+        self.comp_string[present_comp] = headStr
         self.comp_nbodies[present_comp] = nbodies
 
 
