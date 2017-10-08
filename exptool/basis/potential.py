@@ -27,6 +27,7 @@ potential (part of exptool.basis)
 
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 
@@ -127,7 +128,7 @@ class Fields():
             PSPDumpDiskTransformed = trapping.BarTransform(PSPDumpDisk)
             
             if self.verbose > 1:
-                print 'potential.Fields.total_coefficients: Using bar_angle %4.3f' %PSPDumpDiskTransformed.bar_angle
+                print('potential.Fields.total_coefficients: Using bar_angle {0:4.3f}'.format(PSPDumpDiskTransformed.bar_angle))
                 
         else:
             # let's reread for safety
@@ -241,7 +242,7 @@ class Fields():
             x = self.EOF.eof_file
 
         except:
-            print 'potential.Fields.prep_tables: must first call total_coefficients.'
+            print('potential.Fields.prep_tables: must first call total_coefficients.')
 
         # build disk tables
         self.potC,self.rforceC,self.zforceC,self.densC,\
@@ -281,7 +282,7 @@ class Fields():
             y = self.potC
 
         except:
-            print 'potential.Fields.return_density: must first call total_coefficients and prep_tables.'
+            print('potential.Fields.return_density: must first call total_coefficients and prep_tables.')
 
         r2val = (xval*xval + yval*yval)**0.5  + 1.e-10
         r3val = (r2val*r2val + zval*zval)**0.5  + 1.e-10
@@ -319,7 +320,7 @@ class Fields():
         Fields.prep_tables(self)
 
         if not self.densdisk:
-            print 'Fields.density_calculate: no density terms in basis!'
+            print('Fields.density_calculate: no density terms in basis!')
             return None
 
         halodens_mono = np.zeros_like(rvals)
@@ -367,7 +368,7 @@ class Fields():
             x = self.no_odd
 
         except:
-            print 'Fields.return_forces_cart: applying default potential parameters.'
+            print('Fields.return_forces_cart: applying default potential parameters.')
             Fields.set_field_parameters(self)
 
 
@@ -420,7 +421,7 @@ class Fields():
             x = self.no_odd
 
         except:
-            print 'Fields.return_forces_cart: applying default potential parameters.'
+            print('Fields.return_forces_cart: applying default potential parameters.')
             Fields.set_field_parameters(self)
 
 
@@ -495,7 +496,7 @@ class Fields():
             x = self.no_odd
 
         except:
-            print 'Fields.return_forces_cart: applying default potential parameters.'
+            print('Fields.return_forces_cart: applying default potential parameters.')
             Fields.set_field_parameters(self)
 
 
@@ -554,7 +555,7 @@ class Fields():
             x = self.no_odd
 
         except:
-            print 'Fields.return_forces_cart: applying default potential parameters.'
+            print('Fields.return_forces_cart: applying default potential parameters.')
             Fields.set_field_parameters(self)
 
 
@@ -1130,7 +1131,7 @@ class EnergyKappa():
         # helper class to 
         #
         f = open(file,'w+')
-        print >>f,PA.TIME,len(self.Ebins),self.Ebins,self.maxLz,self.maxL,self.maxR,self.circR
+        #print >>f,PA.TIME,len(self.Ebins),self.Ebins,self.maxLz,self.maxL,self.maxR,self.circR
 
         f.close()
 
@@ -1158,11 +1159,11 @@ class EnergyKappa():
         try:
             x = self.Kindx[0]
         except:
-            print 'Making Grid...'
+            print('exptool.potential.sum_ek_values: Making Grid...')
             EnergyKappa.ek_grid(self)
 
         if len(sumval)!=len(self.Eindx):
-            print 'Input array must have values for all particles.'
+            print('exptool.potential.sum_ek_values: Input array must have values for all particles.')
             #break
 
         ebmax = len(self.Ebins)

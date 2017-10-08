@@ -236,7 +236,7 @@ class Input():
         #
         # if the component is found proceed.
         #
-        if (self.which_comp >= 0): 
+        if (self.which_comp is not None): 
 
             #
             # how many bodies to return? (overridden if orbit_list)
@@ -370,8 +370,12 @@ class Input():
             [nbodies,niatr,ndatr,infostringlen] = np.fromfile(self.f, dtype=np.uint32,count=4)
 
         # information string from the header
-        head = np.fromfile(self.f, dtype='a'+str(infostringlen),count=1)
-        [comptitle,expansion,EJinfo,basisinfo] = [q for q in head[0].split(':')]
+        #head = (np.fromfile(self.f, dtype='a'+str(infostringlen),count=1)).encode('utf-8')
+        head = (np.fromfile(self.f, dtype=np.dtype((np.bytes_, infostringlen)),count=1))#
+        
+        head_normal = (head[0].decode())
+        
+        [comptitle,expansion,EJinfo,basisinfo] = [q for q in head_normal.split(':')]
 
         self.comp_pos_data[present_comp] = self.f.tell()            # save where the data actually begins
 
@@ -384,7 +388,7 @@ class Input():
         self.comp_basis[present_comp] = basisinfo
         self.comp_niatr[present_comp] = niatr
         self.comp_ndatr[present_comp] = ndatr
-        self.comp_string[present_comp] = str(head)
+        self.comp_string[present_comp] = head_normal
         self.comp_nbodies[present_comp] = nbodies
 
 

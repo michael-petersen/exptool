@@ -9,6 +9,7 @@
 #    TODO:
 #      add global angular momentum counters
 #
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 import time
@@ -38,7 +39,7 @@ class GQuantities():
         #
         # ability to instantiate and exit
         if simfile == None:
-            print 'globalquantities.__init__: beginning...'
+            print('globalquantities.__init__: beginning...')
             return None
 
     
@@ -58,10 +59,10 @@ class GQuantities():
 
             try:
                 if O.ntot > 0:
-                    if verbose >= 1: print 'globalquantities.__init__: Accepted single input file.'
+                    if verbose >= 1: print('globalquantities.__init__: Accepted single input file.')
 
             except:
-                print 'globalquantities.__init__: multi=False, but simfile is not a valid PSP file. Exiting.'
+                print('globalquantities.__init__: multi=False, but simfile is not a valid PSP file. Exiting.')
             
 
         self.rbins = rbins
@@ -70,12 +71,12 @@ class GQuantities():
 
         if (track_lz) and (comp):
             if self.verbose >= 1:
-                print 'Tracking Global Angular momentum...'
+                print('Tracking Global Angular momentum...')
             GQuantities.track_angular_momentum(self,comp)
 
         if (track_diff_lz) and (comp):
             if self.verbose >= 1:
-                print 'Tracking Radial Differential Angular momentum...'
+                print('Tracking Radial Differential Angular momentum...')
             GQuantities.track_diff_angular_momentum(self,comp,rbins)
 
         if (track_fourier) and (comp):
@@ -118,10 +119,10 @@ class GQuantities():
             f = open(self.SLIST[0])
             
             if self.verbose >= 1:
-                print 'Accepted %i files.' %len(self.SLIST)
+                print('Accepted {0:i} files.'.format(len(self.SLIST)))
                 
         except:
-            print 'First file is not a valid filename. Perhaps the infile is not an array of files?'
+            print('First file is not a valid filename. Perhaps the infile is not an array of files?')
 
         
 
@@ -144,7 +145,8 @@ class GQuantities():
 
             
             if (i % dfreq == 0) and (self.verbose >= 2):
-                print '(%i%%, %3.2f)...' %(i/len(self.SLIST),time.time()-tinit),
+                continue
+                #print('(%i%%, %3.2f)...' %(i/len(self.SLIST),time.time()-tinit),)
                 
 
 
@@ -174,7 +176,8 @@ class GQuantities():
 
             
             if (i % dfreq == 0) and (self.verbose >= 2):
-                print '%3.2f%%, %3.2f seconds elapsed\r' %(float(i/len(self.SLIST)),time.time()-tinit),
+                continue
+                #print '%3.2f%%, %3.2f seconds elapsed\r' %(float(i/len(self.SLIST)),time.time()-tinit),
                 
 
 
@@ -193,7 +196,7 @@ class GQuantities():
         try:
             x = self.aval[0,0,0]
         except:
-            print 'globalquantities.compute_discrete_frequency_fourier : globalquantities.fourier has not yet been called.'
+            print('globalquantities.compute_discrete_frequency_fourier : globalquantities.fourier has not yet been called.')
 
 
         frequency_sampling = (2.*np.pi * k * m )/ ( S * dT )
@@ -202,12 +205,12 @@ class GQuantities():
         try:
             comp = self.comp
         except:
-            print 'globalquantities.compute_fourier: No component specified...trying star.'
+            print('globalquantities.compute_fourier: No component specified...trying star.')
             comp = 'star'
             try:
                 O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
             except:
-                print 'globalquantities.compute_fourier: No star...trying dark.'
+                print('globalquantities.compute_fourier: No star...trying dark.')
                 comp = 'dark'
 
 
@@ -247,7 +250,7 @@ class GQuantities():
             rbins = self.rbins
             dr = rbins[1] - rbins[0]
         except:
-            print 'Rbins must be set in order (or have multiple values) to proceed. Appying default...'
+            print('Rbins must be set in order (or have multiple values) to proceed. Appying default...')
             self.rbins = np.linspace(0.,1.,100)
             rbins = self.rbins
 
@@ -255,12 +258,12 @@ class GQuantities():
         try:
             comp = self.comp
         except:
-            print 'globalquantities.compute_fourier: No component specified...trying star.'
+            print('globalquantities.compute_fourier: No component specified...trying star.')
             comp = 'star'
             try:
                 O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
             except:
-                print 'globalquantities.compute_fourier: No star...trying dark.'
+                print('globalquantities.compute_fourier: No star...trying dark.')
                 comp = 'dark'
 
 
@@ -270,7 +273,7 @@ class GQuantities():
         
         for i,file in enumerate(self.SLIST):
 
-            if self.verbose > 1: print 'globalquantities.compute_fourier: working on ',file
+            if self.verbose > 1: print('globalquantities.compute_fourier: working on ',file)
                 
             O = psp_io.Input(file,comp=comp,verbose=0)
         
@@ -350,7 +353,7 @@ class GQuantities():
             rbins = self.rbins
             dr = rbins[1] - rbins[0]
         except:
-            print 'Rbins must be set in order (or have multiple values) to proceed. Appying default...'
+            print('Rbins must be set in order (or have multiple values) to proceed. Appying default...')
             self.rbins = np.linspace(0.,1.,100)
             rbins = self.rbins
 
@@ -358,12 +361,12 @@ class GQuantities():
         try:
             comp = self.comp
         except:
-            print 'No component specified...trying star.'
+            print('No component specified...trying star.')
             comp = 'star'
             try:
                 O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
             except:
-                print 'No star...trying dark.'
+                print('No star...trying dark.')
                 comp = 'dark'
 
 
@@ -373,7 +376,7 @@ class GQuantities():
         
         for i,file in enumerate(self.SLIST):
 
-            if self.verbose > 1: print 'globalquantities.compute_z_fourier: working on ',file
+            if self.verbose > 1: print('globalquantities.compute_z_fourier: working on ',file)
                 
             O = psp_io.Input(file,comp=comp,verbose=0)
         
