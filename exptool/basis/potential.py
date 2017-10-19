@@ -981,6 +981,12 @@ def restore_field(filename=''):
     # should restore to point just after F.prep_tables()
     f.close()
 
+    # compatibility doubling
+    F.SL.model_file = F.model_file
+    F.SL.sph_file = F.sph_file
+    F.EOF.eof_file = F.eof_file
+    F.EOF.mmax = F.mmax
+
     return F
 
         

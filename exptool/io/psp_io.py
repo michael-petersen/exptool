@@ -370,11 +370,14 @@ class Input():
             [nbodies,niatr,ndatr,infostringlen] = np.fromfile(self.f, dtype=np.uint32,count=4)
 
         # information string from the header
-        #head = (np.fromfile(self.f, dtype='a'+str(infostringlen),count=1)).encode('utf-8')
+        #
+        # I believe np.bytes_ is more robust, would like to undertake a larger conversion.
+        #head = (np.fromfile(self.f, dtype='a'+str(infostringlen),count=1))
         head = (np.fromfile(self.f, dtype=np.dtype((np.bytes_, infostringlen)),count=1))#
-        
+
+        # here are two options for Python3 compatibility. Only .decode() is Python2 compatible, so save for now.
         headStr = (head[0].decode())
-        #headStr = str( head, encoding='utf8' )
+        #headStr = str( head[0])#, encoding='utf8' )
         
         [comptitle,expansion,EJinfo,basisinfo] = [q for q in headStr.split(':')]
 
