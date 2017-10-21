@@ -1,7 +1,6 @@
 *.pyc
 *.dat
 *legacy*
-*test*
 .#*
 *.so
 build/*
