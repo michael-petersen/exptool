@@ -7,9 +7,25 @@ from exptool.io import psp_io
 
 
 
-def measured_rotation(infile):
-    O = psp_io.Input(infile,comp='star')
-    extent = rmax = 0.06
+def measured_rotation(infile,comp,rmax=0.06,nsamp=256):
+    '''
+    velocity.measured_rotation
+        measure rotation velocity from particles
+
+    inputs
+    ---------------
+    infile
+    comp
+    rmax
+    nsamp
+
+    outputs
+    --------------
+
+
+    '''
+    O = psp_io.Input(infile,comp=comp)
+    extent = rmax
     nsamp = 256
     kde_weight = (O.xpos*O.yvel - O.ypos*O.xvel)/( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5)
     #

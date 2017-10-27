@@ -105,6 +105,12 @@ def normalhist(array,nbins,colorst='black'):
 
     
 def binnormalhist(array,bins,weights=None):
+    '''
+    binnormalhist
+         return the 1d histogram given bins and a 1d array (plus optional weighting array)
+
+
+    '''
     if weights==None:
         weights = np.ones(len(array))
     #
