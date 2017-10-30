@@ -34,7 +34,7 @@ import os
 # exptool imports
 from exptool.utils import utils
 from exptool.utils import halo_methods
-from exptool.io import psp_io
+from exptool.io import psp
 
 
 

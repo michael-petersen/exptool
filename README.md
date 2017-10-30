@@ -16,7 +16,7 @@ supercomputer, eagle.
 
 #### Contents
 1. models
-2. psp
+2. io
 3. analysis
 4. observables
 5. basis
