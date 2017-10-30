@@ -5,16 +5,23 @@
     |  |____ /  .  \  |  |          |  |     |  `--'  | |  `--'  | |  `----.
     |_______/__/ \__\ | _|          |__|      \______/   \______/  |_______|
 
-### python analysis of exp files
+## python analysis of exp files
+## msp, 2014-present
 
-#### Version 0.1!
+### Version 0.1!
 There is actually structure to exptool now, which means that I will
 have to fix the software morass I've been rolling with on UMass'
 supercomputer, eagle.
 
 
-#### To Do
-
+#### Contents
+1. models
+2. psp
+3. analysis
+4. observables
+5. basis
+6. orbits
+7. utils
 
 
 
