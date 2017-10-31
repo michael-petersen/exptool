@@ -5,8 +5,25 @@
 #
 # 10-29-2017: First construction
 #
+# Generalization is (BT 2.64)
 #
+#                           rho0
+#   rho(r) = -------------------------------
+#            (r/a)^alpha (1+r/a)^(beta-alpha)
 #
+# where alpha=1, beta=4 for the Hernquist model
+#
+# (beta=4 is the dehnen family of models. dehnen models with alpha in [0.6,2] reasonably describe elliptical galaxy centers)
+# (alpha=2, beta=4 is Jaffe model)
+# (alpha=1, beta=3 is NFW model)
+#
+# Enclosed mass is then
+#
+#                                               s^{2-\alpha}
+#    M(r) = 4\pi \rho_0 a^3 \int_0^{r/a} ds --------------------
+#                                            (1+s)^{\beta-alpha}
+#
+
 '''
 
 
@@ -14,6 +31,8 @@ hernquist (part of exptool.models)
     Implementation of the analytic Hernquist models
 
 H = Hernquist(np.linspace(0.001,1.,300))
+
+
 
 
 '''
