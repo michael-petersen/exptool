@@ -23,6 +23,9 @@ and http://stackoverflow.com/questions/18921419/implementing-a-2d-fft-based-kern
 
 Heavily modified by MSP
 
+TODO:
+1. Add kernel with compact support.
+
 """
 __license__ = 'MIT License <http://www.opensource.org/licenses/mit-license.php>'
 
@@ -110,7 +113,7 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
 
     if fft_true: fgrid = np.fft.fftn(grid)
         
-    # Next, make a 3D histogram of x & y
+    # Next, make a 3D histogram of x, y, z
     # Avoiding np.histogram2d due to excessive memory usage with many points
     #grid = sp.sparse.coo_matrix((weights, xyzi), shape=(nx, ny, nz)).toarray()
 

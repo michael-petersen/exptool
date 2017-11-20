@@ -48,6 +48,16 @@ from exptool.analysis import trapping
 
 
 def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
+    '''
+    kde_pos:
+        take a PSP component structure and return slices.
+
+
+
+
+
+    '''
+    
 
     # XY
     kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
@@ -224,6 +234,8 @@ def show_dump(infile,comp,type='pos',transform=True,\
     show_dump
         first ability to see a PSPDump in the simplest way possible
 
+    TODO
+        allow for forcing contour levels
 
     '''
 
@@ -383,6 +395,8 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     compare_dumps
         look at two different dumps for direct comparison
 
+    TODO:
+        enable multiple component comparison
 
     '''
 
