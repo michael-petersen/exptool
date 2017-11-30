@@ -52,8 +52,14 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     kde_pos:
         take a PSP component structure and return slices.
 
-
-
+    inputs
+    ------------------------
+    PSPDump
+    gridsize=64
+    cres=24
+    face_extents=0.06
+    edge_extents=0.02
+    slice_width=0.1
 
 
     '''
@@ -234,8 +240,25 @@ def show_dump(infile,comp,type='pos',transform=True,\
     show_dump
         first ability to see a PSPDump in the simplest way possible
 
+    INPUTS
+    ------------------------------
+    infile
+    comp
+    type='pos'
+    transform=True             : align bar axis to X axis
+    gridsize=64                : evenly spaced bins between -face_extents, face_extents
+    cres=24
+    face_extents=0.06
+    edge_extents=0.02
+    slice_width=0.1
+
+    OUTPUTS
+    ------------------------------
+
+
     TODO
-        allow for forcing contour levels
+    ------------------------------
+    1. allow for forcing contour levels
 
     '''
 
