@@ -483,7 +483,7 @@ class Fields():
 
         returns
         --------------
-        additions to self--
+        additions to Field instance--
 
         disk_rotation  :                            disk contribution to the rotation curve
         halo_rotation  :                            halo contribution to the rotation curve

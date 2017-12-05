@@ -770,7 +770,7 @@ def force_eval(r, z, phi, \
         return fr,fp,fz,p,p0,fr0,fz0
     
     else:
-        return (fr+fr0),fp,(fz+fz0),p,p0
+        return (fr+fr0),fp,(fz+fz0),(p+p0),p0
 
     #return (fr+fr0),fp,(fz+fz0),p,p0
 
