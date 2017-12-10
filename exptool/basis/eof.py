@@ -1054,7 +1054,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
 ############################################################################################
 
 
-def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1):
+def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,VAR=False):
     '''
     compute_coefficients:
          take a PSP input file and eof_file and compute the cofficients
@@ -1111,7 +1111,12 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1)
     EOF_Out.nmax = norder
     
     if nprocs > 1:
-        a_cos,a_sin = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
+
+        if VAR:
+            a_cos,a_sin,a_cos2,a_sin2 = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd,VAR=VAR)
+
+        else:
+            a_cos,a_sin = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
         
     else:
         # do the accumulation call, not implemented yet
@@ -1121,6 +1126,10 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1)
 
     EOF_Out.cos = a_cos
     EOF_Out.sin = a_sin
+
+    if VAR:
+        EOF_Out.cos2 = a_cos2
+        EOF_Out.sin2 = a_sin2
         
     return EOF_Out
 
@@ -1212,6 +1221,8 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
     fifteenth_arg[0] = verbose
     sixteenth_arg = no_odd
     seventeenth_arg = VAR
+    
+    
     a_coeffs = pool.map(accumulate_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                 itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                                                                 itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
@@ -1839,6 +1850,61 @@ def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
     return varC,varS,facC,facS
     
 
+
+
+
+
+
+
+def compute_sn(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
+    '''
+    compute_variance : break out of variance computation on coefficients
+
+    inputs
+    -------------
+    ParticleInstance
+    accum_cos
+    accum_sin
+    accum_cos2
+    accum_sin2
+
+    outputs
+    -------------
+    varC
+    varS
+    facC
+    facS
+    
+
+    '''    
+    
+    wgt = 1./(np.sum(ParticleInstance.mass))
+    nrm = wgt*wgt;
+    srm = 1./float(ParticleInstance.mass.size)
+
+    
+    totC = accum_cos*wgt
+    totS = accum_sin*wgt
+
+    
+    sqrC = totC*totC
+    sqrS = totS*totS
+
+    
+    varC = accum_cos2*nrm - srm*sqrC
+    varS = accum_sin2*nrm - srm*sqrS
+
+    # this is b_Hall (see Weinberg 1996)
+    facC = sqrC/(varC/(float(ParticleInstance.mass.size)+1.) + sqrC + 1.0e-10)
+    facS = sqrS/(varS/(float(ParticleInstance.mass.size)+1.) + sqrS + 1.0e-10)
+
+    # signal to noise is (coeff^2 / var )^1/2
+
+    snC = ((accum_cos*accum_cos)/varC)**0.5
+    snS = ((accum_sin*accum_sin)/varS)**0.5
+
+    return snC,snS
+    
 
 
 
