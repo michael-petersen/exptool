@@ -1211,12 +1211,13 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
     fifteenth_arg = [ 0 for i in range(0,nprocs)]
     fifteenth_arg[0] = verbose
     sixteenth_arg = no_odd
+    seventeeth_arg = VAR
     a_coeffs = pool.map(accumulate_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                 itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                                                                 itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
                                                                 itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
                                                                 itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),fifteenth_arg,\
-                                                                itertools.repeat(sixteenth_arg) \
+                                                                itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg) \
                                                                 ))
     pool.close()
     pool.join()                                                        
@@ -1224,7 +1225,7 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
 
 
 
-def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False):
+def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False,VAR=False):
     '''
     make_coefficients_multi
 
@@ -1242,7 +1243,7 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     t1 = time.time()
     multiprocessing.freeze_support()
     
-    a_coeffs = multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
+    a_coeffs = multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd,VAR=VAR)
     
     if (verbose):
         print ('eof.make_coefficients_multi: Accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'\
@@ -1253,8 +1254,16 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     
     a_cos = scoefs[0]
     a_sin = scoefs[1]
+
+    if VAR:
+        a_cos2 = scoefs[2]
+        a_sin2 = scoefs[3]
+
+        return a_cos,a_sin,a_cos2,a_sin2
+
+    else:
     
-    return a_cos,a_sin
+        return a_cos,a_sin
 
 
 
@@ -1820,9 +1829,12 @@ def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
     
     varC = accum_cos2*nrm - srm*sqrC
     varS = accum_sin2*nrm - srm*sqrS
-    
+
+    # this is b_Hall (see Weinberg 1996)
     facC = sqrC/(varC/(float(ParticleInstance.mass.size)+1.) + sqrC + 1.0e-10)
     facS = sqrS/(varS/(float(ParticleInstance.mass.size)+1.) + sqrS + 1.0e-10)
+
+    # signal to noise is (coeff^2 / var )^1/2
     
     return varC,varS,facC,facS
     

@@ -519,6 +519,9 @@ class Fields():
             disk_force[indx],halo_force[indx],a,b,c,d,e,f = Fields.return_forces_cyl(self,rval,angle,0.0)
 
         self.rvals = rvals
+        self.disk_dpdr = -1.*disk_force
+        self.halo_dpdr = -1.*halo_force
+        self.total_dpdr = -1.*disk_force + -1.*halo_force
         self.disk_rotation = (rvals*abs(disk_force))**0.5
         self.halo_rotation = (rvals*abs(halo_force))**0.5
         self.total_rotation = (rvals*(abs(halo_force)+abs(disk_force)))**0.5
@@ -543,7 +546,7 @@ class Fields():
 
         returns
         --------------
-        additions to self--
+        additions to Field instance--
 
         rvals
         omega
