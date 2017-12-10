@@ -1192,7 +1192,7 @@ def accumulate_star(a_b):
     return accumulate(*a_b)
 
 
-def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False):
+def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False,VAR=False):
     pool = multiprocessing.Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = potC
