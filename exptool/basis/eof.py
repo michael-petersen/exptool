@@ -1211,7 +1211,7 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
     fifteenth_arg = [ 0 for i in range(0,nprocs)]
     fifteenth_arg[0] = verbose
     sixteenth_arg = no_odd
-    seventeeth_arg = VAR
+    seventeenth_arg = VAR
     a_coeffs = pool.map(accumulate_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                 itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                                                                 itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
