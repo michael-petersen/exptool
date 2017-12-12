@@ -566,6 +566,19 @@ def map_basis(eof_file):
     '''
     return memory maps for modification of basis functions.
 
+    levels in the returned table are:
+        0: m order
+        1: n order
+        3: see below
+        4: numx (radial)
+        5: numy (vertical)
+
+    in returned tables, the third order is:
+        0: potential
+        1: rforce
+        2: zforce
+        3: density (if dens=True)
+
     --------------
 
     be careful! this will allow for overwriting of the basis functions. it is smart to make a copy first (which this does)
@@ -583,7 +596,7 @@ def map_basis(eof_file):
     '''
     copyfile(eof_file, eof_file+'.original')
     
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof.eof_params(eof_file)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
 
     if (dens):
         mC = np.memmap(eof_file, dtype=np.float64, offset=76, shape=(mmax+1,norder,4,numx+1,numy+1))
