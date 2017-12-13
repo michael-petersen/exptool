@@ -235,7 +235,7 @@ def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
 
 def show_dump(infile,comp,type='pos',transform=True,\
               # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,**kwargs):
     '''
     show_dump
         first ability to see a PSPDump in the simplest way possible
@@ -250,7 +250,8 @@ def show_dump(infile,comp,type='pos',transform=True,\
     cres=24
     face_extents=0.06
     edge_extents=0.02
-    slice_width=0.1
+    slice_width=0.1            : slice width for density determination
+    clevels                    : force contour levels
 
     OUTPUTS
     ------------------------------
@@ -258,7 +259,6 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
     TODO
     ------------------------------
-    1. allow for forcing contour levels
 
     '''
 
@@ -326,6 +326,9 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
 
 
+    if 'clevels' in kwargs.keys():
+        levels = levels_edge = kwargs['clevels']
+
     fig = plt.figure(figsize=(7.8,7.5))
 
     left_edge = 0.22
@@ -351,7 +354,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
     # XY
 
     cbar = ax1.contourf(kdeX,kdeY,XY,levels,cmap=cm.gnuplot)
-    ax1.axis([-0.05,0.05,-0.05,0.05])
+    ax1.axis([-0.95*face_extents,0.95*face_extents,-0.95*face_extents,0.95*face_extents])
     for label in ax1.get_xticklabels():
         label.set_rotation(30)
         label.set_horizontalalignment("right")
@@ -377,7 +380,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
     # ZY
 
     ax2.contourf(kdeZYz,kdeZYy,ZY,levels_edge,cmap=cm.gnuplot)
-    ax2.axis([-0.01,0.01,-0.05,0.05])
+    ax2.axis([-0.95*edge_extents,0.95*edge_extents,-0.95*face_extents,0.95*face_extents])
     ax2.set_yticklabels(())
     for label in ax2.get_xticklabels():
         label.set_rotation(30)
@@ -389,7 +392,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
         
     # XZ
     ax3.contourf(kdeXZx,kdeXZz,XZ,levels_edge,cmap=cm.gnuplot)
-    ax3.axis([-0.05,0.05,-0.01,0.01])
+    ax3.axis([-0.95*face_extents,0.95*face_extents,-0.95*edge_extents,0.95*edge_extents])
     ax3.set_xticklabels(())
     for label in ax3.get_yticklabels():
         label.set_fontsize(10)
@@ -400,7 +403,6 @@ def show_dump(infile,comp,type='pos',transform=True,\
     short_infile = infile.split('/')[-1]
     breakdown = short_infile.split('.')
 
-    #print(breakdown[1]+' '+breakdown[2]+': T={0:4.3f}'.format(PSPDump.time))
     ax3.set_title(breakdown[1]+' '+breakdown[2]+': T={0:4.3f}'.format(PSPDump.time),size=18)
     
     return fig
