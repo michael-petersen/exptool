@@ -1818,23 +1818,27 @@ def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0
 
 def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
     '''
-    compute_variance : break out of variance computation on coefficients
+    compute_variance : do variance computation on coefficients
 
     inputs
     -------------
-    ParticleInstance
-    accum_cos
-    accum_sin
-    accum_cos2
-    accum_sin2
+    ParticleInstance    :   particles to accumulate
+    accum_cos           :   accumulated cosine coefficients
+    accum_sin           :   accumulated   sine coefficients
+    accum_cos2          :   squared accumulated cosine coefficients
+    accum_sin2          :   squared accumulated   sine coefficients
 
     outputs
     -------------
-    varC
-    varS
-    facC
-    facS
+    varC                :   variance on the cosine coefficients
+    varS                :   variance on the   sine coefficients
+    facC                :   b_Hall for cosine coefficients
+    facS                :   b_Hall for   sine coefficients
     
+    notes
+    -------------
+    there is some question about the methodology employed here; following Weinberg 1996, we use the MISE
+
 
     '''    
     
@@ -1871,46 +1875,27 @@ def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
 
 def compute_sn(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
     '''
-    compute_variance : break out of variance computation on coefficients
+    compute_sn : compute signal-to-noise metric on the coefficients
 
     inputs
     -------------
-    ParticleInstance
-    accum_cos
-    accum_sin
-    accum_cos2
-    accum_sin2
+    ParticleInstance    :   particles to accumulate
+    accum_cos           :   accumulated cosine coefficients
+    accum_sin           :   accumulated   sine coefficients
+    accum_cos2          :   squared accumulated cosine coefficients
+    accum_sin2          :   squared accumulated   sine coefficients
 
     outputs
     -------------
-    varC
-    varS
-    facC
-    facS
+    snC                 :   signal-to-noise of cosine coefficients
+    snS                 :   signal-to-noise of   sine coefficients
     
 
     '''    
-    
-    wgt = 1./(np.sum(ParticleInstance.mass))
-    nrm = wgt*wgt;
-    srm = 1./float(ParticleInstance.mass.size)
 
-    
-    totC = accum_cos*wgt
-    totS = accum_sin*wgt
+    varC,varS,facC,facS = compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
 
-    
-    sqrC = totC*totC
-    sqrS = totS*totS
-
-    
-    varC = accum_cos2*nrm - srm*sqrC
-    varS = accum_sin2*nrm - srm*sqrS
-
-    # this is b_Hall (see Weinberg 1996)
-    facC = sqrC/(varC/(float(ParticleInstance.mass.size)+1.) + sqrC + 1.0e-10)
-    facS = sqrS/(varS/(float(ParticleInstance.mass.size)+1.) + sqrS + 1.0e-10)
-
+  
     # signal to noise is (coeff^2 / var )^1/2
 
     snC = ((accum_cos*accum_cos)/varC)**0.5

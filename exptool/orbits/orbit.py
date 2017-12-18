@@ -403,11 +403,39 @@ def find_fundamental_frequency(OrbitInstance,time='T',pos='X',vel='VX',hanning=T
 
 
 def organize_frequencies(freq,fftarr,order=4):
+    '''
+    organize_frequencies
+    -----------------------------
+
+    inputs
+    --------------------
+
+
+
+
+    outputs
+    --------------------
+
+
+
+    '''
+
+    # find maxima in the frequency spectrum
     vals = utils.argrelextrema(np.abs(fftarr.real),np.greater,order=order)[0]
+
+    # only select from positive side (not smart, should be absolute?)
     g = np.where(freq[vals] > 0.)[0]
+
+    # get corresponding frequencies
     gomegas = freq[vals[g]]
+
+    # get corresponding power
     gvals = np.abs(fftarr.real)[vals[g]]
+
+    # sort by power
     freq_order = (-1.*gvals).argsort()
+
+    
     return gomegas[freq_order],gvals[freq_order]
 
 

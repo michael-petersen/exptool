@@ -322,12 +322,14 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
 
         # reset to positive velocities for tangential case.
-        levels = levels_edge = np.linspace(0.,np.max(levels),cres)
+        levels = np.linspace(0.,np.max(levels),cres)
+        levels_edge = np.linspace(0.,np.max(levels),cres)
 
 
 
     if 'clevels' in kwargs.keys():
-        levels = levels_edge = kwargs['clevels']
+        levels = kwargs['clevels']
+        levels_edge = kwargs['clevels']
 
     fig = plt.figure(figsize=(7.8,7.5))
 

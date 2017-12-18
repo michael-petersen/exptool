@@ -352,6 +352,14 @@ def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, npower=6.
 
     # this is used to make an in-plane slice by passing abs(third_dimension)
     #print kwargs.keys()
+
+    # gridsize can be a tuple
+    try:
+        if len(gridsize)==2:
+            nx, ny = gridsize
+    except:
+        nx = ny = gridsize
+        
     
     if 'weights' in kwargs.keys():
         weights = kwargs['weights']
