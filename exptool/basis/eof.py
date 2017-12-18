@@ -31,6 +31,15 @@ eof (part of exptool.basis)
     Implementation of Martin Weinberg's EmpOrth9thd routines for EXP simulation analysis
 
 
+
+quickstart
+-----------------------
+
+1. calculate coefficients for a PSP distribution using a given eof_file:
+      cosine_coeff,sine_coeff = compute_coefficients(PSPInput,eof_file)
+
+
+
 member definitions
 -----------------------
 eof_params             : extract basic parameters from a cachefile
@@ -39,6 +48,10 @@ accumulate
 
 usage examples
 -----------------------
+
+
+
+
 
 
 #
@@ -606,6 +619,7 @@ def map_basis(eof_file):
         mC = np.memmap(eof_file, dtype=np.float64, offset=76, shape=(mmax+1,norder,3,numx+1,numy+1))
         mS = np.memmap(eof_file, dtype=np.float64, offset=76+(8*3*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
 
+    # note that mS and potS are different sized owing to m orders: need to homogenize for full usefulness?
 
     return mC,mS
 
@@ -1132,10 +1146,15 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
             a_cos,a_sin = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
         
     else:
-        # do the accumulation call, not implemented yet
-        print('eof.compute_coefficients: This definition has not yet been generalized to take a single processor.')
-        a_cos = 0
-        a_sin = 0
+        # single processor implementation (12.18.2017)
+        #print('eof.compute_coefficients: This definition has not yet been generalized to take a single processor.')
+
+        if VAR:
+            a_cos,a_sin,a_cos2,a_sin2 = accumulate(ParticleInstance,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd,VAR=VAR)
+
+        else:
+            a_cos,a_sin = accumulate(ParticleInstance,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
+
 
     EOF_Out.cos = a_cos
     EOF_Out.sin = a_sin
@@ -1153,6 +1172,23 @@ def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
         main wrapper for computing EOF forces
 
 
+    inputs
+    ------------------------
+    PSPInput
+    EOF_Object
+    verbose
+    nprocs
+    m1
+    m2
+
+    outputs
+    -----------------------
+    p0
+    p
+    fr
+    fp
+    fz
+    r
 
     '''
     if nprocs == -1:
@@ -1439,6 +1475,13 @@ class EOF_Object(object):
 
 
 def eof_coefficients_to_file(f,EOF_Object):
+    '''
+    eof_coefficients_to_file
+
+    helper class for saving eof coefficients to a file
+
+
+    '''
 
     np.array([EOF_Object.time],dtype='f4').tofile(f)
     np.array([EOF_Object.dump],dtype='S100').tofile(f)
@@ -1457,6 +1500,14 @@ def eof_coefficients_to_file(f,EOF_Object):
 
 # wrap the coefficients to file
 def save_eof_coefficients(outfile,EOF_Object,verbose=0):
+    '''
+    save_eof_coefficients
+
+
+
+
+
+    '''
 
     # check to see if file exists
     try:

@@ -415,9 +415,8 @@ def show_dump(infile,comp,type='pos',transform=True,\
 # for two side-by-side plots
 
 def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
-                  label1=None,label2=None,
               # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.025,slice_width=0.2):
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.025,slice_width=0.2,**kwargs):
     '''
     compare_dumps
         look at two different dumps for direct comparison
@@ -508,7 +507,10 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     # XY
     cbar = ax1.contourf(kdeX1,kdeY1,XY1,levels1,cmap=cm.gnuplot)
     ax1.axis([-0.05,0.05,-0.05,0.05])
-    ax1.text(-0.04,0.04,label1)
+
+    if 'label1' in kwargs.keys():
+        ax1.text(-0.04,0.04,kwargs['label1'])
+        
     for label in ax1.get_xticklabels():
         label.set_rotation(30)
         label.set_horizontalalignment("center")
@@ -559,7 +561,10 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     cbar = ax4.contourf(kdeX2,kdeY2,XY2,levels1,cmap=cm.gnuplot)
     ax4.axis([-0.05,0.05,-0.05,0.05])
     ax4.set_yticklabels(())
-    ax4.text(-0.04,0.04,label2)
+
+    if 'label2' in kwargs.keys():
+        ax1.text(-0.04,0.04,kwargs['label2'])
+    
     for label in ax4.get_xticklabels():
         label.set_rotation(30)
         label.set_horizontalalignment("center")
