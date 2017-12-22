@@ -331,7 +331,11 @@ def show_dump(infile,comp,type='pos',transform=True,\
         levels = kwargs['clevels']
         levels_edge = kwargs['clevels']
 
-    fig = plt.figure(figsize=(7.8,7.5))
+    if 'continue' in kwargs.keys():
+        fig = plt.gcf()
+
+    else:
+        fig = plt.figure(figsize=(7.8,7.5))
 
     left_edge = 0.22
     wfac = 5.
