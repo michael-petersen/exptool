@@ -331,7 +331,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
         levels = kwargs['clevels']
         levels_edge = kwargs['clevels']
 
-    if 'continue' in kwargs.keys():
+    if 'overplot' in kwargs.keys():
         fig = plt.gcf()
 
     else:
