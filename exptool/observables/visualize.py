@@ -329,7 +329,11 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
     if 'clevels' in kwargs.keys():
         levels = kwargs['clevels']
-        levels_edge = kwargs['clevels']
+
+        if 'edge_factor' in kwargs.keys():
+            levels_edge = kwargs['edge_factor']*kwargs['clevels']
+        else:
+            levels_edge = kwargs['clevels']
 
     if 'overplot' in kwargs.keys():
         fig = plt.gcf()
