@@ -31,6 +31,8 @@ visualize.compare_dumps('/scratch/mpetersen/Disk001/OUT.run001.01000','/work/mpe
 
 
 
+ffmpeg -framerate 20 -i out%05d.png -c:v libx264 -r 30 -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" ~/Desktop/Disk022trans.mp4
+
 
 
 '''
@@ -43,7 +45,7 @@ import matplotlib.cm as cm
 # exptool routines
 from exptool.io import psp_io
 from exptool.utils import kde_3d
-from exptool.analysis import trapping
+from exptool.analysis import pattern
 
 
 
@@ -273,10 +275,18 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
         PSPDump = psp_io.mix_particles(PartArray)
 
-        
-
+    # do we want a transformation?
     if transform:
-        PSPDump = trapping.BarTransform(PSPDump)
+
+        # check to see if a bar file was provided
+        if 'barfile' in kwargs.keys():
+            BarInstance = pattern.BarDetermine(file=kwargs['barfile'])
+            bar_angle = pattern.find_barangle(PSPDump.time,BarInstance,interpolate=True)
+            PSPDump = pattern.BarTransform(PSPDump,bar_angle=bar_angle)
+
+        # calculate the position angle
+        else:
+            PSPDump = pattern.BarTransform(PSPDump)
 
 
     # do a kde
@@ -440,8 +450,8 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     PSPDump2 = psp_io.Input(infile2,comp=comp)
 
     if transform:
-        PSPDump1 = trapping.BarTransform(PSPDump1)
-        PSPDump2 = trapping.BarTransform(PSPDump2)
+        PSPDump1 = pattern.BarTransform(PSPDump1)
+        PSPDump2 = pattern.BarTransform(PSPDump2)
 
 
     # do the kde
