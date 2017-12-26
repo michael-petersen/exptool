@@ -193,7 +193,7 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
 
 
 
-def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None, npower=6.,type='gaussian'):
+def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None, npower=6.,ktype='gaussian'):
     """
     Performs a gaussian kernel density estimate over a regular grid using a
     convolution of the gaussian kernel with a 2D histogram of the data.
@@ -316,17 +316,17 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
 
     kernel = np.vstack((xx.flatten(), yy.flatten()))
 
-    if type=='linear':
+    if ktype=='linear':
         # still in testing
         raise NotImplementedError()
 
-    elif type=='epanechnikov':
+    elif ktype=='epanechnikov':
         kernel = np.dot(inv_cov, kernel) * kernel 
         kernel = np.abs(1. - np.sum(kernel, axis=0))
 
     else:
         # implement gaussian as catchall
-        if type != 'gaussian':
+        if ktype != 'gaussian':
             print('kde_3d.fast_kde_two: falling back to gaussian kernel')
         # Then evaluate the gaussian function on the kernel grid
         kernel = np.dot(inv_cov, kernel) * kernel 
@@ -356,7 +356,7 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
 
 
 
-def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, npower=6.,surfacedensity=False,**kwargs):#weights=None, opt_third=None,opt_third_constraint=None):
+def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, npower=6.,surfacedensity=False,ktype='gaussian',**kwargs):#weights=None, opt_third=None,opt_third_constraint=None):
     #
     # quick wrapper to return x and y grids to go along with the kernel densities
     #
@@ -394,7 +394,7 @@ def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, npower=6.
     #
     # only set to return square, evenly space grids currently 08-26-16
     # 
-    KDEArray = fast_kde_two(x, y, gridsize=gridsize, extents=extents, nocorrelation=nocorrelation, weights=weights, npower=npower)
+    KDEArray = fast_kde_two(x, y, gridsize=gridsize, extents=extents, nocorrelation=nocorrelation, weights=weights, npower=npower,ktype=ktype)
 
     try:
         xbins = np.linspace(-1.*extents,extents,gridsize)

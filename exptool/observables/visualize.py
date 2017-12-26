@@ -49,7 +49,7 @@ from exptool.analysis import pattern
 
 
 
-def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1):
+def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.):
     '''
     kde_pos:
         take a PSP component structure and return slices.
@@ -68,7 +68,7 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     
 
     # XY
-    kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+    kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     # make a log guard
     eps = np.min(PSPDump.mass)
@@ -79,7 +79,7 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     # XZ
     kdeXZx,kdeXZz,kdePOSXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     # change to log surface density
     kdePOSXZ = np.log10(kdePOSXZ+eps)
@@ -87,7 +87,7 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     # ZY
     kdeZYz,kdeZYy,kdePOSZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     # change to surface density
     kdePOSZY = np.log10(kdePOSZY+eps)
@@ -112,7 +112,7 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
       levels,levels_edge
 
 
-def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,sncut=5.):
+def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,sncut=5.,ktype='gaussian',npower=6.):
     #
     # do a velocity cut along the line of sight
     #
@@ -124,26 +124,26 @@ def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
                                               opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
 
     kdeNUMXY[np.where(kdeNUMXY < sncut)] = 1.e10
-    kdeX,kdeY,kdeVELXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+    kdeX,kdeY,kdeVELXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
 
     # XZ
     kdeXZx,kdeXZz,kdeNUMXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
     kdeNUMXZ[np.where(kdeNUMXZ < sncut)] = 1.e10
     kdeXZx,kdeXZz,kdeVELXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                  weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+                                                  weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     # ZY
     kdeZYz,kdeZYy,kdeNUMZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
     kdeNUMZY[np.where(kdeNUMZY < sncut)] = 1.e10
     kdeZYz,kdeZYy,kdeVELZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                              weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+                                              weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     maxlev_edge = np.max([np.max(abs(kdeVELXY/kdeNUMXY)),np.max(abs(kdeVELZY/kdeNUMZY)),np.max(abs(kdeVELXZ/kdeNUMXZ))])
 
@@ -164,7 +164,7 @@ def kde_xvel(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
 
 
 
-def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,sncut=5.):
+def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,sncut=5.,ktype='gaussian',npower=6.):
     #
     # do a dispersion measurement along the line of sight
     #
@@ -174,45 +174,45 @@ def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
     # XY
     kdeX,kdeY,kdeNUMXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,\
-                                              opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+                                              opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     # zero below an SN cut
     kdeNUMXY[np.where(kdeNUMXY < sncut)] = 1.e10
     
     kdeX,kdeY,kdeVELXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=face_extents,weights=velarr*PSPDump.mass,\
-                                              opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+                                              opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     kdeX,kdeY,kdeDISPXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
                                                gridsize=gridsize,extents=face_extents,weights=(velarr**2.)*PSPDump.mass,\
-                                               opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width)
+                                               opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
 
     # XZ
     kdeXZx,kdeXZz,kdeNUMXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
     kdeNUMXZ[np.where(kdeNUMXZ < sncut)] = 1.e10
     kdeXZx,kdeXZz,kdeVELXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                  weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+                                                  weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     kdeXZx,kdeXZz,kdeDISPXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                  weights=(velarr**2.)*PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width)
+                                                  weights=(velarr**2.)*PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
                                               
     # ZY
     kdeZYz,kdeZYy,kdeNUMZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
     kdeNUMZY[np.where(kdeNUMZY < sncut)] = 1.e10
     kdeZYz,kdeZYy,kdeVELZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                              weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+                                              weights=velarr*PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
     kdeZYz,kdeZYy,kdeDISPZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                              weights=(velarr**2.)*PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width)
+                                              weights=(velarr**2.)*PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
 
                                               
     maxlev_edge = np.max([np.max(abs(kdeVELXY/kdeNUMXY)),np.max(abs(kdeVELZY/kdeNUMZY)),np.max(abs(kdeVELXZ/kdeNUMXZ))])
@@ -237,7 +237,7 @@ def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
 
 def show_dump(infile,comp,type='pos',transform=True,\
               # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,**kwargs):
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.,**kwargs):
     '''
     show_dump
         first ability to see a PSPDump in the simplest way possible
@@ -296,7 +296,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
         kdeX,kdeY,XY,\
           kdeZYz,kdeZYy,ZY,\
           kdeXZx,kdeXZz,XZ,\
-          levels,levels_edge = kde_pos(PSPDump,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+          levels,levels_edge = kde_pos(PSPDump,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width,ktype=ktype,npower=npower)
 
 
     if ( (type=='Xvel') | (type=='Yvel') | (type=='Zvel') | (type=='Rvel') |  (type=='Tvel')):
@@ -311,7 +311,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
         kdeX,kdeY,XY,\
               kdeZYz,kdeZYy,ZY,\
               kdeXZx,kdeXZz,XZ,\
-              levels,levels_edge = kde_xvel(PSPDump,velarr,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+              levels,levels_edge = kde_xvel(PSPDump,velarr,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width,ktype=ktype,npower=npower)
 
 
         # reset to positive velocities for tangential case.
@@ -328,7 +328,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
         kdeX,kdeY,XY,\
               kdeZYz,kdeZYy,ZY,\
               kdeXZx,kdeXZz,XZ,\
-              levels,levels_edge = kde_disp(PSPDump,velarr,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+              levels,levels_edge = kde_disp(PSPDump,velarr,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width,ktype=ktype,npower=npower)
 
 
         # reset to positive velocities for tangential case.
