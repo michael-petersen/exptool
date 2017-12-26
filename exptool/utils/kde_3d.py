@@ -297,6 +297,9 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     # Scaling factor for bandwidth
     scotts_factor = np.power(n, -1.0 / npower) # For 2D
 
+    # note that for 2d, scott and silverman are the same implementation
+
+
     #---- Make the kernel -------------------------------------------
 
     # First, determine how big the kernel needs to be
@@ -313,15 +316,22 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
 
     kernel = np.vstack((xx.flatten(), yy.flatten()))
 
-    if type=='gaussian':
+    if type=='linear':
+        # still in testing
+        raise NotImplementedError()
+
+    elif type=='epanechnikov':
+        kernel = np.dot(inv_cov, kernel) * kernel 
+        kernel = np.abs(1. - np.sum(kernel, axis=0))
+
+    else:
+        # implement gaussian as catchall
+        if type != 'gaussian':
+            print('kde_3d.fast_kde_two: falling back to gaussian kernel')
         # Then evaluate the gaussian function on the kernel grid
         kernel = np.dot(inv_cov, kernel) * kernel 
         kernel = np.sum(kernel, axis=0) / 2.0 
         kernel = np.exp(-kernel) 
-
-    if type=='linear':
-        # still in testing
-        pass
 
 
     kernel = kernel.reshape((int(kern_ny), int(kern_nx)))
