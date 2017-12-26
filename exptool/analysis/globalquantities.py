@@ -7,7 +7,7 @@
 #    12.11.16 cleanup and provide restart support
 #
 #    TODO:
-#      add global angular momentum counters
+#      add global angular momentum counters (per component?)
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 

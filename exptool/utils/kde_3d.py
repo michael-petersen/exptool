@@ -258,15 +258,16 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     dy = (ymax - ymin) / (ny - 1)
 
 
-    within_extent = np.where( (x>xmin) & (x<xmax) & (y>ymin) & (y<ymax))[0]
+    within_extent = np.where( (x >= xmin) & (x <= xmax) & (y > ymin) & (y < ymax))[0]
 
     x = x[within_extent]
     y = y[within_extent]
 
     weights = weights[within_extent]
 
-    x, y = np.asarray(x), np.asarray(y)
-    x, y = np.squeeze(x), np.squeeze(y)
+    # 12.26.17: why did I put these here? They will override the cutouts above?
+    #x, y = np.asarray(x), np.asarray(y)
+    #x, y = np.squeeze(x), np.squeeze(y)
     
 
     
