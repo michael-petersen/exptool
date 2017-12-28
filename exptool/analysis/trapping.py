@@ -1,10 +1,4 @@
-#
-# extract global quantities from simulations
-#
 
-#  08-29-16: added maximum radius capabilities to bar_fourier_compute
-
-#  10-25-16: some redundancies noticed (bar_fourier_compute) and should be unified
 #  12-08-16: cleanup. needs to be merged with neutrapping.
 #  12-23-17: break out bar finding algorithms to the more general pattern.py
 '''
@@ -25,8 +19,7 @@ ComputeTrapping (under construction)
 TODO:
 
 -Current work is on the kmeans implementations for generalize for all simulations
--Python3 print to file
--Filtering algorithms for bar determination
+
 
 '''
 from __future__ import absolute_import, division, print_function, unicode_literals

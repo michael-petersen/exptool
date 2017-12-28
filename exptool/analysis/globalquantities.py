@@ -20,7 +20,7 @@ from exptool.io import psp_io
 
 
 class GQuantities():
-
+    '''
     #
     # basic quantities from simulation
     #
@@ -33,7 +33,12 @@ class GQuantities():
     #   tracking LZ through time: this needs to be cleaned up to make more sense.
     #     total and differential (the latter being very slow)
 
-    
+    # MODES:
+    track_lz
+    track_diff_lz
+    track_fourier
+
+    '''
     def __init__(self,simfile=None,track_lz=False,track_diff_lz=False,track_fourier=False,comp=None,verbose=0,rbins=None,multi=False,resample=0):
 
         #
@@ -70,26 +75,41 @@ class GQuantities():
             
 
         if (track_lz) and (comp):
+            
             if self.verbose >= 1:
                 print('Tracking Global Angular momentum...')
+                
             GQuantities.track_angular_momentum(self,comp)
 
         if (track_diff_lz) and (comp):
+            
             if self.verbose >= 1:
                 print('Tracking Radial Differential Angular momentum...')
+                
             GQuantities.track_diff_angular_momentum(self,comp,rbins)
 
         if (track_fourier) and (comp):
+            
             if self.verbose >= 1:
                 print('globalquantities.__init__: tracking fourier decompositions...')
+                
             GQuantities.compute_fourier(self,mmax=6)
 
     def parse_list(self,resample=0):
-        #
-        # make the list of files to operate on. if resample is >1, will select every (resample) files.
-        #
-
+        '''
+        parse_list
+             make the list of dump files to operate on. if resample is >1, will select every (resample) files.
         
+        inputs
+        ----------------
+
+
+
+        outputs
+        ----------------
+        
+
+        '''
         f = open(self.slist)
         s_list = []
 
@@ -127,13 +147,25 @@ class GQuantities():
         
 
     def track_angular_momentum(self,comp,dfreq=50):
-        #
-        # follow the total angular momentum in a component
-        #
+        '''
+        track_angular_momentum
+            follow the angular momentum in a given component
 
+        called as part of initialization sequence
+        
+        inputs
+        ----------------
+
+
+
+        outputs
+        ----------------
+        
+
+        '''
         tinit = time.time()
         self.TLZ = np.zeros(len(self.SLIST))
-
+        self.T   = np.zeros(len(self.SLIST))
         
         #
         # step through different files    
@@ -142,6 +174,7 @@ class GQuantities():
             O = psp_io.Input(file,comp=comp,verbose=0)
 
             self.TLZ[i] = np.sum(O.xpos*O.yvel - O.ypos*O.xpos)
+            self.T[i] = O.time
 
             
             if (i % dfreq == 0) and (self.verbose >= 2):
@@ -154,7 +187,7 @@ class GQuantities():
 
         tinit = time.time()
         self.TLZ = np.zeros([len(rbins),len(self.SLIST)])
-
+        self.T   = np.zeros(len(self.SLIST))
         
         #
         # probably want rbins to be reportable
@@ -174,6 +207,7 @@ class GQuantities():
                 w = np.where(rindx == j)[0]
                 self.TLZ[j,i] = np.sum(O.xpos[w]*O.yvel[w] - O.ypos[w]*O.xpos[w])
 
+            self.T[i] = O.time
             
             if (i % dfreq == 0) and (self.verbose >= 2):
                 continue

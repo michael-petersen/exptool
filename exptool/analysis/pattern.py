@@ -1,3 +1,8 @@
+
+#  08-29-16: added maximum radius capabilities to bar_fourier_compute
+
+#  10-25-16: some redundancies noticed (bar_fourier_compute) and should be unified
+
 '''
 
 
@@ -15,7 +20,9 @@ BarTransform
 BarDetermine
 
 
-
+TODO:
+-Python3 print to file
+-Filtering algorithms for bar determination
 
 
 
