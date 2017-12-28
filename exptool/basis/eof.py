@@ -20,6 +20,8 @@
 
 # 06-02-17: did you know that __doc__ is a thing? also added variance computation ability
 
+# 12-28-17: MASSIVE speed up (x10) from making array-based computation.
+
 '''
  _______   ______    _______ 
 |   ____| /  __  \  |   ____|
@@ -83,7 +85,8 @@ import matplotlib.cm as cm
 from exptool.utils import utils
 from exptool.io import psp_io
 
-from exptool.basis._accumulate_c import r_to_xi,xi_to_r
+# hold off for now...
+#from exptool.basis._accumulate_c import r_to_xi,xi_to_r
 
 #
 # tools to read in the eof cache and corresponding details
@@ -275,23 +278,71 @@ def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY
 
 
 
+def r_to_xi(r, cmap, scale):
+  '''
+  bonus written for arrays!
+
+  '''
+  #
+  r = np.asarray(r)
+  scalar_input = False
+  if r.ndim == 0:
+        r = r[None]  # Makes x 1D
+        scalar_input = True
+  #
+  subzero = np.where(r < 0.)
+  #
+  if ( cmap == 1 ):
+    #
+    outval = (r/scale-1.0)/(r/scale+1.0)
+    outval[subzero] = 0.
+  #
+  #
+  elif ( cmap == 2 ):
+    #
+    outval = np.log(r)
+    outval[subzero] = 0.
+  #
+  else:    
+    outval = r;
+    outval[subzero] = 0.
+  #
+  if scalar_input:
+        return np.squeeze(outval)
+  return outval
+
+
 #
-# mapping definitions
+# these have the guards removed now...
 #
-def z_to_y(z,hscale):
-    '''
-    return mapping of vertical position to Y-dimension table scaling.
 
-    '''
-    return z/(abs(z)+1.e-10)*np.arcsinh(abs(z/hscale))
+def xi_to_r(xi, cmap, scale):
+  if ( cmap == 1 ):
+    return (1.0+xi)/(1.0 - xi) * scale;
+  #
+  elif (cmap==2):
+    return np.exp(xi);
+  #
+  else:
+    return xi;
 
 
-def y_to_z(y,hscale):
-    '''
-    return mapping of Y-dimension table scaling to vertical position
-    
-    '''
-    return hscale*np.sinh(y)
+def d_xi_to_r(xi, cmap, scale):
+    if ( cmap == 1 ) :
+        return 0.5*(1.0-xi)*(1.0-xi)/scale;
+    #
+    elif (cmap==2):
+        return np.exp(-xi);
+    #
+    else:
+        return 1.0;
+
+
+def z_to_y(z, hscale): return z /( np.abs(z)+1.e-10) * np.arcsinh( np.abs(z/hscale));
+
+def y_to_z(y, hscale): return hscale*np.sinh(y)
+
+
 
 
 
@@ -321,33 +372,39 @@ def return_bins(r,z,\
     ---------------------
 
     '''
+    r = np.asarray(r)
+    z = np.asarray(z)
+    scalar_input = False
+    if r.ndim == 0:
+        r = r[None]  # Makes x 1D
+        z = z[None]
+        scalar_input = True
+        
     # want to allow for this to take vectors...
-    
+    #
     X = (r_to_xi(r,CMAP,ASCALE) - rmin)/dR
     Y = (z_to_y(z,hscale=HSCALE) - zmin)/dZ
-    ix = int( np.floor((r_to_xi(r,CMAP,ASCALE) - rmin)/dR) )
-    iy = int( np.floor((z_to_y(z,hscale=HSCALE) - zmin)/dZ) )
+    ix = ( np.floor((r_to_xi(r,CMAP,ASCALE) - rmin)/dR) ).astype(int)
+    iy = ( np.floor((z_to_y(z,hscale=HSCALE) - zmin)/dZ) ).astype(int)
     #
     # check the boundaries and set guards
+    #
+    ix[(ix < 0)] = 0
+    X[(ix < 0)] = 0
+    #
+    ix[(ix >= numx)] = numx - 1
+    X[(ix >= numx)]  = numx - 1
+    #
+    iy[(iy < 0)] = 0
+    Y[(iy < 0)] = 0
+    #
+    iy[(iy >= numy)] = numy - 1
+    Y[(iy >= numy)]  = numy - 1
+    #
+    if scalar_input:
+        return np.squeeze(X),np.squeeze(Y),np.squeeze(ix),np.squeeze(iy)
     
-    if ix < 0:
-        ix = 0
-        X = 0
-        
-    if ix >= numx:
-        ix = numx - 1
-        X = numx - 1
-        
-    if iy < 0:
-        iy = 0
-        Y = 0
-        
-    if iy >= numy:
-        iy = numy - 1
-        Y = numy - 1
-        
     return X,Y,ix,iy
-
 
 
 def get_pot(r,z,cos_array,sin_array,\
@@ -414,104 +471,73 @@ def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx
     return Vc,Vs
 
 
-
 def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0,no_odd=False,VAR=False):
     '''
-    
-    accumulate: cycle through particles and return potential-tabulated coefficients
+    accumulate
+       workhorse for adding all the numbers together
 
     inputs
-    --------------
-    ParticleInstance :
-    potC             :
-    potS             :
-    MMAX             :
-    NMAX             :
-    XMIN             :
-    dX               :
-    YMIN             :
-    dY               :
-    NUMX             :
-    NUMY             :
-    ASCALE           :
-    HSCALE           :
-    CMAP             :
-    verbose          : (optional, default 0)
-    no_odd           : (optional, default False)
-    VAR              : (optional, default False)
+    ----------------
+    1  ParticleInstance  :
+    2  potC
+    3  potS
+    4  MMAX
+    5  NMAX
+    6  XMIN
+    7  dX
+    8  YMIN
+    9  dY
+    10 NUMX
+    11 NUMY
+    12 ASCALE
+    13 HSCALE
+    14 CMAP
+    15 verbose=0
+    16 no_odd=False
+    17 VAR=False
 
 
     outputs
     ---------------
-    accum_cos        :
-    accum_sin        :
+    accum_cos           : cosine coefficients
+    accum_sin           :   sine coefficients
 
-    (if VAR):
-        accum_cos2   :
-        accum_sin2   :
-    
 
     '''
-    
     norm = -4.*np.pi
-    
+    norb = ParticleInstance.mass.size
     #
     # set up particles
     #
-    norb = len(ParticleInstance.mass)
-    
+    r = (ParticleInstance.xpos**2. + ParticleInstance.ypos**2. + 1.e-10)**0.5
+    phitmp = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
     #
-    # set up accumulation arrays
+    phi = np.tile(phitmp,(MMAX+1,NMAX,1))
     #
-    accum_cos = np.zeros([MMAX+1,NMAX])
-    accum_sin = np.zeros([MMAX+1,NMAX])
-
+    vc,vs = get_pot(r, ParticleInstance.zpos, potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
+    #
+    vc *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
+    vs *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
+    #  
+    morder = np.tile(np.arange(0.,MMAX+1.,1.),(norb,NMAX,1)).T
+    mcos = np.cos(phi*morder)
+    msin = np.sin(phi*morder)
+    #
+    if (no_odd):
+        mask = np.abs(np.cos((np.pi/2.)*morder))
+    else:
+        mask = np.zeros_like(morder) + 1.
+        #
+    accum_cos = np.sum(norm * mcos * vc, axis=2)
+    accum_sin = np.sum(norm * msin * vs, axis=2)
+    #
     if VAR:
-        accum_cos2 = np.zeros([MMAX+1,NMAX])
-        accum_sin2 = np.zeros([MMAX+1,NMAX])
-    
-    for n in range(0,norb):
-        
-        if (verbose > 0) & ( ((float(n)+1.) % 1000. == 0.0) | (n==0)): utils.print_progress(n,norb,'eof.accumulate')
-
-        # calculate cylindrical coordinates
-        r = (ParticleInstance.xpos[n]**2. + ParticleInstance.ypos[n]**2. + 1.e-10)**0.5
-        phi = np.arctan2(ParticleInstance.ypos[n],ParticleInstance.xpos[n])
-        
-        vc,vs = get_pot(r, ParticleInstance.zpos[n], potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
-        
-        # skip odd terms?
-        #if ((mm % 2) != 0) & (no_odd):
-        #    continue
-            
-            #
-        morder = np.tile(np.arange(0.,MMAX+1.,1.),(NMAX,1)).T
-        mcos = np.cos(phi*morder)
-        msin = np.sin(phi*morder)
-
-        # make a mask to only do the even terms?
-        if (no_odd):
-            mask = abs(np.cos((np.pi/2.)*morder))
-
-        else:
-            mask = np.zeros_like(morder) + 1.
-
-        accum_cos += (norm * ParticleInstance.mass[n] * mcos * vc)
-        
-        accum_sin += (norm * ParticleInstance.mass[n] * msin * vs)
-
-        if VAR:
-
-            accum_cos2 += (norm * ParticleInstance.mass[n] * mcos * vc) * (norm * ParticleInstance.mass[n] * mcos * vc)
-        
-            accum_sin2 += (norm * ParticleInstance.mass[n] * msin * vs) * (norm * ParticleInstance.mass[n] * msin * vs)
-            
-    if VAR:
+        accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
+        accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
         return accum_cos,accum_sin,accum_cos2,accum_sin2
-
+    #
     else:
         return accum_cos,accum_sin
-
 
 
 
@@ -1150,10 +1176,10 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
         #print('eof.compute_coefficients: This definition has not yet been generalized to take a single processor.')
 
         if VAR:
-            a_cos,a_sin,a_cos2,a_sin2 = accumulate(ParticleInstance,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd,VAR=VAR)
+            a_cos,a_sin,a_cos2,a_sin2 = accumulate(PSPInput,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd,VAR=VAR)
 
         else:
-            a_cos,a_sin = accumulate(ParticleInstance,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
+            a_cos,a_sin = accumulate(PSPInput,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
 
 
     EOF_Out.cos = a_cos
