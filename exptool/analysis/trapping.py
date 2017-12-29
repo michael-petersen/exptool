@@ -11,6 +11,7 @@
 trapping.py (part of exptool)
 
 
+
 CLASSES:
 ApsFinding
 ComputeTrapping (under construction)
@@ -19,6 +20,27 @@ ComputeTrapping (under construction)
 TODO:
 
 -Current work is on the kmeans implementations for generalize for all simulations
+
+
+
+MAIN REFERENCE:
+Petersen, Weinberg, & Katz (2016)
+[http://adsabs.harvard.edu/abs/2016MNRAS.463.1952P]
+
+Calculate quantities for each orbit. Given a set of aps, find:
+
+0. $\langle \theta_{\rm bar}\rangle_N$, the standard trapping metric that assesses the angular separation from the bar for the clusters. Returned value is the maximum angular separation from the bar for the two clusters. $N$ is the number of aps to use in the average.
+1. $\langle X_{\rm aps}\rangle_N$, the average position along the bar axis of the aps, by cluster. Then take the minimum of this value. That is, this is the smallest extent of the aps when clustered.
+2. $\sigma_{X_{\rm aps}}$, the variance along the bar major axis of the aps positions in a given cluster.
+3. Using the ratio of (1) and (2) as a S/N proxy; $x_1$ orbits, as well as higher-order families, have large values. Note that to find $x_2$ orbits, do (1) and (2) in the y-dimension.
+4. $\Omega_r$, the $r$ dimension frequency. Used to calculate orbits that fall below the Nyquist frequency for time sampling.
+
+Two improvements over PWK16:
+1. Use the closest $N$ aps in time to the indexed time
+2. Set a threshold, $T_{\rm thresh}$, that is some multiple of the bar period $T_{\rm bar}$ in which the $N$ aps must reside.
+
+Some combination of these quantities will define the bar.
+
 
 
 '''
@@ -31,7 +53,6 @@ import numpy as np
 import datetime
 import os
 from scipy import interpolate
-from scipy.interpolate import UnivariateSpline
 
 # multiprocessing imports
 import itertools
@@ -60,7 +81,7 @@ class ApsFinding():
 
     A standard use would be
 
-    >>> A = trapping.Trapping()
+    >>> A = trapping.ApsFinding()
     >>> TrappingInstance = A.determine_r_aps(simulation_files,trapping_comp,nout=100000,out_directory=simulation_directory,return_aps=True)
 
     To read back in a saved aps file:

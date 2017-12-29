@@ -75,7 +75,6 @@ import time
 import sys
 import itertools
 import multiprocessing
-from collections import OrderedDict
 from shutil import copyfile
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -88,8 +87,12 @@ from exptool.io import psp_io
 # hold off for now...
 #from exptool.basis._accumulate_c import r_to_xi,xi_to_r
 
+#############################################################################################
 #
-# tools to read in the eof cache and corresponding details
+# empirical orthongonal function table reader functions
+#
+#    note that the tables are currently constructed elsewhere,
+#    contingent on converting a Sturm-Louiville eigenfunction solver to compile stand-alone
 #
 def eof_params(file,verbose=0):
     '''
@@ -277,7 +280,10 @@ def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY
     return XMIN,XMAX,dX,YMIN,YMAX,dY
 
 
-
+#############################################################################################
+#
+# mapping functions
+#
 def r_to_xi(r, cmap, scale):
   '''
   bonus written for arrays!
@@ -328,6 +334,13 @@ def xi_to_r(xi, cmap, scale):
 
 
 def d_xi_to_r(xi, cmap, scale):
+    '''
+    d_xi_to_r
+        compute delta r as a function of xi (radial mapping coordinate)
+
+    TODO: needs error handling
+
+    '''
     if ( cmap == 1 ) :
         return 0.5*(1.0-xi)*(1.0-xi)/scale;
     #
@@ -338,9 +351,21 @@ def d_xi_to_r(xi, cmap, scale):
         return 1.0;
 
 
-def z_to_y(z, hscale): return z /( np.abs(z)+1.e-10) * np.arcsinh( np.abs(z/hscale));
+def z_to_y(z, hscale):
+    '''
+    compute z position to y table mapping
 
-def y_to_z(y, hscale): return hscale*np.sinh(y)
+
+    '''
+    return z /( np.abs(z)+1.e-10) * np.arcsinh( np.abs(z/hscale));
+
+
+def y_to_z(y, hscale):
+    '''
+    compute y table to z position mapping
+
+    '''
+    return hscale*np.sinh(y)
 
 
 
@@ -356,51 +381,60 @@ def return_bins(r,z,\
     #
     inputs
     ---------------------
-    r
-    z
-    rmin=0
-    dR=0
-    zmin=0
-    dZ=0
-    numx=0
-    numy=0
-    ASCALE=0.01
-    HSCALE=0.001
-    CMAP=0
+    r                 :         scalar or 1d-array, r position(s) of particle(s)
+    z                 :         scalar or 1d-array, z position(s) of particle(s)
+    rmin              : (0)     minimum R table value
+    dR                : (0)     delta R table value
+    zmin              : (0)     minimum z table value
+    dZ                : (0)     delta z table value
+    numx              : (0)     number of R table bins
+    numy              : (0)     number of z table bins
+    ASCALE            : (0.01)  scalelength of table 
+    HSCAL             : (0.001) scaleheight of table
+    CMAP              : (0)     radial coordinate mapping
 
     returns
     ---------------------
+    X                 :         exact R table value
+    Y                 :         exact z table value
+    ix                :         floor R table bin
+    iy                :         floor z table bin
 
     '''
+
+    # check scalar v ndarray
     r = np.asarray(r)
     z = np.asarray(z)
     scalar_input = False
     if r.ndim == 0:
-        r = r[None]  # Makes x 1D
+        r = r[None] # increase dimensionality
         z = z[None]
         scalar_input = True
         
-    # want to allow for this to take vectors...
-    #
+
+    # precise bin values
     X = (r_to_xi(r,CMAP,ASCALE) - rmin)/dR
     Y = (z_to_y(z,hscale=HSCALE) - zmin)/dZ
+
+    # nearest (floor) integer bin
     ix = ( np.floor((r_to_xi(r,CMAP,ASCALE) - rmin)/dR) ).astype(int)
     iy = ( np.floor((z_to_y(z,hscale=HSCALE) - zmin)/dZ) ).astype(int)
+    
     #
     # check the boundaries and set guards
     #
     ix[(ix < 0)] = 0
     X[(ix < 0)] = 0
-    #
+    
     ix[(ix >= numx)] = numx - 1
     X[(ix >= numx)]  = numx - 1
-    #
+    
     iy[(iy < 0)] = 0
     Y[(iy < 0)] = 0
-    #
+    
     iy[(iy >= numy)] = numy - 1
     Y[(iy >= numy)]  = numy - 1
-    #
+    
     if scalar_input:
         return np.squeeze(X),np.squeeze(Y),np.squeeze(ix),np.squeeze(iy)
     
