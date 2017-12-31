@@ -82,7 +82,12 @@ class ApsFinding():
     A standard use would be
 
     >>> A = trapping.ApsFinding()
-    >>> TrappingInstance = A.determine_r_aps(simulation_files,trapping_comp,nout=100000,out_directory=simulation_directory,return_aps=True)
+    >>> simulation_directory = '/scratch/mpetersen/Disk001/'
+    >>> f = open(simulation_directory+'simfiles.dat','w')
+    >>> for x in range(000,1000): print >>f,simulation_directory+'OUT.run001.{0:05d}'.format(x)
+    >>> f.close()
+    >>> trapping_comp = 'star'
+    >>> TrappingInstance = A.determine_r_aps(simulation_directory+'simfiles.dat',trapping_comp,nout=1000,out_directory=simulation_directory,return_aps=True)
 
     To read back in a saved aps file:
     
@@ -361,7 +366,7 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
 
     returns
     ----------
-    theta_n          :
+    theta_n          : (see explanation at beginning for definitions)
     clustermean      :
     clusterstd_x     :
     clusterstd_y     :
@@ -440,9 +445,18 @@ def transform_aps(ApsArray,BarInstance):
     '''
     transform_aps : simple transformation for the aps array, offloaded for clarity.
     
+    inputs
+    ------------------
+    ApsArray        :
+    BarInstance     :
+
+    outputs
+    ------------------
+    X               :
+
     stuck in one direction, watch out
     '''
-    bar_positions = find_barangle(ApsArray[:,0],BarInstance)
+    bar_positions = pattern.find_barangle(ApsArray[:,0],BarInstance)
     X = np.zeros([len(ApsArray[:,1]),2])
     X[:,0] = ApsArray[:,1]*np.cos(bar_positions) - ApsArray[:,2]*np.sin(bar_positions)
     X[:,1] = -ApsArray[:,1]*np.sin(bar_positions) - ApsArray[:,2]*np.cos(bar_positions)

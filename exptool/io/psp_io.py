@@ -871,3 +871,55 @@ def map_simulation_files(outfile,simulation_directory,simulation_name):
     else:
         print('psp_io.map_simulation_files: file already exists.')
 
+
+
+'''
+# shrinking example: make a PSP file smaller than the original
+
+in_file = ""
+out_file = ""
+
+# get the positions ofr key markers
+O = psp_io.Input(in_file,comp='star')
+
+
+nbods_desired = 30000
+
+
+AA = open(in_file,"rb")
+data = AA.read(int(O.comp_pos_data[0] + int(nbods_desired*8*4)))
+
+BB = open(out_file,"wb")
+BB.write(data)
+
+
+# move to second component)
+AA.seek(O.comp_pos[1])
+data = AA.read(int((O.comp_pos_data[1]-O.comp_pos[1]) + nbods_desired*8*4))
+AA.close()
+
+
+BB.write(data)
+BB.close()
+
+
+
+# change the number of bodies
+
+# total
+AA = np.memmap(out_file, dtype=np.uint32, offset=8, shape=(1))
+AA[0] = int(2*nbods_desired)
+AA.flush()
+
+# halo
+AA = np.memmap(out_file, dtype=np.uint32, offset=int(O.comp_pos[0]+8), shape=(1))
+AA[0] = nbods_desired
+AA.flush()
+
+AA = np.memmap(out_file, dtype=np.uint32, offset=int(int(O.comp_pos_data[0] + int(nbods_desired*8*4))+8), shape=(1))
+AA[0] = nbods_desired
+AA.flush()
+
+
+'''
+        

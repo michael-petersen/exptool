@@ -15,16 +15,22 @@ class KMeans():
     
     def __init__(self, K, X=None, N=0):
         self.K = K
-        if X == None:
+        
+        try:
+
+            tmp = len(X)
+            self.X = X
+            self.N = len(X)
+                
+        except:
+
             if N == 0:
                 raise Exception("If no data is provided, \
                                  a parameter N (number of points) is needed")
             else:
                 self.N = N
                 self.X = self._init_board_gauss(N, K)
-        else:
-            self.X = X
-            self.N = len(X)
+            
         self.mu = None
         self.clusters = None
         self.method = None
@@ -45,31 +51,6 @@ class KMeans():
         X = np.array(X)[:N]
         return X
  
-    def plot_board(self):
-        X = self.X
-        fig = plt.figure(figsize=(5,5))
-        plt.xlim(-1,1)
-        plt.ylim(-1,1)
-        if self.mu and self.clusters:
-            mu = self.mu
-            clus = self.clusters
-            K = self.K
-            for m, clu in clus.items():
-                cs = matplotlib.cm.spectral(1.*m/self.K)
-                plt.plot(mu[m][0], mu[m][1], 'o', marker='*', \
-                         markersize=12, color=cs)
-                plt.plot(zip(*clus[m])[0], zip(*clus[m])[1], '.', \
-                         markersize=8, color=cs, alpha=0.5)
-        else:
-            plt.plot(zip(*X)[0], zip(*X)[1], '.', alpha=0.5)
-        if self.method == '++':
-            tit = 'K-means++'
-        else:
-            tit = 'K-means with random initialization'
-        pars = 'N=%s, K=%s' % (str(self.N), str(self.K))
-        plt.title('\n'.join([pars, tit]), fontsize=16)
-        plt.savefig('kpp_N%s_K%s.png' % (str(self.N), str(self.K)), \
-                    bbox_inches='tight', dpi=200)
  
     def _cluster_points(self):
         mu = self.mu
@@ -136,13 +117,3 @@ class KPlusPlus(KMeans):
             self._dist_from_centers()
             self.mu.append(self._choose_next_center())
  
-    def plot_init_centers(self):
-        X = self.X
-        fig = plt.figure(figsize=(5,5))
-        plt.xlim(-1,1)
-        plt.ylim(-1,1)
-        plt.plot(zip(*X)[0], zip(*X)[1], '.', alpha=0.5)
-        plt.plot(zip(*self.mu)[0], zip(*self.mu)[1], 'ro')
-        plt.savefig('kpp_init_N%s_K%s.png' % (str(self.N),str(self.K)), \
-                    bbox_inches='tight', dpi=200)
-            
