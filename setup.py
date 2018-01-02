@@ -31,7 +31,7 @@ ext_modules.append(accumulate_c)
                              
     
 setup(name='exptool',
-      version='0.1',
+      version='0.2',
       description='EXP analysis in Python',
       author='Michael Petersen',
       author_email='mpete0@astro.umass.edu',
@@ -41,7 +41,7 @@ setup(name='exptool',
       package_dir = {'exptool/': ''},
       packages=['exptool','exptool/analysis','exptool/basis',
                 'exptool/io','exptool/orbits','exptool/utils','exptool/observables','exptool/models'],
-      package_data={'': ['README.md','LICENSE']},
+      package_data={'': ['README.md','LICENSE'],'exptool/io':['*.dat'],'exptool/analysis':['*.dat']},
       include_package_data=True,
       install_requires=['numpy>=1.7','scipy','matplotlib'],
       ext_modules=ext_modules,
