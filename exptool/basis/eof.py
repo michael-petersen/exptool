@@ -78,6 +78,7 @@ import multiprocessing
 from shutil import copyfile
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from collections import OrderedDict
 
 
 # exptool definitions

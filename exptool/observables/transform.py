@@ -31,7 +31,7 @@ def rotate_points(PSPDump,xrotation,yrotation,zrotation):
 
     returns
     ------------------
-
+    PSPOut      : the rotated phase-space output
 
 
     '''
