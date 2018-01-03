@@ -162,7 +162,7 @@ class Input():
                 Input.psp_read_headers(self)
         
                 if self.verbose>=1:
-                    print('psp_io.Input: The time is {0:3.2f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
+                    print('psp_io.Input: The time is {0:4.3f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
 
                     if self.verbose >= 2:
 
@@ -226,7 +226,7 @@ class Input():
         Input.psp_read_headers(self)
         
         if self.verbose>=1:
-            print('psp_io.Input: The time is {0:3.2f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
+            print('psp_io.Input: The time is {0:4.3f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
 
         #
         # select component to output
@@ -573,7 +573,7 @@ class Input():
         self.f.close()
 
         if self.verbose>=1:
-            print('psp_io.Input: The time is {0:3.2f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
+            print('psp_io.Input: The time is {0:4.3f}, with {1:1d} components and {2:1d} total bodies.'.format(self.time,self.ncomp,self.ntot) )
 
         #
         # select component to output
@@ -852,7 +852,7 @@ def map_simulation_files(outfile,simulation_directory,simulation_name):
         current_time = -1.
         for i in range(0,n_snapshots+1):
             try:
-                PSPDump = Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %i)
+                PSPDump = Input(simulation_directory+'OUT.'+simulation_name+'.{0:05d}'.format(i))
                 t = PSPDump.time
                 del PSPDump
 
@@ -861,7 +861,7 @@ def map_simulation_files(outfile,simulation_directory,simulation_name):
                 t = current_time
                 
             if t > current_time:
-                print >>f,simulation_directory+'OUT.'+simulation_name+'.%05i' %i
+                print(simulation_directory+'OUT.'+simulation_name+'.{0:05d}'.format(i),file=f)
                 current_time = t
                 print(current_time)
                 

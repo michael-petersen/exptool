@@ -521,7 +521,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
 
             theta_20[indx] = np.nan
             r_frequency[indx] = np.nan
-            x_positio[indx] = np.nan
+            x_position[indx] = np.nan
             sigma_x[indx] = np.nan
             sigma_y[indx] = np.nan
             
@@ -538,7 +538,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
 
             theta_20[indx] = np.nan
             r_frequency[indx] = np.nan
-            x_positio[indx] = np.nan
+            x_position[indx] = np.nan
             sigma_x[indx] = np.nan
             sigma_y[indx] = np.nan
             
@@ -579,56 +579,76 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
 
 
 
+
 def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                    sbuffer=20,\
-                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
-                   sigmax_limit=0.001,t_thresh=1.5,\
+                   t_thresh=1.5,\
+                   criteria = {},\
                    verbose=0):
     '''
     do_kmeans_dict : single processor version of orbit computation
 
     inputs
     -----------
-    TrappingInstanceDict
-    BarInstance
-    opening_angle
-    rfreq_limi
-    sigmax_limit
-    t_thresh
-    verbose
+    TrappingInstanceDict     : the position of apsides for given orbits, dictionary form
+    BarInstance              : the bar evolution to use
+    sbuffer                  : the number of aps to consider in trapping
+    t_thresh                 : the maximum time window to allow trapping (guard against random effects)
+    criteria                 : dictionary of families to define (see below)
+    verbose                  : reporting flag
 
 
     returns
     -----------
-    np.array([trapping_array_x1,trapping_array_x2])
+    trapping_array           : array, [n_families,n_orbits,n_steps]  
+                                n_families = number of keys in criteria
+                                n_orbits   = number of keys in TrappingInstanceDict
+                                n_steps    = number of elements in BarInstance.time
+                               binary table, with 1 when trapped, 0 when not.
 
+    
+    notes
+    -----------
+    criteria, 
+    
+    
+    the Nyquist frequency is calculated based on the minimum spacing of the bar model and is always applied.
+       this provides a measure of uncertainty; orbits with unresolved frequencies cannot be classified.
+    
     
     '''
     #
     norb = TrappingInstanceDict['norb']
-
-    trapping_array_x1 = np.zeros([norb,len(BarInstance.time)],dtype='i1')
-    trapping_array_x2 = np.zeros([norb,len(BarInstance.time)],dtype='i1')
-
+    nfamilies = len(criteria.keys())
+    if nfamilies == 0:
+        print('no families defined?')
+    #
+    trapping_array = np.zeros([nfamilies,norb,len(BarInstance.time)],dtype='i1')
+    #
+    #
     t1 = time.time()
-    
-    #if (verbose > 0): print('trapping.do_kmeans_dict: opening angle=%4.3f, OmegaR=%3.2f, sigma_x limit=%4.3f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sigmax_limit,sbuffer)
-    
+    #
+    #if (verbose > 0): print 'trapping.do_kmeans_dict: opening angle=%4.3f, OmegaR=%3.2f, sigma_x limit=%4.3f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sigmax_limit,sbuffer)
+    #   
     for indx in range(0,norb):
-        
-        if ((indx % (norb/100)) == 0) & (verbose > 0):  utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
+        #
+        #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
+        if (((indx % (norb/20)) == 0) & (verbose > 0)):  
+            #
+            print float(indx)/float(norb),'...',
+            #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
         time_sequence = np.array(TrappingInstanceDict[indx])[:,0]
-        
+        #
         #
         # guard against total aps range being too small (very important for halo!)
         if time_sequence.size < sbuffer:
             continue
-        
+        #
         #
         # transform to bar frame
-        X = transform_aps(TrappingInstanceDict[indx],BarInstance)
+        X = trapping.transform_aps(TrappingInstanceDict[indx],BarInstance)
         #
-        
+        #
         orbit_dist = []
         for midpoint in range(0,len(X)):
             relative_aps_time = time_sequence - time_sequence[midpoint]
@@ -637,65 +657,85 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
             #
             # guard against aps with too large of a timespan (some number of bar periods, preferably)
             if relative_aps_time[closest_aps[-1]] > t_thresh:
-                orbit_dist.append([0.0,1.0,1.0])
-                orbit_dist.append([np.max(BarInstance.time),1.0,1.0])
+                orbit_dist.append([0.0,1.0,1.0,1.0])
+                orbit_dist.append([np.max(BarInstance.time),1.0,1.0,1.0])
                 continue
-            #
-            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx)
-            #
-            if midpoint==0:
-                #
-                orbit_dist.append([0.0,theta_n,clusterstd_x])
-            #
-            # default action
-            orbit_dist.append([time_sequence[midpoint],theta_n,clusterstd_x])
-            #
-            if midpoint==(len(X)-1):
-                orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x])
-            #
-            #
             
+            # compute the clustering
+            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = trapping.process_kmeans(X[closest_aps],indx)
+            
+            # check time boundaries
+            if midpoint==0: # first step
+                
+                orbit_dist.append([0.0,theta_n,clusterstd_x,clusterstd_y])
+            
+            # default action
+            orbit_dist.append([time_sequence[midpoint],theta_n,clusterstd_x,clusterstd_y])
+            
+            
+            if midpoint==(len(X)-1): # last step
+                orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x,clusterstd_y])
+
+        
         DD = np.array(orbit_dist) # 0:time, 1:theta_n, 2:sigma_x
         
         #nDD = abs(np.ediff1d(DD[:,1],to_begin=1.0))
-        #
+        
+        # radial frequency computation
         tDD = 1./(abs(np.ediff1d(DD[:,0],to_begin=100.0))+1.e-8)
 
-        
         # make interpolated functions:
         #     1. theta_n vs time
         #     2. r_frequency vs time
         #     3. sigma_x vs time
-        #     4. delta(theta_n) vs time (volitility, disabled for speed now)
+        #     4. sigma_y vs time
+        #     5. delta(theta_n) vs time (volitility, disabled for speed now)
         theta_func = interpolate.interp1d(DD[:,0],DD[:,1], kind='nearest',fill_value=1.4)      #1
-        
-        frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.4)       #2
-        
-        sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.4) #3
-
-        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)            #4
-
         #
+        frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.4)       #2
+        #
+        sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.4) #3
+        
+        sigmay_func = interpolate.interp1d(DD[:,0],abs(DD[:,3]),kind='nearest',fill_value=1.4) #4
+        #
+        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)            #5
+        #
+
         #
         # apply trapping rules
         #
+        
         # set up nyquist frequency limit
         nyquist = 1./(4.*(BarInstance.time[1]-BarInstance.time[0]))
-
         
-        x1 = np.where(   (theta_func(BarInstance.time) < opening_angle) \
-                       & (frequency_func(BarInstance.time) < nyquist) \
-                       & (sigmax_func(BarInstance.time) < sigmax_limit) )[0]
+        
+        metric = [theta_func(BarInstance.time),\
+                  frequency_func(BarInstance.time),\
+                 sigmax_func(BarInstance.time),\
+                 sigmay_func(BarInstance.time)]
+        
+        
+        for nfam,family in enumerate(np.array(criteria.keys())):
+            
+            
+            trapped = np.where( (metric[0] > criteria[family][0][0]) & (metric[0] < criteria[family][0][1])\
+                      & (metric[1] > criteria[family][1][0]) & (metric[1] < criteria[family][1][1])\
+                      & (metric[2] > criteria[family][2][0]) & (metric[2] < criteria[family][2][1])\
+                      & (metric[3] > criteria[family][3][0]) & (metric[3] < criteria[family][3][1]))[0]
+    
+            trapping_array[nfam,indx,trapped] = np.ones(len(trapped))
 
-
-        x2 = np.where(   (frequency_func(BarInstance.time) > nyquist) )[0]
-        #
-        # set trapped time regions to true
-        trapping_array_x1[indx,x1] = np.ones(len(x1))
-        trapping_array_x2[indx,x2] = np.ones(len(x2))
     t2 = time.time()-t1
-    if (verbose > 1): print('K-means took {0:3.2f} seconds ({1:3.2f} ms per orbit)'.format(t2, t2/norb*1000))
-    return np.array([trapping_array_x1,trapping_array_x2])
+    
+    if (verbose > 1): print 'K-means took %3.2f seconds (%3.2f ms per orbit)' %(t2, t2/norb*1000)
+        
+    return np.array(trapping_array)
+
+
+
+
+
+
 
 
 
@@ -735,23 +775,21 @@ def do_kmeans_dict_star(a_b):
 
 def multi_compute_trapping(holding,nprocs,BarInstance,\
                    sbuffer=20,\
-                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
-                   sigmax_limit=0.001,t_thresh=1.5,\
+                   t_thresh=1.5,\
+                   criteria={},\
                    verbose=0):
                    
     pool = Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = BarInstance
     third_arg = sbuffer
-    fourth_arg = opening_angle
-    fifth_arg = rfreq_limit
-    sixth_arg = sigmax_limit
-    seventh_arg = t_thresh
+    fourth_arg = t_thresh
+    fifth_arg = criteria
     
-    eighth_arg = [0 for i in range(0,nprocs)]
-    eighth_arg[0] = verbose
+    sixth_arg = [0 for i in range(0,nprocs)]
+    sixth_arg[0] = verbose
     
-    a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),eighth_arg))
+    a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg))
     
     # clean up to exit
     pool.close()
@@ -763,8 +801,8 @@ def multi_compute_trapping(holding,nprocs,BarInstance,\
 
 def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    sbuffer=20,\
-                   opening_angle=np.pi/8.,rfreq_limit=22.5,\
-                   sigmax_limit=0.001,t_thresh=1.5,\
+                   t_thresh=1.5,\
+                   criteria={},\
                    verbose=0):
     
     nprocs = multiprocessing.cpu_count()
@@ -778,16 +816,18 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
 
     trapping_arrays = multi_compute_trapping(holding,nprocs,BarInstance,\
                    sbuffer=sbuffer,\
-                   opening_angle=opening_angle,rfreq_limit=rfreq_limit,\
-                   sigmax_limit=sigmax_limit,t_thresh=t_thresh,\
+                   t_thresh=t_thresh,\
+                   criteria=criteria,\
                    verbose=verbose)
                    
     print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
 
-    x1_master = re_form_trapping_arrays(trapping_arrays,0)
-    x2_master = re_form_trapping_arrays(trapping_arrays,1)
+    #x1_master = re_form_trapping_arrays(trapping_arrays,0)
+    #x2_master = re_form_trapping_arrays(trapping_arrays,1)
     
-    return x1_master,x2_master
+    #return x1_master,x2_master
+
+    return trapping_arrays
 
 
 

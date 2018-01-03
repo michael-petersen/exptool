@@ -1,5 +1,4 @@
-# exptool
-## python analysis of exp files
+# exptool: python analysis of exp files
 ## msp, 2014-present
 
 ### Version 0.2!
@@ -13,16 +12,19 @@ as some usage examples for methods.
 
 #### Contents
 1. models
-* analytic models from the literature.
+   *analytic models
 2. io
-* input methods
+   *input/output methods
 3. analysis
-* catachall analysis tools from papers listed below
+   *analysis tools from publications below
 4. observables
-* make observational comparisons
+   *observational comparison methods
 5. basis
+   *computational classes for orthogonal expansions
 6. orbits
+   *computational classes for orbit analysis
 7. utils
+   *helper functions
 
 
 
