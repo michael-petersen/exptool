@@ -635,7 +635,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
         if (((indx % (norb/20)) == 0) & (verbose > 0)):  
             #
-            print float(indx)/float(norb),'...',
+            print(float(indx)/float(norb),'...',end='')
             #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
         time_sequence = np.array(TrappingInstanceDict[indx])[:,0]
         #
@@ -727,7 +727,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
 
     t2 = time.time()-t1
     
-    if (verbose > 1): print 'K-means took %3.2f seconds (%3.2f ms per orbit)' %(t2, t2/norb*1000)
+    if (verbose > 1): print('K-means took {0:4.3f} seconds ({0:4.3f} ms per orbit)'.format(t2, t2/norb*1000))
         
     return np.array(trapping_array)
 

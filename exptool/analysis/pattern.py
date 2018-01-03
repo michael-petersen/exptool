@@ -334,12 +334,13 @@ class BarDetermine():
 
         # this will be broken in python 3 compatibility
         
-        #f = open(outfile,'w')
+        f = open(outfile,'w')
 
-        #for i in range(0,len(self.time)):
-        #    print >>f,self.time[i],self.pos[i],self.deriv[i]
+        for i in range(0,len(self.time)):
+            print(self.time[i],self.pos[i],self.deriv[i],file=f)
 
-        #f.close()
+        f.close()
+
         return None
  
     def place_ellipse(self):
