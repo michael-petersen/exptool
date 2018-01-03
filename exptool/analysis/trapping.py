@@ -646,7 +646,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         #
         #
         # transform to bar frame
-        X = trapping.transform_aps(TrappingInstanceDict[indx],BarInstance)
+        X = transform_aps(TrappingInstanceDict[indx],BarInstance)
         #
         #
         orbit_dist = []
@@ -662,7 +662,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                 continue
             
             # compute the clustering
-            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = trapping.process_kmeans(X[closest_aps],indx)
+            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx)
             
             # check time boundaries
             if midpoint==0: # first step
