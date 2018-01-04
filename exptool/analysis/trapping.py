@@ -718,10 +718,10 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         for nfam,family in enumerate(np.array(criteria.keys())):
             
             
-            trapped = np.where( (metric[0] > criteria[family][0][0]) & (metric[0] < criteria[family][0][1])\
-                      & (metric[1] > criteria[family][1][0]) & (metric[1] < criteria[family][1][1])\
-                      & (metric[2] > criteria[family][2][0]) & (metric[2] < criteria[family][2][1])\
-                      & (metric[3] > criteria[family][3][0]) & (metric[3] < criteria[family][3][1]))[0]
+            trapped = np.where( (metric[0] >= criteria[family][0][0]) & (metric[0] < criteria[family][0][1])\
+                      & (metric[1] >= criteria[family][1][0]) & (metric[1] < criteria[family][1][1])\
+                      & (metric[2] >= criteria[family][2][0]) & (metric[2] < criteria[family][2][1])\
+                      & (metric[3] >= criteria[family][3][0]) & (metric[3] < criteria[family][3][1]))[0]
     
             trapping_array[nfam,indx,trapped] = np.ones(len(trapped))
 
@@ -824,10 +824,15 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
 
     #x1_master = re_form_trapping_arrays(trapping_arrays,0)
     #x2_master = re_form_trapping_arrays(trapping_arrays,1)
+    trapped = {}
+
+    for nfam,family in enumerate(np.array(criteria.keys())):
+
+        trapped[nfam] = re_form_trapping_arrays(trapping_arrays,nfam)
     
     #return x1_master,x2_master
 
-    return trapping_arrays
+    return trapped
 
 
 
@@ -839,7 +844,7 @@ def re_form_trapping_arrays(array,array_number):
     for processor in range(0,len(array)): norb_master += array[processor].shape[1]
     #
     # now initialize new blank array? Or should it dictionary?
-    net_array = np.zeros([norb_master,array[0].shape[2]],dtype='i2')
+    net_array = np.zeros([int(norb_master),int(array[0].shape[2])],dtype='i2')
     start_index = 0
     for processor in range(0,len(array)):
         end_index = start_index + array[processor].shape[1]
@@ -847,5 +852,8 @@ def re_form_trapping_arrays(array,array_number):
         net_array[start_index:end_index] = array[processor][array_number]
         start_index = end_index
     return net_array
+
+
+#warnings.filterwarnings("ignore",category =RuntimeWarning)
 
 

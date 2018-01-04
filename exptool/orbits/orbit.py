@@ -230,6 +230,18 @@ class Orbits(dict):
         '''
         return a resampled orbit map
 
+        inputs
+        -----------------------------
+
+
+
+
+        outputs
+        -----------------------------
+
+        
+        TODO
+        -----------------------------
         what's the best way to extend this to multiple orbits?
         what about adding velocity?
 
@@ -277,7 +289,7 @@ class Orbits(dict):
                 BarInstance = kwargs['bar']
 
 
-                bar_positions = trapping.find_barangle(self['T'],BarInstance)
+                bar_positions = pattern.find_barangle(self['T'],BarInstance)
 
                 # make a tiled version for fast computation
                 manybar = np.tile(bar_positions,(self['M'].shape[0],1)).T
