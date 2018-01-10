@@ -47,6 +47,12 @@ from exptool.io import psp_io
 from exptool.utils import kde_3d
 from exptool.analysis import pattern
 
+# register new colormaps if necessary
+import colormaps as cmaps
+plt.register_cmap(name='viridis', cmap=cmaps.viridis)
+plt.register_cmap(name='magma', cmap=cmaps.magma)
+
+
 
 
 def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.):
@@ -237,7 +243,7 @@ def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
 
 def show_dump(infile,comp,type='pos',transform=True,\
               # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.,**kwargs):
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.,cwheel=cm.gnuplot,**kwargs):
     '''
     show_dump
         first ability to see a PSPDump in the simplest way possible
@@ -265,6 +271,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
     '''
 
     # read in component(s)
+
 
     if np.array(comp).size == 1:
         PSPDump = psp_io.Input(infile,comp=comp)
@@ -373,7 +380,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
         
     # XY
 
-    cbar = ax1.contourf(kdeX,kdeY,XY,levels,cmap=cm.gnuplot)
+    cbar = ax1.contourf(kdeX,kdeY,XY,levels,cmap=cwheel)
     ax1.axis([-0.95*face_extents,0.95*face_extents,-0.95*face_extents,0.95*face_extents])
     for label in ax1.get_xticklabels():
         label.set_rotation(30)
@@ -399,7 +406,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
         
     # ZY
 
-    ax2.contourf(kdeZYz,kdeZYy,ZY,levels_edge,cmap=cm.gnuplot)
+    ax2.contourf(kdeZYz,kdeZYy,ZY,levels_edge,cmap=cwheel)
     ax2.axis([-0.95*edge_extents,0.95*edge_extents,-0.95*face_extents,0.95*face_extents])
     ax2.set_yticklabels(())
     for label in ax2.get_xticklabels():
@@ -411,7 +418,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
     ax2.xaxis.labelpad = 18
         
     # XZ
-    ax3.contourf(kdeXZx,kdeXZz,XZ,levels_edge,cmap=cm.gnuplot)
+    ax3.contourf(kdeXZx,kdeXZz,XZ,levels_edge,cmap=cwheel)
     ax3.axis([-0.95*face_extents,0.95*face_extents,-0.95*edge_extents,0.95*edge_extents])
     ax3.set_xticklabels(())
     for label in ax3.get_yticklabels():
@@ -434,7 +441,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
 def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
               # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.025,slice_width=0.2,**kwargs):
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.025,slice_width=0.2,cwheel=cm.gnuplot,**kwargs):
     '''
     compare_dumps
         look at two different dumps for direct comparison
@@ -523,7 +530,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
 
         
     # XY
-    cbar = ax1.contourf(kdeX1,kdeY1,XY1,levels1,cmap=cm.gnuplot)
+    cbar = ax1.contourf(kdeX1,kdeY1,XY1,levels1,cmap=cwheel)
     ax1.axis([-0.05,0.05,-0.05,0.05])
 
     if 'label1' in kwargs.keys():
@@ -552,7 +559,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
        
     
     # ZY
-    ax2.contourf(kdeZYz1,kdeZYy1,ZY1,levels_edge1,cmap=cm.gnuplot)
+    ax2.contourf(kdeZYz1,kdeZYy1,ZY1,levels_edge1,cmap=cwheel)
     ax2.axis([-0.01,0.01,-0.05,0.05])
     ax2.set_yticklabels(())
     for label in ax2.get_xticklabels():
@@ -566,7 +573,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
 
     
     # XZ
-    ax3.contourf(kdeXZx1,kdeXZz1,XZ1,levels_edge1,cmap=cm.gnuplot)
+    ax3.contourf(kdeXZx1,kdeXZz1,XZ1,levels_edge1,cmap=cwheel)
     ax3.axis([-0.05,0.05,-0.01,0.01])
     ax3.set_xticklabels(())
     for label in ax3.get_yticklabels():
@@ -576,7 +583,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     ax3.yaxis.labelpad = 18
 
     # XY2
-    cbar = ax4.contourf(kdeX2,kdeY2,XY2,levels1,cmap=cm.gnuplot)
+    cbar = ax4.contourf(kdeX2,kdeY2,XY2,levels1,cmap=cwheel)
     ax4.axis([-0.05,0.05,-0.05,0.05])
     ax4.set_yticklabels(())
 
@@ -591,7 +598,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
         
 
     # ZY2
-    ax5.contourf(kdeZYz2,kdeZYy2,ZY2,levels_edge1,cmap=cm.gnuplot)
+    ax5.contourf(kdeZYz2,kdeZYy2,ZY2,levels_edge1,cmap=cwheel)
     ax5.axis([-0.01,0.01,-0.05,0.05])
     ax5.set_yticklabels(())
     for label in ax5.get_xticklabels():
@@ -603,7 +610,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     ax5.xaxis.labelpad = 18
         
     # XZ2
-    ax6.contourf(kdeXZx2,kdeXZz2,XZ2,levels_edge1,cmap=cm.gnuplot)
+    ax6.contourf(kdeXZx2,kdeXZz2,XZ2,levels_edge1,cmap=cwheel)
     ax6.axis([-0.05,0.05,-0.01,0.01])
     ax6.set_xticklabels(())
     ax6.set_yticklabels(())

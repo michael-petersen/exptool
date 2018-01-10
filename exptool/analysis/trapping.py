@@ -191,6 +191,10 @@ class ApsFinding():
 
             norb = len(numi)
 
+            if self.verbose > 0:
+                    print('Current time: {4.3f}'.format(Ob.time),end='\r', flush=True)
+                
+
 
             for j in range(0,norb):
                 aps_dictionary[numi[j]].append([Ob.time,x[j],y[j],z[j]])
@@ -657,8 +661,8 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
             #
             # guard against aps with too large of a timespan (some number of bar periods, preferably)
             if relative_aps_time[closest_aps[-1]] > t_thresh:
-                orbit_dist.append([0.0,1.0,1.0,1.0])
-                orbit_dist.append([np.max(BarInstance.time),1.0,1.0,1.0])
+                orbit_dist.append([0.0,1.0,1.0,1.0,1.0])
+                orbit_dist.append([np.max(BarInstance.time),1.0,1.0,1.0,1.0])
                 continue
             
             # compute the clustering
@@ -667,14 +671,14 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
             # check time boundaries
             if midpoint==0: # first step
                 
-                orbit_dist.append([0.0,theta_n,clusterstd_x,clusterstd_y])
+                orbit_dist.append([0.0,theta_n,clusterstd_x,clusterstd_y,clustermean])
             
             # default action
-            orbit_dist.append([time_sequence[midpoint],theta_n,clusterstd_x,clusterstd_y])
+            orbit_dist.append([time_sequence[midpoint],theta_n,clusterstd_x,clusterstd_y,clustermean])
             
             
             if midpoint==(len(X)-1): # last step
-                orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x,clusterstd_y])
+                orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x,clusterstd_y,clustermean])
 
         
         DD = np.array(orbit_dist) # 0:time, 1:theta_n, 2:sigma_x
@@ -690,15 +694,17 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         #     3. sigma_x vs time
         #     4. sigma_y vs time
         #     5. delta(theta_n) vs time (volitility, disabled for speed now)
-        theta_func = interpolate.interp1d(DD[:,0],DD[:,1], kind='nearest',fill_value=1.4)      #1
+        theta_func = interpolate.interp1d(DD[:,0],DD[:,1], kind='nearest',fill_value=0.7)      #1
         #
-        frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.4)       #2
+        frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.0)       #2
         #
-        sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.4) #3
+        sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.0) #3
         
-        sigmay_func = interpolate.interp1d(DD[:,0],abs(DD[:,3]),kind='nearest',fill_value=1.4) #4
+        sigmay_func = interpolate.interp1d(DD[:,0],abs(DD[:,3]),kind='nearest',fill_value=1.0) #4
+
+        xmean_func = interpolate.interp1d(DD[:,0],abs(DD[:,4]),kind='nearest',fill_value=1.0) #5
         #
-        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)            #5
+        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)            #6
         #
 
         #
@@ -712,16 +718,19 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         metric = [theta_func(BarInstance.time),\
                   frequency_func(BarInstance.time),\
                  sigmax_func(BarInstance.time),\
-                 sigmay_func(BarInstance.time)]
+                 sigmay_func(BarInstance.time),
+                xmean_func(BarInstance.time)]
         
         
         for nfam,family in enumerate(np.array(criteria.keys())):
-            
+
+            # how does this get covered from missing criteria?
             
             trapped = np.where( (metric[0] >= criteria[family][0][0]) & (metric[0] < criteria[family][0][1])\
                       & (metric[1] >= criteria[family][1][0]) & (metric[1] < criteria[family][1][1])\
                       & (metric[2] >= criteria[family][2][0]) & (metric[2] < criteria[family][2][1])\
-                      & (metric[3] >= criteria[family][3][0]) & (metric[3] < criteria[family][3][1]))[0]
+                      & (metric[3] >= criteria[family][3][0]) & (metric[3] < criteria[family][3][1])\
+                      & (metric[4] >= criteria[family][4][0]) & (metric[4] < criteria[family][4][1]))[0]
     
             trapping_array[nfam,indx,trapped] = np.ones(len(trapped))
 

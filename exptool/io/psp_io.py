@@ -840,7 +840,7 @@ def get_n_snapshots(simulation_directory):
 
 
 
-def map_simulation_files(outfile,simulation_directory,simulation_name):
+def map_simulation_files(outfile,simulation_directory,simulation_name,verbose=1):
     #
     # simple definition to sort through a directory and make a list of all the dumps, guarding for bad files
     #
@@ -863,7 +863,9 @@ def map_simulation_files(outfile,simulation_directory,simulation_name):
             if t > current_time:
                 print(simulation_directory+'OUT.'+simulation_name+'.{0:05d}'.format(i),file=f)
                 current_time = t
-                print(current_time)
+
+                if verbose > 0:
+                    print('Current time: {4.3f}'.format(current_time),end='\r', flush=True)
                 
         #
         f.close()
