@@ -25,6 +25,9 @@ TODO:
 -Filtering algorithms for bar determination
 
 
+BASIC USAGE:
+
+
 
 '''
 
@@ -229,6 +232,10 @@ class BarDetermine():
 
     def cycle_files_aps(self,threedee=False):
 
+        # eventually this could be flexible!
+        comp='star'
+
+        
         if self.verbose >= 2:
                 t1 = time.time()
 
