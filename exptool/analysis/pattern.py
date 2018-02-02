@@ -230,11 +230,10 @@ class BarDetermine():
         if self.verbose >= 2:
                 print('Computed {0:d} steps in {1:3.2f} minutes, for an average of {2:3.2f} seconds per step.'.format( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) ))
 
-    def cycle_files_aps(self,threedee=False):
+    def cycle_files_aps(self,threedee=False,nout=100000):
 
         # eventually this could be flexible!
         comp='star'
-
         
         if self.verbose >= 2:
                 t1 = time.time()
