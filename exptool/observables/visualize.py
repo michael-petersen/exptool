@@ -19,7 +19,6 @@ visualize.py : part of exptool
 
 # WISHLIST:
 -add position overlays to velocity or dispersion plots (see velocity.py)
--specify colorbar levels (for movie making)
 
 
 from exptool.observables import visualize
@@ -32,6 +31,11 @@ visualize.compare_dumps('/scratch/mpetersen/Disk001/OUT.run001.01000','/work/mpe
 
 
 ffmpeg -framerate 20 -i out%05d.png -c:v libx264 -r 30 -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" ~/Desktop/Disk022trans.mp4
+
+
+To make a movie, set specifications make sense:
+
+visualize.show_dump('/scratch/mpetersen/Disk004/OUT.run004.01000','star',type='pos',transform=True,gridsize=129,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=5.,cwheel='magma',barfile='/scratch/mpetersen/Disk004/run004_m2n1_barpos.dat')
 
 
 
@@ -260,6 +264,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
     edge_extents=0.02
     slice_width=0.1            : slice width for density determination
     clevels                    : force contour levels
+    barfile
 
     OUTPUTS
     ------------------------------

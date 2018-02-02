@@ -180,13 +180,17 @@ class BarDetermine():
 
         return None
     
-    def track_bar(self,filelist,verbose=0,maxr=1.):
+    def track_bar(self,filelist,verbose=0,maxr=1.,apse=False):
 
         self.slist = filelist
         self.verbose = verbose
         self.maxr = maxr
-        
-        BarDetermine.cycle_files(self)
+
+        if apse:
+            BarDetermine.cycle_files_aps(self)
+
+        else:
+            BarDetermine.cycle_files(self)
 
         BarDetermine.unwrap_bar_position(self)
 
@@ -222,6 +226,49 @@ class BarDetermine():
 
         if self.verbose >= 2:
                 print('Computed {0:d} steps in {1:3.2f} minutes, for an average of {2:3.2f} seconds per step.'.format( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) ))
+
+    def cycle_files_aps(self,threedee=False):
+
+        if self.verbose >= 2:
+                t1 = time.time()
+
+        BarDetermine.parse_list(self)
+
+        self.time = np.zeros(len(self.SLIST))
+        self.pos = np.zeros(len(self.SLIST))
+
+        for i in range(0,len(self.SLIST)):
+
+            # open three files to compare
+            Oa = psp_io.Input(self.SLIST[i-1],comp=comp,nout=nout,verbose=0)
+            Ob = psp_io.Input(self.SLIST[i],comp=comp,nout=nout,verbose=self.verbose)
+            Oc = psp_io.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
+
+            # compute 2d radial positions
+            if threedee:
+                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos + Oa.zpos*Oa.zpos)**0.5
+                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos + Ob.zpos*Ob.zpos)**0.5
+                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos + Oc.zpos*Oc.zpos)**0.5
+
+            else:
+                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
+                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
+                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
+                
+            # use logic to find aps
+            aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
+
+            
+            xposlist = Ob.xpos[aps]
+            yposlist = Ob.ypos[aps]
+                
+            self.time[i] = O.time
+            self.pos[i] = BarDetermine.bar_fourier_compute(self,xposlist,yposlist,maxr=self.maxr)
+
+
+        if self.verbose >= 2:
+                print('Computed {0:d} steps in {1:3.2f} minutes, for an average of {2:3.2f} seconds per step.'.format( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) ))
+
 
 
     def bar_doctor_print(self):
