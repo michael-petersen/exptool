@@ -243,7 +243,7 @@ class BarDetermine():
         self.time = np.zeros(len(self.SLIST))
         self.pos = np.zeros(len(self.SLIST))
 
-        for i in range(0,len(self.SLIST)):
+        for i in range(1,len(self.SLIST)-1):
 
             # open three files to compare
             Oa = psp_io.Input(self.SLIST[i-1],comp=comp,nout=nout,verbose=0)
@@ -268,7 +268,7 @@ class BarDetermine():
             xposlist = Ob.xpos[aps]
             yposlist = Ob.ypos[aps]
                 
-            self.time[i] = O.time
+            self.time[i] = Ob.time
             self.pos[i] = BarDetermine.bar_fourier_compute(self,xposlist,yposlist,maxr=self.maxr)
 
 
