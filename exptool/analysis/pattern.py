@@ -231,6 +231,16 @@ class BarDetermine():
                 print('Computed {0:d} steps in {1:3.2f} minutes, for an average of {2:3.2f} seconds per step.'.format( len(self.SLIST),(time.time()-t1)/60.,(time.time()-t1)/float(len(self.SLIST)) ))
 
     def cycle_files_aps(self,threedee=False,nout=100000):
+        '''
+        go through files, but use only the aps positions to determine the bar position. Useful if strong secondary patterns exist in m=2 power.
+
+
+        EXAMPLE
+        A = pattern.BarDetermine()
+        A.track_bar(filelist,apse=True,maxr=0.02)
+
+
+        '''
 
         # eventually this could be flexible!
         comp='star'

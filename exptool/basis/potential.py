@@ -38,7 +38,7 @@ import time
 # exptool classes
 from exptool.utils import utils
 from exptool.io import psp_io
-from exptool.analysis import trapping
+from exptool.analysis import pattern
 from exptool.basis import eof
 from exptool.basis import spheresl
 from exptool.utils import halo_methods
@@ -125,7 +125,7 @@ class Fields():
         self.time = PSPDumpDisk.time
         
         if self.transform:
-            PSPDumpDiskTransformed = trapping.BarTransform(PSPDumpDisk)
+            PSPDumpDiskTransformed = pattern.BarTransform(PSPDumpDisk)
             
             if self.verbose > 1:
                 print('potential.Fields.total_coefficients: Using bar_angle {0:4.3f}'.format(PSPDumpDiskTransformed.bar_angle))
@@ -146,7 +146,7 @@ class Fields():
 
         
         if self.transform:
-            PSPDumpHaloTransformed = trapping.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
+            PSPDumpHaloTransformed = pattern.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
             
         else:
             PSPDumpHaloTransformed = PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
@@ -1214,7 +1214,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
 
     '''
     infile = simulation_directory+'OUT.'+simulation_name+'.%05i' %intime
-    BarInstance = trapping.BarDetermine()
+    BarInstance = pattern.BarDetermine()
 
     if transform:
         if bar_bonus == '':
@@ -1227,7 +1227,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
     
         PSPDump = psp_io.Input(infile,validate=True)
     
-        pattern = trapping.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
+        pattern = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
     
         rotfreq = pattern/(2.*np.pi)
 

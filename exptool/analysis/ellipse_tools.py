@@ -297,6 +297,9 @@ class genEllipse:
             ax2 = fig.add_subplot(122)
 
         ax1.scatter(self.A,1.-self.B/self.A,color='black',s=10.)
+        ax1.set_xlabel('Semi-major axis')
+        ax1.set_ylabel('Ellipticity')
+        
         ax2.scatter(self.A,self.ANG,color='black',s=10.)
 
 
