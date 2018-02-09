@@ -1761,16 +1761,28 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
     wake['Y'] = ygrid
 
     if zline.shape[0] > 1:
-        wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
-        wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
+
+        if m1 < 1:
+            wake['P'] = (p+p0).reshape([xline.shape[0],zline.shape[0]])
+            wake['D'] = (d+d0).reshape([xline.shape[0],zline.shape[0]])
+        else:
+            wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
+            wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
+            
         wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
         wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
         wake['fP'] = fp.reshape([xline.shape[0],zline.shape[0]])
         wake['fZ'] = fz.reshape([xline.shape[0],zline.shape[0]])
 
     else:
-        wake['P'] = p
-        wake['D'] = d
+
+        if m1 < 1:
+            wake['P'] = p + p0
+            wake['D'] = d + d0
+        else:
+            wake['P'] = p
+            wake['D'] = d
+            
         wake['fR'] = fr
         wake['R'] = R
         wake['fP'] = fp
