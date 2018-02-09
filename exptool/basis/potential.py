@@ -1227,12 +1227,12 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
     
         PSPDump = psp_io.Input(infile,validate=True)
     
-        pattern = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
+        patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
     
-        rotfreq = pattern/(2.*np.pi)
+        rotfreq = patt/(2.*np.pi)
 
     else:
-        pattern = 0.
+        patt = 0.
         rotfreq = 0.
     
     F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=False,centering=True,mutual_center=True)
@@ -1240,7 +1240,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
     F.total_coefficients()
     F.prep_tables()
 
-    return F,pattern,rotfreq
+    return F,patt,rotfreq
 
 
 
