@@ -19,6 +19,20 @@ import numpy as np
 from exptool.io import psp_io
 
 
+
+class MassDistribution():
+    '''
+    class to calculate basic mass distribution quantities for models, including aribtray component mixing
+
+    '''
+
+    def __init__(self):
+
+        pass
+
+
+
+
 class GQuantities():
     '''
     #

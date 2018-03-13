@@ -979,7 +979,7 @@ def accumulated_eval_contributions(r, z, phi, accum_cos, accum_sin, potC, rforce
 
 def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                                potC=0, rforceC=0, zforceC=0, potS=0, rforceS=0, zforceS=0,\
-                               rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=0,eof_file='',density=False):
+                               rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=0,density=False,eof_file=''):
     '''
     accumulated_eval_particles
         -takes a set of particles with standard PSP attributes (see psp_io documentation) and returns potential and forces.
@@ -1227,7 +1227,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
     return EOF_Out
 
 
-def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
+def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000,density=False):
     '''
     compute_forces
         main wrapper for computing EOF forces
@@ -1241,6 +1241,7 @@ def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
     nprocs
     m1
     m2
+    density
 
     outputs
     -----------------------
@@ -1263,13 +1264,22 @@ def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000):
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
     if nprocs > 1:
-        p0,p,fr,fp,fz,r = find_forces_multi(PSPInput,nprocs,EOF_Object.cos,EOF_Object.sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=m1,m2=m2,verbose=verbose)
+        if density:
+            p0,p,d0,d,fr,fp,fz,r = find_forces_multi(PSPInput,nprocs,EOF_Object.cos,EOF_Object.sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=m1,m2=m2,verbose=verbose,density=True)
+        else:
+            p0,p,fr,fp,fz,r = find_forces_multi(PSPInput,nprocs,EOF_Object.cos,EOF_Object.sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=m1,m2=m2,verbose=verbose,density=False)
 
     else:
-        p0,p,fr,fp,fz,r = accumulated_eval_particles(PSPInput, EOF_Object.cos, EOF_Object.sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=numx,numy=numy,MMAX=mmax,NMAX=norder,ASCALE=ascale,HSCALE=hscale,CMAP=cmap,m1=m1,m2=m2,verbose=verbose)
+        if density:
+            p0,p,d0,d,fr,fp,fz,r = accumulated_eval_particles(PSPInput, EOF_Object.cos, EOF_Object.sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=numx,numy=numy,MMAX=mmax,NMAX=norder,ASCALE=ascale,HSCALE=hscale,CMAP=cmap,m1=m1,m2=m2,verbose=verbose,density=True)
+        else:
+            p0,p,fr,fp,fz,r = accumulated_eval_particles(PSPInput, EOF_Object.cos, EOF_Object.sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=numx,numy=numy,MMAX=mmax,NMAX=norder,ASCALE=ascale,HSCALE=hscale,CMAP=cmap,m1=m1,m2=m2,verbose=verbose)
          
 
-    return p0,p,fr,fp,fz,r
+    if density:
+        return p0,p,d0,d,fr,fp,fz,r
+    else:
+        return p0,p,fr,fp,fz,r
 
 
 
@@ -1394,7 +1404,7 @@ def accumulated_eval_particles_star(a_b):
     return accumulated_eval_particles(*a_b)
 
 
-def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1,m2,verbose=0):
+def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1,m2,verbose=0,density=False):
     pool = multiprocessing.Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = a_cos
@@ -1420,6 +1430,7 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
     twentysecond_arg = m2
     twentythird_arg = [0 for i in range(0,nprocs)]
     twentythird_arg[0] = verbose
+    twentyfourth_arg = density
     a_vals = pool.map(accumulated_eval_particles_star,\
                          itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                          itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
@@ -1428,35 +1439,39 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
                          itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),itertools.repeat(fifteenth_arg),\
                          itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg),itertools.repeat(eighteenth_arg),\
                          itertools.repeat(nineteenth_arg),itertools.repeat(twentieth_arg),itertools.repeat(twentyfirst_arg),itertools.repeat(twentysecond_arg),\
-                         twentythird_arg))
+                         twentythird_arg,itertools.repeat(twentyfourth_arg)))
     pool.close()
     pool.join()
     return a_vals 
 
 
 
-def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0):
+def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0,density=False):
     
     holding = redistribute_particles(ParticleInstance,nprocs)
     
     t1 = time.time()
     multiprocessing.freeze_support()
     
-    a_vals = multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=verbose)
+    a_vals = multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=verbose,density=density)
     
     if (verbose):
         print('eof.find_forces_multi: Force Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
               
     # accumulate over processes
-    
-    p0,p,fr,fp,fz,r = mix_outputs(np.array(a_vals))
-    return p0,p,fr,fp,fz,r
+
+    if density:
+        p0,p,d0,d,fr,fp,fz,r = mix_outputs(np.array(a_vals),density=True)
+        return p0,p,d0,d,fr,fp,fz,r
+    else:
+        p0,p,fr,fp,fz,r = mix_outputs(np.array(a_vals))
+        return p0,p,fr,fp,fz,r
 
 
 #
 # helper class for making torques
 # 
-def mix_outputs(MultiOutput):
+def mix_outputs(MultiOutput,density=False):
     n_instances = len(MultiOutput)
     n_part = 0
     for i in range(0,n_instances):
@@ -1467,19 +1482,39 @@ def mix_outputs(MultiOutput):
     full_fp = np.zeros(n_part)
     full_fz = np.zeros(n_part)
     full_r = np.zeros(n_part)
+    if density:
+        full_d0 = np.zeros(n_part)
+        full_d = np.zeros(n_part)
     #
     #
     first_part = 0
     for i in range(0,n_instances):
         n_instance_part = len(MultiOutput[i][0])
-        full_p0[first_part:first_part+n_instance_part] = MultiOutput[i][0]
-        full_p [first_part:first_part+n_instance_part] = MultiOutput[i][1]
-        full_fr[first_part:first_part+n_instance_part] = MultiOutput[i][2]
-        full_fp[first_part:first_part+n_instance_part] = MultiOutput[i][3]
-        full_fz[first_part:first_part+n_instance_part] = MultiOutput[i][4]
-        full_r [first_part:first_part+n_instance_part] = MultiOutput[i][5]
-        first_part += n_instance_part
-    return full_p0,full_p,full_fr,full_fp,full_fz,full_r
+
+        if density:
+            full_p0[first_part:first_part+n_instance_part] = MultiOutput[i][0]
+            full_p [first_part:first_part+n_instance_part] = MultiOutput[i][1]
+            full_d0[first_part:first_part+n_instance_part] = MultiOutput[i][2]
+            full_d [first_part:first_part+n_instance_part] = MultiOutput[i][3]
+            full_fr[first_part:first_part+n_instance_part] = MultiOutput[i][4]
+            full_fp[first_part:first_part+n_instance_part] = MultiOutput[i][5]
+            full_fz[first_part:first_part+n_instance_part] = MultiOutput[i][6]
+            full_r [first_part:first_part+n_instance_part] = MultiOutput[i][7]
+
+        else:
+            full_p0[first_part:first_part+n_instance_part] = MultiOutput[i][0]
+            full_p [first_part:first_part+n_instance_part] = MultiOutput[i][1]
+            full_fr[first_part:first_part+n_instance_part] = MultiOutput[i][2]
+            full_fp[first_part:first_part+n_instance_part] = MultiOutput[i][3]
+            full_fz[first_part:first_part+n_instance_part] = MultiOutput[i][4]
+            full_r [first_part:first_part+n_instance_part] = MultiOutput[i][5]
+            first_part += n_instance_part
+
+    if density:
+        return full_p0,full_p,full_d0,full_d,full_fr,full_fp,full_fz,full_r
+
+    else:
+        return full_p0,full_p,full_fr,full_fp,full_fz,full_r
 
 
 
@@ -1753,7 +1788,8 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
             cos_coefs_in[i] = np.zeros(EOFObj.nmax)
             sin_coefs_in[i] = np.zeros(EOFObj.nmax)
     #
-    p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
+   # p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
+    p0,p,d0,d,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=True)
     #
     #
     wake = {}

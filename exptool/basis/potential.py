@@ -661,8 +661,18 @@ class Fields():
                 cos_coefs_in[i] = np.zeros(self.EOF.nmax)
                 sin_coefs_in[i] = np.zeros(self.EOF.nmax)
 
-        
-        p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in ,m1=0,m2=self.disk_use_m,eof_file=self.EOF.eof_file,density=True)
+
+        # if using a restored file, potC etc may already exist. checking...
+        try:
+            p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in ,\
+                                                                potC=self.potC, rforceC=self.rforceC, zforceC=self.zforceC, \
+                                                                potS=self.potS, rforceS=self.rforceS, zforceS=self.zforceS, \
+                                                                rmin=self.rmindisk,dR=0,zmin=self.zmindisk,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,\
+                                                                ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=0,density=False,eof_file='')
+
+        except:
+            p0,p,d0,d,fr,fp,fz,R = eof.accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in ,m1=0,m2=self.disk_use_m,eof_file=self.EOF.eof_file,density=True)
+
 
         den0,den1,pot0,pot1,potr,pott,potp,rr = spheresl.eval_particles(P,self.halofac*self.SL.expcoef,self.SL.sph_file,self.SL.model_file,l1=0,l2=self.halo_use_l)
 

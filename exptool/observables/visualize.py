@@ -265,6 +265,9 @@ def show_dump(infile,comp,type='pos',transform=True,\
     slice_width=0.1            : slice width for density determination
     clevels                    : force contour levels
     barfile
+    ktype
+    npower
+    cwheel
 
     OUTPUTS
     ------------------------------

@@ -3,7 +3,9 @@
 
 transform.py : part of exptool
 
-to view a galaxy on the sky in some way (LOS usefulness)
+two pieces:
+1. to view a galaxy on the sky in some way (LOS usefulness)
+2. to convert simulation coordinates into physical units
                       
 '''
 
