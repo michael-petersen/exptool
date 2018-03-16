@@ -1835,34 +1835,42 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
 
 
 def reorganize_eof_dict(EOFDict):
-
+    #
     # extract size of basis
     mmax = EOFDict[0].mmax
     nmax = EOFDict[0].nmax
-    
+    #
     # reorganize
     coef_sums = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0],nmax])
+    coefs_cos = np.zeros([mmax+1,nmax,np.array(EOFDict.keys()).shape[0]])
+    coefs_sin = np.zeros([mmax+1,nmax,np.array(EOFDict.keys()).shape[0]])
     time_order = np.zeros(np.array(EOFDict.keys()).shape[0])
-    
+    #
     keynum = 0
     for keyval in EOFDict.keys():
         for mm in range(0,mmax+1):
             for nn in range(0,nmax):
                 coef_sums[mm,keynum,nn] = EOFDict[keyval].cos[mm,nn]**2. + EOFDict[keyval].sin[mm,nn]**2.
+                coefs_cos[mm,nn,keynum] = EOFDict[keyval].cos[mm,nn]
+                coefs_sin[mm,nn,keynum] = EOFDict[keyval].sin[mm,nn]
         #
         time_order[keynum] = EOFDict[keyval].time
         keynum += 1
-
-        
+    #
+    #   
     # assemble into dictionary
     CDict = {}
     CDict['time']   = time_order[time_order.argsort()]
     CDict['total'] = {}
     CDict['sum'] = {}
+    CDict['cos'] = {}
+    CDict['sin'] = {}
     for mm in range(0,mmax+1):
         CDict['total'][mm] = coef_sums[mm,time_order.argsort(),:]
         CDict['sum'][mm] = np.sum(coef_sums[mm],axis=1)[time_order.argsort()]
-    
+        CDict['cos'][mm] = coefs_cos[mm,:,time_order.argsort()].T
+        CDict['sin'][mm] = coefs_sin[mm,:,time_order.argsort()].T
+    #
     return CDict
 
 
