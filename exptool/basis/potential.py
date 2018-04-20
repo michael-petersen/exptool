@@ -201,13 +201,13 @@ class Fields():
             print('potential.Fields.total_coefficients: (x,y,z) = {0:6.5f},{1:6.5f},{2:6.5f}'\
                   .format(float(self.xcen_disk),float(self.ycen_disk),float(self.zcen_disk)))
 
-            PSPDumpDiskTransformed.xpos -= self.xcen_disk
-            PSPDumpDiskTransformed.ypos -= self.ycen_disk
-            PSPDumpDiskTransformed.zpos -= self.zcen_disk
+            PSPDumpDiskTransformed.xpos = PSPDumpDiskTransformed.xpos - self.xcen_disk
+            PSPDumpDiskTransformed.ypos = PSPDumpDiskTransformed.ypos - self.ycen_disk
+            PSPDumpDiskTransformed.zpos = PSPDumpDiskTransformed.zpos - self.zcen_disk
             
-            PSPDumpHaloTransformed.xpos -= self.xcen_halo
-            PSPDumpHaloTransformed.ypos -= self.ycen_halo
-            PSPDumpHaloTransformed.zpos -= self.zcen_halo
+            PSPDumpHaloTransformed.xpos = PSPDumpHaloTransformed.xpos - self.xcen_halo
+            PSPDumpHaloTransformed.ypos = PSPDumpHaloTransformed.ypos - self.ycen_halo
+            PSPDumpHaloTransformed.zpos = PSPDumpHaloTransformed.zpos - self.zcen_halo
 
 
         else:
@@ -630,13 +630,13 @@ class Fields():
         returns
         ---------
         wake   : dictionary with the following keys
-           R
-           T
-           P
-           D
-           tfR
-           dfR
-           hfR
+           R   : radius grid
+           T   : theta grid
+           P   : potential grid
+           D   : density grid
+           tfR : total radial force grid
+           dfR : DISK  radial force grid
+           hfR : HALO  radial force grid
 
         '''
 

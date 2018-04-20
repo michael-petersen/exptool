@@ -27,6 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 
 from exptool.orbits import orbit
+from exptool.basis import potential
 
 # standard imports
 import numpy as np
@@ -273,3 +274,250 @@ def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=100.,verbose=Fals
 
 
 
+
+#
+# ###################################################################################
+#
+#   multistepping block
+
+
+import itertools
+from multiprocessing import Pool, freeze_support
+import multiprocessing
+
+
+
+
+def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
+                   verbose=0,nprocs=-1):
+    '''
+    do_integrate_multi:
+       multiprocessor integration of orbits
+
+    '''
+
+    if nprocs <= 0:
+        nprocs = multiprocessing.cpu_count()
+
+    subrads = redistribute_arrays(rads,nprocs)
+    
+    if (verbose > 0):
+        print('Beginning integration, using {} processors.'.format(nprocs))
+    
+    t1 = time.time()
+    freeze_support()
+    #
+    out_arrays = multi_compute_integration(subrads,nprocs,vels,F,\
+                   nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
+                   verbose=verbose)
+    #
+    # out_arrays have [rads.size,vels.size,4,nint]
+    #
+    print('Total integration calculation took {0:3.2f} seconds, or {1:3.2f} seconds per orbit.'.format(time.time()-t1,(time.time()-t1)/float(rads.size*vels.size)))
+    #
+    orbit_array = re_form_orbit_arrays(out_arrays)
+    #
+    #print_orbit_array(outfile,orbit_array)
+    #
+    return orbit_array
+    
+
+
+
+def multi_compute_integration(subrads,nprocs,vels,F,\
+                   nint,dt,rotfreq,no_odd,halo_l,disk_m,\
+                   dyn_res,ap_max,\
+                   verbose=0):
+    #
+    pool = Pool(nprocs)
+    #
+    a_args = [subrads[i] for i in range(0,nprocs)]
+    second_arg = vels
+    third_arg = F
+    fourth_arg = nint
+    fifth_arg = dt
+    sixth_arg = rotfreq
+    seventh_arg = no_odd
+    eighth_arg = halo_l
+    ninth_arg = disk_m
+    tenth_arg = dyn_res
+    eleventh_arg = ap_max
+    #
+    #integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m)
+    #
+    twelvth_arg = [0 for i in range(0,nprocs)]
+    twelvth_arg[0] = verbose
+    #
+    out_vals = pool.map(integrate_grid_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
+    #
+    # clean up to exit
+    pool.close()
+    pool.join()
+    #
+    return out_vals
+
+
+
+
+def integrate_grid_star(a_b):
+    """Convert `f([1,2])` to `f(1,2)` call."""
+    return integrate_grid(*a_b)
+
+
+
+
+def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,verbose):
+    '''
+
+
+    treat dt as the maximum value as a guard
+
+    0: TX
+    1: TY
+    2: VX
+    3: VY
+    4: T
+
+    '''
+    #
+    Oarray = np.zeros([rads.size,vels.size,5,nint])
+    #
+    for irad,rad in enumerate(rads):
+        #print 'Radius is ',rad
+        #
+        for ivel,vel in enumerate(vels):
+            #start_pos,start_vel = integrate.gen_init_step(rad,vel,z0=0.000)#,zvel0=0.2)
+            start_pos = [rad,0.,0.]
+            start_vel = [0.,vel,0.]
+            #
+            dtime = np.max([compute_timestep(F,start_pos,start_vel,dyn_res=dyn_res,verbose=False),dt])
+            
+            Orbit = leapfrog_integrate(F,nint,dtime,start_pos,start_vel,rotfreq=rotfreq,no_odd=no_odd,halo_l=halo_l,disk_m=disk_m,verbose=verbose,ap_max=ap_max)
+            #print_orbit(f,O)
+            #
+            # bring orbits up to uniform length
+            Oarray[irad,ivel,0] = np.concatenate((Orbit['TX'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,1] = np.concatenate((Orbit['TY'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,2] = np.concatenate((Orbit['VX'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,3] = np.concatenate((Orbit['VY'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,4] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))
+    #
+    #       
+    return Oarray
+        
+   
+
+#
+def redistribute_arrays(rads,divisions):
+    '''
+    given a grid of initial conditions (1d array rads) and a number of divisions (int divisions)
+
+
+    '''
+    #
+    subrads = [ [] for i in range(0,divisions) ]
+    #
+    rads_per_proc = int(np.floor(rads.size/divisions))
+    first_partition = int(rads.size - rads_per_proc*(divisions-1))
+    #
+    print('Each processor has {} radii.'.format((rads_per_proc)))#, first_partition
+    #
+    for i in range(0,divisions):
+        #
+        if (i>0):
+            #
+            subrads[i] = rads[((i-1)*rads_per_proc)+first_partition : ((i)*rads_per_proc)+first_partition]
+        #    
+        else:
+            subrads[i] = rads[0 : first_partition]
+    #        
+    return subrads
+
+
+
+
+
+def re_form_orbit_arrays(array):
+    #
+    norb_master = 0
+    for processor in range(0,len(array)): norb_master += array[processor].shape[0]
+    #
+    #
+    # now initialize new blank array
+    net_array = np.zeros([norb_master,array[0].shape[1],array[0].shape[2],array[0].shape[3]],dtype='f4')
+    #
+    start_index = 0
+    for processor in range(0,len(array)):
+        #
+        end_index = start_index + array[processor].shape[0]
+        #
+        net_array[start_index:end_index] = array[processor]
+        start_index = end_index
+    #
+    return net_array
+
+
+
+
+def print_orbit_array(f,OrbitArray):
+    
+    for rad in range(0,OrbitArray.shape[0]):
+        for vel in range(0,OrbitArray.shape[1]):
+            
+            # find non-zero values
+            try:
+                nsteps = np.where(OrbitArray[rad,vel,4] == 0.)[0][1]
+            except:
+                nsteps = OrbitArray.shape[3]
+                
+            # set up the header
+            print(nsteps,OrbitArray[rad,vel,0,0],OrbitArray[rad,vel,3,0],OrbitArray[rad,vel,4,1],end='',file=f) # this prints X0, VY0, dt
+
+            # print the x positions
+            for x in range(0,nsteps): print(OrbitArray[rad,vel,0,x],end='',file=f)
+
+            # print the y positions
+            for x in range(0,nsteps): print(OrbitArray[rad,vel,1,x],end='',file=f)
+
+            # force end of line
+            print('',file=f)
+
+
+
+def run_time(simulation_directory,simulation_name,\
+                 eof_file,sph_file,model_file,\
+                 intime,\
+                 rads,vels,\
+                 nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
+                 verbose,nprocs=-1,omegap=-1.,orbitfile=''):
+    '''
+    run_time
+
+    '''
+
+    F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file)
+
+    # use a supplied pattern speed if given
+    if omegap >= 0.:
+        patt = omegap
+        
+    rotfreq = -1.*abs(patt/(2.*np.pi))
+    
+    OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
+
+
+    if orbitfile != '':
+        f = open(orbitfile,'w')
+        
+    else:
+        f = open(simulation_directory+'omap_'+str(intime)+'.txt','w')
+
+    print_orbit_array(f,OrbitArray)
+
+    f.close()
+
+
+
+
+
+    

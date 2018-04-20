@@ -108,8 +108,6 @@ def binnormalhist(array,bins,weights=None):
     '''
     binnormalhist
          return the 1d histogram given bins and a 1d array (plus optional weighting array)
-
-
     '''
     if weights==None:
         weights = np.ones(len(array))
@@ -118,12 +116,12 @@ def binnormalhist(array,bins,weights=None):
     binsind = bins+(0.5*(bins[1]-bins[0]))
     array_out = np.zeros(len(bins))
     for i in range(0,len(array)):
-	binn = np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
+	binn = int(np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) ))
         #
         if ((binn >= 0) & (binn < len(bins)) ):
             array_out[binn] += weights[i]
     array_out /= (sum(array_out))
-    
+    # 
     return array_out
 
 
