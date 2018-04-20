@@ -489,13 +489,13 @@ def run_time(simulation_directory,simulation_name,\
                  intime,\
                  rads,vels,\
                  nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
-                 verbose,nprocs=-1,omegap=-1.,orbitfile=''):
+                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=True):
     '''
     run_time
 
     '''
 
-    F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file)
+    F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform)
 
     # use a supplied pattern speed if given
     if omegap >= 0.:
