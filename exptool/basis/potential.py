@@ -1254,3 +1254,24 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
 
 
 
+def make_rotation(simulation_directory,simulation_name,intime):
+    '''
+    make_rotation
+
+
+    '''
+
+    F = restore_field(simulation_directory+'/potential.'+str(intime)+'.dat')
+
+    F.EOF.eof_file = simulation_directory+'/.eof.cache.file'
+    F.SL.model_file = simulation_directory+'/SLGridSph.model'
+    F.SL.sph_file = simulation_directory+'/SLGridSph.cache.'+simulation_name
+    
+    F.set_field_parameters(no_odd=True,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1)
+    F.make_force_grid()
+    F.rotation_curve()
+
+    
+    return F
+
+

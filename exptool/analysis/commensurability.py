@@ -31,8 +31,12 @@ from scipy.ndimage import filters
 import scipy.ndimage.filters
 
 # need a check here to see if this will actually import and a clause if not
-from skimage.morphology import skeletonize
 
+try:
+    from skimage.morphology import skeletonize
+    able_to_skel = True
+except:
+    able_to_skel = False
 
 
 
@@ -123,9 +127,18 @@ for j in range(0,len(res)):
 
 
 
-def map_skeleton(Rarr,Varr,Aarr,sigma=(3.,3.),ridge_cutoff=0.5):
+def map_skeleton(Rarr,Varr,Aarr,\
+                 sigma=(3.,3.),ridge_cutoff=0.2,\
+                 scaling = 256.,scalefac = 6.,skelcut=0.002):
     
-    area_map = 256.*Aarr.T/(np.pi*Rarr.T*Rarr.T)
+    area_map = scaling*Aarr
+    
+    
+    
+    # add a pre-process
+    area_map[area_map > scaling/scalefac] = scaling/scalefac
+    
+    area_map = np.log10(area_map)
 
     #
     # only do the needed derivatives
@@ -153,21 +166,31 @@ def map_skeleton(Rarr,Varr,Aarr,sigma=(3.,3.),ridge_cutoff=0.5):
     ridge_map = np.max(w,axis=2)
     
     #
-    # now threshold the map
+    # now threshold the map, which includes an adaptive cutoff
     #
     threshold_map = np.zeros_like(ridge_map)
     good_values = np.where(ridge_map > ridge_cutoff)
     threshold_map[good_values] = 1.
-    
-    skeleton = skeletonize(threshold_map)
 
-    #
-    # zero out bad values
-    #
-    ridge_trace = np.zeros_like(ridge_map)
-    good_values = np.where(skeleton < 0.002)
-    ridge_trace[good_values] = np.nan
-    
+    if able_to_skel:
+        skeleton = skeletonize(threshold_map)
+
+        # alternate methodology to explore
+        #skeleton, distance = medial_axis(threshold_map, return_distance=True)
+
+
+        #
+        # nan the irrelevant values
+        #
+        ridge_trace = np.zeros_like(ridge_map)
+        good_values = np.where(skeleton < skelcut)
+        ridge_trace[good_values] = np.nan
+        
+    else:
+        print('exptool.commensurability: skimage is not available. falling back to non-pruned area plots.')
+
+        ridge_trace = threshold_map
+        
     
     return ridge_trace
     
@@ -185,5 +208,21 @@ def print_skeleton(infile,pskel,Rarr,Varr):
     
     f.close()
 
+
+
+
+def make_fishbone(infile):
+    E = np.genfromtxt(infile) 
+
+    rads = np.unique(E[:,0])
+    vels = np.unique(E[:,1])
+
+    Rarr,Varr = np.meshgrid(rads,vels)  
+    Rarr = Rarr.T; Varr = Varr.T
+    Aarr = E[:,2].reshape(rads.size,vels.size)
+    
+    dd = Aarr.T/(np.pi*Rarr.T*Rarr.T)
+
+    return Rarr.T,Varr.T,dd
 
 
