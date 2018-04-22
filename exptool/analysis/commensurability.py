@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 # exptool imports
-from exptool.utils import kde_3d
 from exptool.utils import utils
 
 
@@ -130,6 +129,14 @@ for j in range(0,len(res)):
 def map_skeleton(Rarr,Varr,Aarr,\
                  sigma=(3.,3.),ridge_cutoff=0.2,\
                  scaling = 256.,scalefac = 6.,skelcut=0.002):
+    '''
+    map_skeleton:
+         take a grid of integrated orbits
+
+
+
+
+    '''
     
     area_map = scaling*Aarr
     
@@ -224,5 +231,59 @@ def make_fishbone(infile):
     dd = Aarr.T/(np.pi*Rarr.T*Rarr.T)
 
     return Rarr.T,Varr.T,dd
+
+
+
+
+
+
+def construct_live_fishbones(infile,res=80,percentile=25.):
+    '''
+
+
+
+    '''
+    E = np.genfromtxt(infile)
+    
+    # transform to relative area
+    AA = E[:,2]/(np.pi*E[:,0]*E[:,0])
+
+    #
+    # brute force the binning
+    #
+    rads = np.linspace(0.,0.05,res)
+    dr = rads[1]-rads[0]
+    vels = np.linspace(-0.2,1.6,res)
+    dv = vels[1]-vels[0]
+    rr,vv = np.meshgrid(rads,vels)
+    
+    LF = {}
+    LF['rr'] = rr
+    LF['vv'] = vv
+    
+    eps =0.#1.e-10
+    LF['min']  = np.ones([rads.size,vels.size])+eps
+    LF['mean'] = np.ones([rads.size,vels.size])+eps
+    LF['med']  = np.ones([rads.size,vels.size])+eps
+    LF['std']  = np.ones([rads.size,vels.size])+eps
+    LF['quar'] = np.ones([rads.size,vels.size])+eps
+
+
+    for rindx,rad in enumerate(rads):
+        for vindx,vel in enumerate(vels):
+            w = np.where( (np.abs(E[:,0] - rad) < dr) & (np.abs(E[:,1] - vel) < dv))
+            #print(len(w[0]))
+            if len(w[0]) > 0:
+                LF['min'][rindx,vindx]  = np.min(AA[w])
+                LF['mean'][rindx,vindx] = np.mean(AA[w])
+                LF['med'][rindx,vindx]  = np.median(AA[w])
+                LF['std'][rindx,vindx] = np.std(AA[w])
+                
+                arr_aa = AA[w][AA[w].argsort()]
+                quartile = int(np.floor(len(w[0])*float(percentile/100.)))
+                LF['quar'][rindx,vindx] = arr_aa[quartile]
+
+    return LF
+
 
 

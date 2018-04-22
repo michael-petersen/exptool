@@ -59,7 +59,7 @@ plt.register_cmap(name='magma', cmap=cmaps.magma)
 
 
 
-def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.):
+def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.,**kwargs):
     '''
     kde_pos:
         take a PSP component structure and return slices.
@@ -75,10 +75,13 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
 
 
     '''
-    
+    # TODO:
+    # add kwargs to handle opt_third
 
     # XY
-    kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
+    kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,\
+                                                  #opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,\
+                                                  ktype=ktype,npower=npower)
 
     # make a log guard
     eps = np.min(PSPDump.mass)
@@ -89,7 +92,8 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     # XZ
     kdeXZx,kdeXZz,kdePOSXZ = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.zpos,\
                                                   gridsize=gridsize,extents=(-1.*face_extents,face_extents,-1.*edge_extents,edge_extents),\
-                                                  weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
+                                                  #weights=PSPDump.mass,opt_third=abs(PSPDump.ypos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
+                                                  weights=PSPDump.mass,ktype=ktype,npower=npower)
 
     # change to log surface density
     kdePOSXZ = np.log10(kdePOSXZ+eps)
@@ -97,18 +101,23 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     # ZY
     kdeZYz,kdeZYy,kdePOSZY = kde_3d.total_kde_two(PSPDump.zpos,PSPDump.ypos,\
                                               gridsize=gridsize,extents=(-1.*edge_extents,edge_extents,-1.*face_extents,face_extents),\
-                                              weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
+                                              #weights=PSPDump.mass,opt_third=abs(PSPDump.xpos),opt_third_constraint=slice_width,ktype=ktype,npower=npower)
+                                              weights=PSPDump.mass,ktype=ktype,npower=npower)
 
     # change to surface density
     kdePOSZY = np.log10(kdePOSZY+eps)
 
     # set up the figure
 
-    maxlev_edge = np.max([np.max(kdePOSXZ),np.max(kdePOSZY)])
+    maxlev_edge = np.nanmax([np.nanmax(kdePOSXZ),np.nanmax(kdePOSZY)])
+    minlev_edge = np.nanmin([np.nanmin(kdePOSXZ),np.nanmin(kdePOSZY)])
 
     # add a prefac to eps to make sure lowest contour catches it
-    levels_edge = np.round(np.linspace(np.log10(0.9*eps),maxlev_edge,cres),1)
-    levels = np.round(np.linspace(np.log10(0.9*eps),np.max(kdePOSXY),cres),1)
+
+    # fix if the resulting densities are negative
+    levels = np.round(np.linspace(np.log10(0.9*eps),np.nanmax(kdePOSXY),cres),2)
+    levels_edge = np.round(np.linspace(np.log10(0.9*eps),maxlev_edge,cres),2)
+
 
     #print 'Increase factor:',np.max(levels)/np.max(levels_edge)
 
@@ -353,6 +362,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
 
     if 'clevels' in kwargs.keys():
+        # if clevels is specified, override the autoscaling for both edge on and face on
         levels = kwargs['clevels']
 
         if 'edge_factor' in kwargs.keys():
@@ -362,7 +372,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
     if 'overplot' in kwargs.keys():
         fig = plt.gcf()
-
+        
     else:
         fig = plt.figure(figsize=(7.8,7.5))
 
@@ -383,7 +393,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
     ax3 = fig.add_axes([left_edge,bottom_edge+(wfac-1.)*width_share,(wfac-1.)*width_share,width_share])
 
     # the colorbar
-    ax4 = fig.add_axes([right_edge+0.03,bottom_edge,0.02,wfac*width_share])
+    ax4 = fig.add_axes([right_edge+0.01,bottom_edge,0.02,wfac*width_share])
 
         
     # XY
@@ -449,7 +459,7 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
 def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
               # parameters for the plot
-              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.025,slice_width=0.2,cwheel=cm.gnuplot,**kwargs):
+              gridsize=64,cres=24,face_extents=0.06,edge_extents=0.025,slice_width=0.2,cwheel=cm.magma,**kwargs):
     '''
     compare_dumps
         look at two different dumps for direct comparison
@@ -470,18 +480,27 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
 
 
     # do the kde
+    if 'ktype' in kwargs.keys():
+        ktype=kwargs['ktype']
+    else:
+        ktype='gaussian'
+
+    if 'npower' in kwargs.keys():
+        npower=kwargs['npower']
+    else:
+        npower=6.
 
     if (type=='pos'):
 
         kdeX1,kdeY1,XY1,\
           kdeZYz1,kdeZYy1,ZY1,\
           kdeXZx1,kdeXZz1,XZ1,\
-          levels1,levels_edge1 = kde_pos(PSPDump1,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+          levels1,levels_edge1 = kde_pos(PSPDump1,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width,ktype=ktype,npower=npower)
 
         kdeX2,kdeY2,XY2,\
           kdeZYz2,kdeZYy2,ZY2,\
           kdeXZx2,kdeXZz2,XZ2,\
-          levels2,levels_edge2 = kde_pos(PSPDump2,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+          levels2,levels_edge2 = kde_pos(PSPDump2,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width,ktype=ktype,npower=npower)
 
     if ( (type=='Xvel') | (type=='Rvel') |  (type=='Tvel')):
         if (type=='Xvel'):
@@ -498,18 +517,31 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
         kdeX1,kdeY1,XY1,\
               kdeZYz1,kdeZYy1,ZY1,\
               kdeXZx1,kdeXZz1,XZ1,\
-              levels1,levels_edge1 = kde_xvel(PSPDump1,velarr1,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+              levels1,levels_edge1 = kde_xvel(PSPDump1,velarr1,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width,ktype=ktype,npower=npower)
 
         kdeX2,kdeY2,XY2,\
               kdeZYz2,kdeZYy2,ZY2,\
               kdeXZx2,kdeXZz2,XZ2,\
-              levels2,levels_edge2 = kde_xvel(PSPDump2,velarr2,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width)
+              levels2,levels_edge2 = kde_xvel(PSPDump2,velarr2,gridsize=gridsize,cres=cres,face_extents=face_extents,edge_extents=edge_extents,slice_width=slice_width,ktype=ktype,npower=npower)
 
         if (type=='Tvel'): levels1 = levels_edge1 = levels2 = levels_edge2 = np.linspace(0.,np.max(levels),cres)
 
 
 
-    fig = plt.figure(figsize=(14.,7.))
+    #if 'rescale' in kwargs.keys():
+    #    levels_edge1 = levels_edge2 = 
+
+    if 'clevels' in kwargs.keys():
+        # if clevels is specified, override the autoscaling for both edge on and face on
+        levels1 = levels_edge1 = levels2 = levels_edge2 = kwargs['clevels']
+
+
+
+    if 'overplot' in kwargs.keys():
+        fig = plt.gcf()
+
+    else:
+        fig = plt.figure(figsize=(14.,7.))
 
     left_edge = 0.12
     midpoint = 0.47
@@ -534,7 +566,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     ax6 = fig.add_axes([midpoint+midbuffer,                         bottom_edge+(wfac-1.)*width_share_h, (wfac-1.)*width_share_r, width_share_h])
     
     # colorbar
-    ax7 = fig.add_axes([0.89,bottom_edge,0.01,wfac*width_share_h])
+    ax7 = fig.add_axes([0.87,bottom_edge,0.01,wfac*width_share_h])
 
         
     # XY
@@ -596,7 +628,7 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
     ax4.set_yticklabels(())
 
     if 'label2' in kwargs.keys():
-        ax1.text(-0.04,0.04,kwargs['label2'])
+        ax4.text(-0.04,0.04,kwargs['label2'])
     
     for label in ax4.get_xticklabels():
         label.set_rotation(30)
