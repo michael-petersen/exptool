@@ -496,7 +496,7 @@ def run_time(simulation_directory,simulation_name,\
     '''
 
     if verbose:
-        print('exptool.integrate.run_time: in directory {}, run {} at output {}, with transform={}'.format(simulation_directory,simulation_name,intime,transform)
+        print('exptool.integrate.run_time: in directory {}, run {} at output {}, with transform={}'.format(simulation_directory,simulation_name,intime,transform))
 
     F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform)
 
