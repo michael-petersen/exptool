@@ -492,6 +492,35 @@ def run_time(simulation_directory,simulation_name,\
                  verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=True):
     '''
     run_time
+          execute all necessary steps to run an integration grid
+
+
+    inputs
+    ------------------
+    simulation_directory
+    simulation_name
+    eof_file
+    sph_file
+    model_file
+    intime
+    rads
+    vels
+    nint
+    dt
+    no_odd
+    halo_l
+    max_m
+    dyn_res
+    ap_max
+    verbose
+    nprocs=-1
+    omegap=-1.
+    orbitfile=''
+    transform=True
+
+
+    returns
+    ------------------
 
     '''
 
