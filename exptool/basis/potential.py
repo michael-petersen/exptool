@@ -619,7 +619,7 @@ class Fields():
 
     def make_force_grid(self,rline = np.linspace(0.00022,0.1,100),thline = np.linspace(0.00022,2.*np.pi,50)):
         '''
-        make_eof_wake: evaluate a simple grid of points along an axis
+        make_force_grid: evaluate a simple grid of points along an axis
 
         inputs
         ---------
@@ -682,14 +682,20 @@ class Fields():
         wake['R'] = rgrid
         wake['T'] = thgrid
 
-        wake['P'] = (p+pot1).reshape([thline.shape[0],rline.shape[0]])
+        wake['P'] = (p+pot1+p0+pot0).reshape([thline.shape[0],rline.shape[0]])
+        wake['P1'] = (p+pot1).reshape([thline.shape[0],rline.shape[0]])
         wake['D'] = (d+den0+den1).reshape([thline.shape[0],rline.shape[0]])
+        
         wake['tfR'] = (-1.*fr+halo_rforce).reshape([thline.shape[0],rline.shape[0]])
         wake['dfR'] = (-1.*fr).reshape([thline.shape[0],rline.shape[0]])
         wake['hfR'] = halo_rforce.reshape([thline.shape[0],rline.shape[0]])
 
-        wake['fP'] = fp.reshape([thline.shape[0],rline.shape[0]])
-        wake['fZ'] = fz.reshape([thline.shape[0],rline.shape[0]])
+        wake['tfP'] = (fp+potp).reshape([thline.shape[0],rline.shape[0]])
+        wake['dfP'] = fp.reshape([thline.shape[0],rline.shape[0]])
+        wake['hfP'] = potp.reshape([thline.shape[0],rline.shape[0]])
+
+        wake['tfZ'] = fz.reshape([thline.shape[0],rline.shape[0]])
+        wake['dfZ'] = fz.reshape([thline.shape[0],rline.shape[0]])
 
         wake['Rline'] = rline
         wake['Tline'] = thline
@@ -1261,6 +1267,7 @@ def make_rotation(simulation_directory,simulation_name,intime):
 
     '''
 
+    # this restores to the orientation of the saving potential! could be dangerous.
     F = restore_field(simulation_directory+'/potential.'+str(intime)+'.dat')
 
     F.EOF.eof_file = simulation_directory+'/.eof.cache.file'
