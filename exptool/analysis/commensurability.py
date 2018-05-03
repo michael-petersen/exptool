@@ -237,9 +237,33 @@ def make_fishbone(infile):
 
 
 
-def construct_live_fishbones(infile,res=80,percentile=25.):
+def construct_live_fishbones(infile,percentile=25.,particle_limit=0,rads = np.linspace(0.,0.05,80),vels = np.linspace(-0.2,1.6,80)):
     '''
+    construct_live_fishbones
 
+
+
+    inputs
+    ----------------------
+    infile         :              input file with calculated orbit areas
+    percentile     : (default=25)
+    particle_limit : (default=0)  minimum number of particles per bin to consider
+    rads           : (default)
+    vels           : (default)
+
+
+
+    returns
+    ----------------------
+    LF             :              dictionary with keys listed below
+       rr
+       vv
+       min
+       mean
+       med
+       std
+       perc
+       
 
 
     '''
@@ -250,10 +274,8 @@ def construct_live_fishbones(infile,res=80,percentile=25.):
 
     #
     # brute force the binning
-    #
-    rads = np.linspace(0.,0.05,res)
+    #  
     dr = rads[1]-rads[0]
-    vels = np.linspace(-0.2,1.6,res)
     dv = vels[1]-vels[0]
     rr,vv = np.meshgrid(rads,vels)
     
@@ -261,19 +283,20 @@ def construct_live_fishbones(infile,res=80,percentile=25.):
     LF['rr'] = rr
     LF['vv'] = vv
     
-    eps =0.#1.e-10
-    LF['min']  = np.ones([rads.size,vels.size])+eps
-    LF['mean'] = np.ones([rads.size,vels.size])+eps
-    LF['med']  = np.ones([rads.size,vels.size])+eps
-    LF['std']  = np.ones([rads.size,vels.size])+eps
-    LF['quar'] = np.ones([rads.size,vels.size])+eps
+    LF['min']  = np.ones([rads.size,vels.size])
+    LF['mean'] = np.ones([rads.size,vels.size])
+    LF['med']  = np.ones([rads.size,vels.size])
+    LF['std']  = np.ones([rads.size,vels.size])
+    LF['perc'] = np.ones([rads.size,vels.size])
 
 
     for rindx,rad in enumerate(rads):
         for vindx,vel in enumerate(vels):
+
+            # calculate particles in a given bin
             w = np.where( (np.abs(E[:,0] - rad) < dr) & (np.abs(E[:,1] - vel) < dv))
-            #print(len(w[0]))
-            if len(w[0]) > 0:
+
+            if len(w[0]) > particle_limit:
                 LF['min'][rindx,vindx]  = np.min(AA[w])
                 LF['mean'][rindx,vindx] = np.mean(AA[w])
                 LF['med'][rindx,vindx]  = np.median(AA[w])
@@ -281,7 +304,7 @@ def construct_live_fishbones(infile,res=80,percentile=25.):
                 
                 arr_aa = AA[w][AA[w].argsort()]
                 quartile = int(np.floor(len(w[0])*float(percentile/100.)))
-                LF['quar'][rindx,vindx] = arr_aa[quartile]
+                LF['perc'][rindx,vindx] = arr_aa[quartile]
 
     return LF
 

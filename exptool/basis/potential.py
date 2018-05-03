@@ -25,8 +25,16 @@
 potential (part of exptool.basis)
     construct instances that are combinations of different components
 
+
+
+TODO:
+1. add support for energy/kappa dimensionality conversion
+
+
+
 '''
 
+# python3 compatibility...
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 
@@ -624,8 +632,8 @@ class Fields():
         inputs
         ---------
         self   : Fields instance
-        rline  :
-        thline :
+        rline  : spacing in radius to probe
+        thline : spacing in theta to probe
         
         returns
         ---------
