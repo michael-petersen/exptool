@@ -79,6 +79,7 @@ from shutil import copyfile
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from collections import OrderedDict
+import matplotlib as mpl
 
 
 # exptool definitions
@@ -2211,11 +2212,11 @@ def read_binary_eof_coefficients_dict(coeffile):
 
 def quick_plot_coefs(coeffile,label=''):
 
-    EOF2Dict = eof.read_binary_eof_coefficients_dict(coeffile)
+    EOF2Dict = read_binary_eof_coefficients_dict(coeffile)
 
-    DC = eof.reorganize_eof_dict(EOF2Dict)
+    DC = reorganize_eof_dict(EOF2Dict)
 
-    DCp = eof.calculate_eof_phase(EOF2Dict)
+    DCp = calculate_eof_phase(EOF2Dict)
 
 
     
