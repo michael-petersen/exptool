@@ -2209,4 +2209,50 @@ def read_binary_eof_coefficients_dict(coeffile):
 
 
 
-  
+def quick_plot_coefs(coeffile,label=''):
+
+    EOF2Dict = eof.read_binary_eof_coefficients_dict(coeffile)
+
+    DC = eof.reorganize_eof_dict(EOF2Dict)
+
+    DCp = eof.calculate_eof_phase(EOF2Dict)
+
+
+    
+    fig = plt.figure(figsize=(12.0875,   5.8875))
+
+    ax = fig.add_axes([0.18,0.55,0.6,0.3])
+    ax2 = fig.add_axes([0.18,0.22,0.6,0.3])
+
+    ax3 = fig.add_axes([0.81,0.22,0.02,0.63])
+
+
+
+    for mm in range(EOF2Dict[0].mmax,0,-1):
+        ax.plot(DC['time'],np.log10((DC['sum'][mm]**0.5)/(DC['sum'][0]**0.5)),color=cm.gnuplot(float(mm-1)/float(EOF2Dict[0].mmax-1),1.))
+        ax2.plot(DCp['time'],DCp['speed'][mm][:,0]/float(mm),color=cm.gnuplot(float(mm-1)/float(EOF2Dict[0].mmax-1),1.))
+
+
+
+    maxt = np.max(DC['time'])
+    ax2.axis([0.0,maxt,0.0,120.])
+    ax.axis([0.0,maxt,-2.8,-.4])
+
+    ax.set_xticklabels(())
+    ax.set_ylabel('log m$_\mu$/m$_0$\nAmplitude',size=18)
+    ax2.set_xlabel('Time',size=18)
+    ax2.set_ylabel('m$_\mu$\nPattern Speed',size=18)
+
+    ax.set_title(label)
+
+    #for label in ax.get_xticklabels(): label.set_rotation(30); label.set_horizontalalignment("right")
+
+    cmap = mpl.cm.gnuplot
+    norm = mpl.colors.BoundaryNorm(boundaries=np.arange(1,len(DC['sum'].keys())+1,1), ncolors=256)
+    cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
+    cb1.set_label('Azimuthal Order, $\mu$',size=24)
+    cb1.set_ticks(np.arange(1,len(DC['sum'].keys()),1)+0.5)
+    cb1.set_ticklabels([str(x) for x in np.arange(1,len(DC['sum'].keys()),1)])
+
+
+    
