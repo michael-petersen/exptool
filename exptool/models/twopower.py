@@ -17,6 +17,7 @@ twopower (part of exptool.models)
 
 R,D,M,P,DP = twopower.gen_model(200.,0.0025,0.0,rtarget=0.005,alpha=1.,beta=4.,rtrunc=0.01,wtrunc=0.2,rmax=0.1)
 
+twopower.write_model(outputfile,R,D,M,P)
 
 '''
 from __future__ import absolute_import, division, print_function, unicode_literals
