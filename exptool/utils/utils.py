@@ -89,39 +89,46 @@ def resample(x,y,new_x,sord=0):
 
 
 def normalhist(array,nbins,colorst='black'):
-    #
-    # quick and dirty normalized histogram
-    #
+    '''
+    
+     quick and dirty normalized histogram
+    
+    '''
+    
 	bins = np.linspace(np.min(array),np.max(array),nbins)
 	binsind  = bins+(0.5*(bins[1]-bins[0]))
 	array_out = np.zeros(nbins)
-	for i in range(0,len(array)):
-		binn = np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
-		array_out[binn] += 1
-	array_out /= (sum(array_out))
-	plt.plot(binsind,array_out,color=colorst,linewidth=2.0,drawstyle='steps-mid')
-	plt.draw()
+
+    for i in range(0,len(array)):
+        binn = np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
+        array_out[binn] += 1
+
+    array_out /= (sum(array_out))
+
+    #plt.plot(binsind,array_out,color=colorst,linewidth=2.0,drawstyle='steps-mid')
+	#plt.draw()
     
 
-    
 def binnormalhist(array,bins,weights=None):
     '''
     binnormalhist
          return the 1d histogram given bins and a 1d array (plus optional weighting array)
     '''
+    
     if weights==None:
         weights = np.ones(len(array))
-    #
-    #print weights
+    
     binsind = bins+(0.5*(bins[1]-bins[0]))
     array_out = np.zeros(len(bins))
+    
     for i in range(0,len(array)):
-	binn = int(np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) ))
-        #
-        if ((binn >= 0) & (binn < len(bins)) ):
-            array_out[binn] += weights[i]
+	binn = int(np.floor( (array[i]-bins[0])/(bins[1]-bins[0])))
+    
+    if ((binn >= 0) & (binn < len(bins)) ):
+        array_out[binn] += weights[i]
+        
     array_out /= (sum(array_out))
-    # 
+
     return array_out
 
 
