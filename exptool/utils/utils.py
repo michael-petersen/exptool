@@ -91,13 +91,13 @@ def resample(x,y,new_x,sord=0):
 def normalhist(array,nbins,colorst='black'):
     '''
     
-     quick and dirty normalized histogram
+    quick and dirty normalized histogram
     
     '''
-    
-	bins = np.linspace(np.min(array),np.max(array),nbins)
-	binsind  = bins+(0.5*(bins[1]-bins[0]))
-	array_out = np.zeros(nbins)
+
+    bins = np.linspace(np.min(array),np.max(array),nbins)
+    binsind  = bins+(0.5*(bins[1]-bins[0]))
+    array_out = np.zeros(nbins)
 
     for i in range(0,len(array)):
         binn = np.floor( (array[i]-bins[0])/(bins[1]-bins[0]) )
@@ -122,10 +122,10 @@ def binnormalhist(array,bins,weights=None):
     array_out = np.zeros(len(bins))
     
     for i in range(0,len(array)):
-	binn = int(np.floor( (array[i]-bins[0])/(bins[1]-bins[0])))
+        binn = int(np.floor( (array[i]-bins[0])/(bins[1]-bins[0])))
     
-    if ((binn >= 0) & (binn < len(bins)) ):
-        array_out[binn] += weights[i]
+        if ((binn >= 0) & (binn < len(bins)) ):
+            array_out[binn] += weights[i]
         
     array_out /= (sum(array_out))
 
@@ -411,7 +411,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
         window_size = np.abs(np.int(window_size))
         order = np.abs(np.int(order))
-    except ValueError, msg:
+    except:# ValueError, msg:
         raise ValueError("window_size and order have to be of type int")
     
     if window_size % 2 != 1 or window_size < 1:
