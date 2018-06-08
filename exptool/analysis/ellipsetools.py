@@ -32,58 +32,59 @@ from scipy.optimize import curve_fit
 import matplotlib.cm as cm
 
 
-
-#
-# ellipse definitions for fitting
-#
-
-def gen_ellipse(th,a,b,c):
+class buildEllipse():
     '''
-    returns generalized ellipse in polar coordinates
-
-    for bar determination following Athanassoula 1990
-
+    ellipse definitions for fitting
     '''
-    xcomp = ( abs(np.cos(th))**c) / a**c
-    ycomp = ( abs(np.sin(th))**c) / b**c
-    gell =  ( (xcomp + ycomp) )**(-1./c)
-    return gell
+
+    def __init__(self):
+
+        pass
+
+    
+    
+    def gen_ellipse(self,th,a,b,c):
+        '''
+        returns generalized ellipse in polar coordinates
+
+        for bar determination following Athanassoula 1990
+
+        '''
+        xcomp = ( abs(np.cos(th))**c) / a**c
+        ycomp = ( abs(np.sin(th))**c) / b**c
+        gell =  ( (xcomp + ycomp) )**(-1./c)
+        return gell
+
+    def fixed_ellipse(self,th,a,b):
+        '''
+        returns c=2 ellipse in polar coordinates
 
 
-
-def fixed_ellipse(th,a,b):
-    '''
-    returns c=2 ellipse in polar coordinates
-
-
-    '''
-    xcomp = (( abs(np.cos(th))**2.0) / a**2.0 ) 
-    ycomp = (( abs(np.sin(th))**2.0) / b**2.0 ) 
-    gell =  ( (xcomp + ycomp) )**(-1./2.0)
-    return gell
+        '''
+        xcomp = (( abs(np.cos(th))**2.0) / a**2.0 ) 
+        ycomp = (( abs(np.sin(th))**2.0) / b**2.0 ) 
+        gell =  ( (xcomp + ycomp) )**(-1./2.0)
+        return gell
 
 
-
-
-def inside_ellipse(X,Y,A,B,C,rot=0.):
-    '''
-    inside_ellipse
+    def inside_ellipse(self,X,Y,A,B,C,rot=0.):
+        '''
+        inside_ellipse
         determine whether a set of points is inside of an ellipse
     
-    # only tests in first quadrant for power safety
+        # only tests in first quadrant for power safety
 
 
 
-    '''
-    rX,rY = X*np.cos(rot)-Y*np.sin(rot),-X*np.sin(rot)-Y*np.cos(rot)
-    ellipse_radius = ((abs(rX)/A)**C + (abs(rY)/B)**C)
-    yes_ellipse = np.where(ellipse_radius < 1.0)[0]
-    ellipse_array = np.zeros(len(X))
-    ellipse_array[yes_ellipse] = 1
-    return ellipse_array
-    #if ((abs(X)/A)**C + (abs(Y)/B)**C) < 1.0 : return 1
-    #else: return 0
+        '''
+        rX,rY = X*np.cos(rot)-Y*np.sin(rot),-X*np.sin(rot)-Y*np.cos(rot)
 
+        ellipse_radius = ((abs(rX)/A)**C + (abs(rY)/B)**C)
+
+        yes_ellipse = np.where(ellipse_radius < 1.0)[0]
+        ellipse_array = np.zeros(len(X))
+        ellipse_array[yes_ellipse] = 1
+        return ellipse_array
 
 
 
@@ -98,7 +99,8 @@ class genEllipse:
     #
 
     '''
-    def fitEllipse(self,O,theta_resolution=200,resolution=256,rmax=0.1,loggy=False,generalize=True,weights=None,ncbins=50,contourlevels=[None],SN=1.):
+    def fitEllipse(self,PSPInput,
+                       theta_resolution=200,resolution=256,rmax=0.1,loggy=False,generalize=True,weights=None,ncbins=50,contourlevels=[None],SN=1.,verbose=0):
         # here, I have made the input a PSP call...but this could be generalized better.
         
         #
@@ -109,18 +111,18 @@ class genEllipse:
         kde_weights = None
         
         if weights=='normalized':
-            kde_weights = O.mass/np.median(O.mass)
+            kde_weights = PSPInput.mass/np.median(PSPInput.mass)
 
         if weights=='mass':
-            kde_weights = O.mass
+            kde_weights = PSPInput.mass
 
-        extent = np.max([abs(O.xpos),abs(O.ypos)])
+        extent = np.max([abs(PSPInput.xpos),abs(PSPInput.ypos)])
 
         desired_resolution = (2.*rmax)/resolution
 
         grid_size = int(np.ceil( (2.*extent)/desired_resolution))
 
-        tmp_posarr = kde_3d.fast_kde_two(O.xpos, O.ypos, gridsize=(grid_size,grid_size), extents=[-extent,extent,-extent,extent], nocorrelation=False, weights=kde_weights)
+        tmp_posarr = kde_3d.fast_kde_two(PSPInput.xpos, PSPInput.ypos, gridsize=(grid_size,grid_size), extents=[-extent,extent,-extent,extent], nocorrelation=False, weights=kde_weights)
 
         tmp_xarr,tmp_yarr = np.meshgrid( np.linspace(-extent,extent,grid_size),np.linspace(-extent,extent,grid_size))
 
@@ -226,7 +228,8 @@ class genEllipse:
 
                 else:
 
-                    print('ellipse_tools.fitEllipse: Rejected for SN.')
+                    if verbose:
+                        print('ellipse_tools.fitEllipse: Rejected for SN.')
 
         # trim the extras
         self.R = self.R[0:k]
@@ -304,23 +307,33 @@ class genEllipse:
 
 
 
-def ellip_drop(A,B,drop=0.4):
+
+
+class measureEllipse(object):
     '''
-    given a list of axis lengths, calculate the length of the bar based on some specified ellipticity drop
+    collected definitions to measure the length of an ellipse
+
 
     '''
-    found = False
-    j = 2
-    while found==False:
-        d = (1.-B[j-1]/A[j-1]) - (1.-B[j]/A[j])
-        if d > drop:
-            found = True
-            print('INDEX VALUE is {0:d}'.format(j-1))
-        j += 1
-        if j==len(A):
-            found = True
-            j=2
-    return A[j-2]
+
+    @staticmethod
+    def ellip_drop(A,B,drop=0.4):
+        '''
+        given a list of axis lengths, calculate the length of the bar based on some specified ellipticity drop
+
+        '''
+        found = False
+        j = 2
+        while found==False:
+            d = (1.-B[j-1]/A[j-1]) - (1.-B[j]/A[j])
+            if d > drop:
+                found = True
+                print('INDEX VALUE is {0:d}'.format(j-1))
+            j += 1
+            if j==len(A):
+                found = True
+                j=2
+        return A[j-2]
 
 
 
