@@ -11,6 +11,27 @@ ellipse_tools.py: part of exptool
 
 
 
+# basic use: do ellipse fits to find the bar position angle
+
+simulation_directory = '/scratch/mpetersen/Disk004/'
+simulation_name = 'run004'
+
+phase = np.zeros(2000)
+tt = np.zeros(2000)
+for i in range(000,2000):
+    O1 = psp_io.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %i,comp='star')
+    #P1 = pattern.BarTransform(O1)
+    T1 = ellipsetools.genEllipse()
+    T1.fitEllipse(O1,rmax=0.05,loggy=True,generalize=False,resolution=61,ncbins=121,weights='mass',SN=100)
+    #
+    e = (1.-T1.B/T1.A)
+    phase[i] = T1.ANG[ np.where(np.max(e)==e)[0]]
+    tt[i] = O1.time
+    print O1.time,phase[i]
+
+
+
+
 
                                                            
 '''
@@ -32,18 +53,13 @@ from scipy.optimize import curve_fit
 import matplotlib.cm as cm
 
 
-class buildEllipse():
+class Ellipse():
     '''
     ellipse definitions for fitting
     '''
 
-    def __init__(self):
-
-        pass
-
-    
-    
-    def gen_ellipse(self,th,a,b,c):
+    @staticmethod
+    def free_ellipse(th,a,b,c):
         '''
         returns generalized ellipse in polar coordinates
 
@@ -55,7 +71,9 @@ class buildEllipse():
         gell =  ( (xcomp + ycomp) )**(-1./c)
         return gell
 
-    def fixed_ellipse(self,th,a,b):
+    
+    @staticmethod
+    def fixed_ellipse(th,a,b):
         '''
         returns c=2 ellipse in polar coordinates
 
@@ -67,7 +85,8 @@ class buildEllipse():
         return gell
 
 
-    def inside_ellipse(self,X,Y,A,B,C,rot=0.):
+    @staticmethod
+    def inside_ellipse(X,Y,A,B,C,rot=0.):
         '''
         inside_ellipse
         determine whether a set of points is inside of an ellipse
@@ -776,3 +795,151 @@ class EllipseFinder():
 
 '''
 
+
+# more linear algebra based ellipse tools
+from numpy import linalg as LA
+
+import time
+
+def principal_axes(I):
+    """
+    Returns the principal moments of inertia and the orientation.
+    Parameters
+    ----------
+    I : ndarray, shape(3,3)
+        An inertia tensor.
+    Returns
+    -------
+    Ip : ndarray, shape(3,)
+        The principal moments of inertia. This is sorted smallest to largest.
+    C : ndarray, shape(3,3)
+        The rotation matrix.
+    """
+    Ip, C = np.linalg.eig(I)
+    indices = np.argsort(-Ip)
+    Ip = Ip[indices]
+    C = C.T[indices]
+    return Ip, C
+
+
+
+def euler_angles(rotation_matrix):
+    '''
+    return the corresponding Euler angles from a rotation matrix
+
+    '''
+    theta_x = np.arctan2(rotation_matrix[2,1],rotation_matrix[2,2])
+
+    theta_y = -1.*arcsin(rotation_matrix[2,0])
+
+    theta_z = np.arctan2(rotation_matrix[1,0],rotation_matrix[0,0])
+
+    return theta_x,theta_y,theta_z
+
+
+
+def make_inertia_tensor(POINTS,WEIGHTS,q,s): # points must be pre-rotated
+    INERT = np.zeros([3,3])
+    for i in range(0,len(POINTS)):
+        R2 = POINTS[i][0]**2. + (POINTS[i][1]/q)**2. + (POINTS[i][2]/s)**2.
+        for j in range(0,3):
+            for k in range(0,3):
+                INERT[j,k] += (POINTS[i][j]*POINTS[i][k]*WEIGHTS[i])/R2
+    return INERT
+
+
+def find_axial_ratios(POINTS,MASSES,tol=0.005):
+    qq = []
+    ss = []
+    # initial step
+    q = 1.
+    s = 1.
+    qdiff = 1.
+    sdiff = 1.
+    qq.append(q)
+    ss.append(s)
+    INERT = make_inertia_tensor(POINTS,MASSES,q,s)
+    eigenvalues,eigenvectors = principal_axes(INERT)
+    POINTSROT = np.dot(POINTS,eigenvectors.T)
+    #for i in range(0,nsteps):
+    while (qdiff > tol) | (sdiff > tol):
+        t1 = time.time()
+        q = eigenvalues[1]/eigenvalues[0]
+        qq.append(q)
+        s = eigenvalues[2]/eigenvalues[0]
+        ss.append(s)
+        INERT2 = make_inertia_tensor(POINTSROT,MASSES,q,s)
+        eigenvalues,eigenvectors = principal_axes(INERT2)
+        POINTSROT = np.dot(POINTSROT,eigenvectors.T)
+        qdiff = abs(eigenvalues[1]/eigenvalues[0] - q)
+        sdiff = abs(eigenvalues[2]/eigenvalues[0] - s)
+        print 'Time elapsed . . . %s seconds, larger tolerance at %s' % (np.round(time.time()-t1,2),np.round( np.max([qdiff,sdiff]),4))
+    return np.array(qq),np.array(ss)
+
+
+
+
+def select_particles(R,XPOS,YPOS,ZPOS,MASS,rlim):    
+    rgood = np.where(R<rlim)[0]
+    POINTS = np.array([XPOS[rgood],YPOS[rgood],ZPOS[rgood]]).T
+    MASSES = MASS[rgood]
+    return POINTS,MASSES
+
+
+
+'''
+#temporary example
+
+
+t_to_check = np.arange(0,1200,50)
+r_to_check = 10.**(np.linspace(-2.3,-1.,20))
+
+QQ = np.zeros([len(r_to_check),len(t_to_check)])
+SS = np.zeros([len(r_to_check),len(t_to_check)])
+
+
+for t,tval in enumerate(t_to_check):
+    print 'The time is ',tval
+    infile = '/scratch/mpetersen/Disk064a/OUT.run064a.%05i' %tval
+    O = psp_io.Input(infile,comp='dark',nout=1000000)
+    for i,val in enumerate(r_to_check):
+        R = (O.xpos**2.+O.ypos**2.+O.zpos**2.)**0.5
+        print 'At radius r=%s now, %s of %s' % (np.round(val,4),i+1,len(r_to_check))
+        P,M = select_particles(R,O.xpos,O.ypos,O.zpos,O.mass,val)
+        Q,S = find_axial_ratios(P,M,tol=0.005)
+        QQ[i,t] = Q[-1]
+        SS[i,t] = S[-1]
+
+
+
+
+f = open('/scratch/mpetersen/Disk064e/axial_ratios.dat','wb')
+
+np.array([len(r_to_check),len(t_to_check)],dtype='i').tofile(f)
+np.array(r_to_check,dtype='f').tofile(f)
+np.array(t_to_check,dtype='f').tofile(f)
+np.array(QQ.reshape(-1,),dtype='f').tofile(f)
+np.array(SS.reshape(-1,),dtype='f').tofile(f)
+
+f.close()
+
+
+#
+# read axial ratios back in
+#
+axial_ratio_file = '/scratch/mpetersen/Disk064a/axial_ratios.dat'
+
+[rlen,tlen] = np.memmap(axial_ratio_file,dtype='i',shape=(2))
+rvals = np.memmap(axial_ratio_file,dtype='f',offset=8,shape=(rlen))
+tvals = np.memmap(axial_ratio_file,dtype='f',offset=(8+4*rlen),shape=(tlen))
+QQ = np.memmap(axial_ratio_file,dtype='f',shape=(rlen,tlen),offset = (8 + 4*(tlen+rlen)))
+SS = np.memmap(axial_ratio_file,dtype='f',shape=(rlen,tlen),offset = (8 + 4*(tlen+rlen+(rlen*tlen))))
+
+
+plt.figure(1)
+for i in range(0,24):
+    plt.plot(r_to_check,SS[:,i],color=cm.gnuplot(i/23.,1.))
+
+
+    
+'''
