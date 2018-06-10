@@ -873,7 +873,7 @@ def find_axial_ratios(POINTS,MASSES,tol=0.005):
         POINTSROT = np.dot(POINTSROT,eigenvectors.T)
         qdiff = abs(eigenvalues[1]/eigenvalues[0] - q)
         sdiff = abs(eigenvalues[2]/eigenvalues[0] - s)
-        print 'Time elapsed . . . %s seconds, larger tolerance at %s' % (np.round(time.time()-t1,2),np.round( np.max([qdiff,sdiff]),4))
+        print('Time elapsed . . . {0:5.2f} seconds, larger tolerance at {1:5.4f}'.format(np.round(time.time()-t1,2),np.round( np.max([qdiff,sdiff]),4)))
     return np.array(qq),np.array(ss)
 
 
@@ -899,7 +899,7 @@ SS = np.zeros([len(r_to_check),len(t_to_check)])
 
 
 for t,tval in enumerate(t_to_check):
-    print 'The time is ',tval
+    print('The time is ',tval)
     infile = '/scratch/mpetersen/Disk064a/OUT.run064a.%05i' %tval
     O = psp_io.Input(infile,comp='dark',nout=1000000)
     for i,val in enumerate(r_to_check):

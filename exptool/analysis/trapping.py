@@ -352,7 +352,7 @@ def reduce_aps_dictionary(TrappingInstance,norb):
 
 
 
-def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
+def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
     '''
     #
     # robust kmeans implementation
@@ -366,6 +366,7 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
     indx             : a designation of the orbit, for use with multiprocessing
     k                : the number of clusters
     maxima           : calculate average (if False) or maximum (if True) quantities
+    mad              : toggle median absolute deviation calculation
 
 
     returns
@@ -389,17 +390,31 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
         
         # these may be better served as maxima
         if ~maxima:
-            clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
-            clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
-        
-            # mean cluster center in the x dimension (preferred trapping direction).
+
+            if ~mad:
+                clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+                clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+            
+            else:
+                # median absolute deviation implementation to check
+                clusterstd_x = np.mean([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[0]\
+                                            for i in range(0,k)])
+                clusterstd_y = np.mean([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[1]\
+                                            for i in range(0,k)])
+            
             clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
         else:
-            clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
-            clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
-        
-            # maximum x dimension extent for cluster center (not sensitive to non-bar)
+            if ~mad:
+                clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+                clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+            
+            else:
+                clusterstd_x = np.max([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[0]\
+                                            for i in range(0,k)])
+                clusterstd_y = np.max([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[1]\
+                                            for i in range(0,k)])
+            
             clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
         theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
@@ -414,13 +429,31 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False):
         try:
 
             if ~maxima:
-                clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
-                clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+
+                if ~mad:
+                    clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+                    clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+
+                else:
+                    # median absolute deviation implementation to check
+                    clusterstd_x = np.mean([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[0]\
+                                            for i in range(0,k)])
+                    clusterstd_y = np.mean([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[1]\
+                                            for i in range(0,k)])
+
                 clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
             else:
-                clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
-                clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+                if ~mad:
+                    clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
+                    clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
+
+                else:
+                    clusterstd_x = np.max([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[0]\
+                                            for i in range(0,k)])
+                    clusterstd_y = np.max([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[1]\
+                                            for i in range(0,k)])
+                
                 clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
             theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
@@ -472,6 +505,8 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
                           sbuffer=20,\
                           t_thresh=1.5,\
                           maxima=False,\
+                          mad=False,\
+                          k=2,\
                           verbose=1): 
     '''
     do_single_kmeans_step: analyze a desired time in the trapping dictionary
@@ -553,7 +588,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         X = transform_aps(TrappingInstanceDict[indx],BarInstance)
 
         # do k-means
-        theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],maxima=maxima)
+        theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],k=k,maxima=maxima,mad=mad)
 
         if kmeans_plus_flag == 1: sent_to_kmeans_plus += 1
 
@@ -588,7 +623,10 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                    sbuffer=20,\
                    t_thresh=1.5,\
                    criteria = {},\
-                   verbose=0):
+                   verbose=0,\
+                   maxima=False,\
+                   mad=False,\
+                       k=2):
     '''
     do_kmeans_dict : single processor version of orbit computation
 
@@ -666,7 +704,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                 continue
             
             # compute the clustering
-            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx)
+            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx,k=k,maxima=maxima,mad=mad)
             
             # check time boundaries
             if midpoint==0: # first step
@@ -714,7 +752,8 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         # set up nyquist frequency limit
         nyquist = 1./(4.*(BarInstance.time[1]-BarInstance.time[0]))
         
-        
+
+        # hard-code in the metrics that we use. this should be modified to accept various inputs.
         metric = [theta_func(BarInstance.time),\
                   frequency_func(BarInstance.time),\
                  sigmax_func(BarInstance.time),\
@@ -786,7 +825,9 @@ def multi_compute_trapping(holding,nprocs,BarInstance,\
                    sbuffer=20,\
                    t_thresh=1.5,\
                    criteria={},\
-                   verbose=0):
+                   verbose=0,\
+                    maxima=False,\
+                               mad=False):
                    
     pool = Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
@@ -797,8 +838,11 @@ def multi_compute_trapping(holding,nprocs,BarInstance,\
     
     sixth_arg = [0 for i in range(0,nprocs)]
     sixth_arg[0] = verbose
+
+    seventh_arg = maxima
+    eighth_arg = mad
     
-    a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg))
+    a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg,itertools.repeat(seventh_arg),itertools.repeat(eighth_arg)))
     
     # clean up to exit
     pool.close()
@@ -812,7 +856,9 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    sbuffer=20,\
                    t_thresh=1.5,\
                    criteria={},\
-                   verbose=0):
+                   verbose=0,\
+                        maxima=False,\
+                        mad = False):
     
     nprocs = multiprocessing.cpu_count()
     holding = redistribute_aps(TrappingInstanceDict,nprocs)
@@ -827,7 +873,9 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    sbuffer=sbuffer,\
                    t_thresh=t_thresh,\
                    criteria=criteria,\
-                   verbose=verbose)
+                   verbose=verbose,\
+                                                 maxima=maxima,\
+                                                 mad=mad)
                    
     print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
 
