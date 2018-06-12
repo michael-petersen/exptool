@@ -40,8 +40,11 @@ from exptool.io import psp_io
 
 
 # pull in C routines
-from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
 
+try:
+    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
+except:
+    from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r
 
 
 # special math imports
@@ -75,9 +78,9 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, s
     # needs the potential table to be defined
     #
     numr = d0.shape[0]
-    dens_mat = np.zeros([lmax+1,nmax+1])
-    pot_mat = np.zeros([lmax+1,nmax+1])
-    force_mat = np.zeros([lmax+1,nmax+1])
+    dens_mat = np.zeros([lmax+1,nmax])
+    pot_mat = np.zeros([lmax+1,nmax])
+    force_mat = np.zeros([lmax+1,nmax])
 
     x = r_to_xi(x,cmap,scale);
     
@@ -102,7 +105,7 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, s
     
     for l in range(0,lmax+1):
 
-        for n in range(1,nmax+1):
+        for n in range(0,nmax):
         
             dens_mat[l][n] = (x1*eftable[l][n][indx] + x2*eftable[l,n,indx+1])*np.sqrt(evtable[l,n]) * (x1*d0[indx] + x2*d0[indx+1]);
 
@@ -124,7 +127,7 @@ def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap, scale):#, int w
     # needs the potential table to be defined
     #
     numr = len(d0)
-    mat = np.zeros([lmax+1,nmax+1])
+    mat = np.zeros([lmax+1,nmax])
     #if (which || !cmap):
     x = r_to_xi(x,cmap,scale);
     #
@@ -143,7 +146,7 @@ def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap, scale):#, int w
     x2 = (x - xi[indx])/(dxi);
     for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
         #print x1,x2
-        for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
+        for n in range(0,nmax): #(int n=1; n<=nmax; n++) {
             mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])*np.sqrt(evtable[l,n]) * (x1*d0[indx] + x2*d0[indx+1]);
     return mat
 
@@ -159,11 +162,11 @@ def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
 
     returns
     --------
-    mat     :   (lmax+1,nmax+1) matrix of halo forces
+    mat     :   (lmax+1,nmax) matrix of halo forces
 
     '''
     numr = p0.shape[0]
-    mat = np.zeros([lmax+1,nmax+1])
+    mat = np.zeros([lmax+1,nmax])
     
     x = r_to_xi(x,cmap,scale);
     
@@ -186,7 +189,7 @@ def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
     
     for l in range(0,lmax+1):
         
-        for n in range(1,nmax+1):
+        for n in range(0,nmax):
             
             mat[l][n] = fac * ((p - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*p*eftable[l,n,indx]*p0[indx] + (p + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l,n]);
 
@@ -239,9 +242,10 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x - xi[indx])/(dxi);
     
-    pot_mat = np.zeros([lmax+1,nmax+1])
-    force_mat = np.zeros([lmax+1,nmax+1])
+    pot_mat = np.zeros([lmax+1,nmax])
+    force_mat = np.zeros([lmax+1,nmax])
 
+    # trapezoidal rule solve for the potential
     pot_mat = (x1*eftable[:,:,indx] + x2*eftable[:,:,indx+1])/np.sqrt(evtable[:,:]) * (x1*p0[indx] + x2*p0[indx+1]);
 
     if indx == 0:
@@ -249,22 +253,9 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
         force_mat = fac * ((x2 - 0.5)*eftable[:,:,0]*p0[0] - 2.0*x2*eftable[:,:,1]*p0[1] + (x2 + 0.5)*eftable[:,:,2]*p0[2]) / np.sqrt(evtable);
 
     else:
-        force_mat = fac * ((x2 - 0.5)*eftable[:,:,indx-1]*p0[indx-1] - 2.0*x2*eftable[:,:,indx]*p0[indx] + (x2 + 0.5)*eftable[:,:,indx+1]*p0[indx+1]) / np.sqrt(evtable);
+        force_mat = fac * ((x2 - 0.5)*eftable[:,:,indx-1]*p0[indx-1] - 2.0*x2*eftable[:,:,indx]*p0[indx] + (x2 + 0.5)*eftable[:,:,indx+1]*p0[indx+1]) / np.sqrt(evtable)
 
     
-    #for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
-        
-        #for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
-            
-            #pot_mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
-
-            #if indx == 0:
-                # do a forced advance of the indx by one if running into the edge
-            #    force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,0]*p0[0] - 2.0*x2*eftable[l,n,1]*p0[1] + (x2 + 0.5)*eftable[l,n,2]*p0[2]) / np.sqrt(evtable[l][n]);
-            #else:
-            #    force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*x2*eftable[l,n,indx]*p0[indx] + (x2 + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l][n]);
-
-            
     return pot_mat,force_mat
 
 
@@ -298,16 +289,11 @@ def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x -   xi[indx])/(dxi);
     
-    mat = np.zeros([lmax+1,nmax+1])
+    mat = np.zeros([lmax+1,nmax])
 
     mat = (x1*eftable[:,:,indx] + x2*eftable[:,:,indx+1])/np.sqrt(evtable) * (x1*p0[indx] + x2*p0[indx+1]);
     
-    #for l in range(0,lmax+1): #(int l=0; l<=lmax; l++) {
-        
-        #for n in range(1,nmax+1): #(int n=1; n<=nmax; n++) {
-            
-            #mat[l,n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
-            
+
     return mat
 
 
@@ -335,8 +321,8 @@ def get_halo_pot(x, l, n, evtable, eftable, xi, p0, cmap, scale):#, int which):
     if (indx>numr-2): indx = numr - 2;
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x - xi[indx])/(dxi);
+    
     return (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
-    #return (x1*table[l].ef[n][indx] + x2*table[l].ef[n][indx+1])/sqrt(table[l].ev[n]) * sphpot(xi_to_r(x));
 
 
 
@@ -387,13 +373,25 @@ def multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=1,no_odd
     fourth_arg = [0 for i in range(0,nprocs)]
     fourth_arg[0] = verbose
     fifth_arg = no_odd
-    a_coeffs = pool.map(compute_coefficients_solitary_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+
+    # hack our way to python 2/3 compatibility
+    try:
+        a_coeffs = pool.map(compute_coefficients_solitary_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                            fourth_arg,itertools.repeat(fifth_arg)))
+    except:
+        a_coeffs = pool.map(compute_coefficients_solitary_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+                                                                           fourth_arg,itertools.repeat(fifth_arg)))
+                                                                           
+                                                                           
     pool.close()
     pool.join()
     return a_coeffs
 
 
+
+# NOTE:
+# if python2/python3 compatibility is desired here, need to have itertools.izip AND zip versions
+# see http://www.diveintopython3.net/porting-code-to-python-3-with-2to3.html
 
 def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
 
@@ -446,8 +444,10 @@ def multi_all_eval_particles(holding,nprocs,expcoef,sph_file,mod_file,verbose):
     fourth_arg = mod_file
     fifth_arg = [0 for i in range(0,nprocs)]
     fifth_arg[0] = verbose
-    a_vals = pool.map(all_eval_particles_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg)\
+    
+    a_vals = pool.map(all_eval_particles_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg)\
                                                               ,itertools.repeat(fourth_arg),fifth_arg))
+                                                              
     pool.close()
     pool.join()
     return a_vals
@@ -465,8 +465,11 @@ def eval_particles(ParticleInstance,expcoef,sph_file,mod_file,nprocs=-1,verbose=
         #
         if (verbose):
             print('sl.eval_particles: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
+
+        # this doesn't handle l1/l2
         a_vals = multi_all_eval_particles(holding,nprocs,expcoef,sph_file,mod_file,verbose)
         #
+        
         if (verbose):
             print('spheresl.eval_particles: particle Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
         # sum over processes
@@ -517,18 +520,32 @@ def mix_outputs_sph(MultiOutput):
 
 
 def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0,no_odd=False):
-    #
-    # follows compute_coefficients from EXP's SphereSL.cc
-    #
-    #    this is the workhorse that does the accumulation.
-    # 
-    #
+    '''
+    
+     follows compute_coefficients from EXP's SphereSL.cc (see also SphericalBasis.cc)
+    
+        this is the workhorse that does the accumulation.
+     
+
+    inputs
+    -----------------
+
+
+
+    returns
+    ----------------
+    expcoef               : (matrix, (lmax)*(lmax+2)+1 x nmax) coefficient matrix
+    
+    '''
+    
     fac0 = -4.0*np.pi;
     lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
     xi,r,p0,d0 = halo_methods.init_table(model_file,numr,rmin,rmax,cmap,scale)
-    #
-    expcoef = np.zeros([lmax*(lmax+2)+1,nmax+1])
-    #
+
+    
+    expcoef = np.zeros([lmax*(lmax+2)+1,nmax])
+
+    
     factorial = factorial_return(lmax)
     
     norb = len(ParticleInstance.mass)
@@ -559,7 +576,7 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
         # go through loops
         #
         potd = get_halo_pot_matrix(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
-           # returns potd, (lmax+1,nmax+1)
+           # returns potd, (lmax+1,nmax)
         
         loffset = 0
         for l in range(0,lmax+1):
@@ -711,7 +728,7 @@ def get_pot_coefs(l, l_coef, l_potd, l_dpot):
     nmax = len(l_coef)
     pp = 0.0
     dpp = 0.0;
-    for n in range(1,nmax+1):
+    for n in range(0,nmax):
         
         pp  += potd[i] * coef[i];
         dpp += dpot[i] * coef[i];
@@ -724,7 +741,7 @@ def get_dens_coefs(l, l_coef, dend):
     # pass this the l array of coefficients
     # and d array of coefficients
     pp = 0.0;
-    for n in range(1,nmax+1):
+    for n in range(0,nmax):
         
         pp  += dend[n] * l_coef[n];
         
@@ -847,9 +864,9 @@ def all_eval(r, costh, phi, expcoef,\
 
     if nmax < nmax_check:
       if verbose >=4: print('spheresl.all_eval: reducing nmax.')
-      evtable = evtable[:,0:nmax+1]
-      eftable = eftable[:,0:nmax+1]
-      expcoef = expcoef[:,0,nmax+1]   
+      evtable = evtable[:,0:nmax]
+      eftable = eftable[:,0:nmax]
+      expcoef = expcoef[:,0,nmax]   
 
 
 
@@ -971,9 +988,9 @@ def force_eval(r, costh, phi, expcoef,\
 
     if nmax < nmax_check:
       if verbose >=4: print('spheresl.force_eval: reducing nmax.')
-      evtable = evtable[:,0:nmax+1]
-      eftable = eftable[:,0:nmax+1]
-      expcoef = expcoef[:,0:nmax+1]   
+      evtable = evtable[:,0:nmax]
+      eftable = eftable[:,0:nmax]
+      expcoef = expcoef[:,0:nmax]   
 
 
 
@@ -998,7 +1015,7 @@ def force_eval(r, costh, phi, expcoef,\
 
 
     # build matrix for phi terms
-    morder = np.tile(np.arange(0.,lmax+1,1.),(nmax+1,1)).T
+    morder = np.tile(np.arange(0.,lmax+1,1.),(nmax,1)).T
 
     try:
 
@@ -1008,7 +1025,7 @@ def force_eval(r, costh, phi, expcoef,\
             
 
         else:
-            phiarr = np.tile(phi,(nmax+1,1)).T
+            phiarr = np.tile(phi,(nmax,1)).T
             
             cosm = np.cos(phiarr*morder)
             sinm = np.sin(phiarr*morder)
@@ -1116,7 +1133,8 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
       for l in range(1,lmax+1):
 
         # if L truncation is set
-        if (l > (L2+1)) | (l < (L1+1)): continue
+        # is this correct?
+        if (l > (L2)) | (l < (L1)): continue
         
         # M loop
         moffset = 0
@@ -1210,7 +1228,7 @@ def sl_coefficients_to_file(f,SL_Object):
     # 4x2 = 8 bytes
     
     np.array(SL_Object.expcoef.reshape(-1,),dtype='f8').tofile(f)
-    # 8 bytes x ((lmax)*(lmax+2)+1) x (nmax+1) bytes to end of array
+    # 8 bytes x ((lmax)*(lmax+2)+1) x (nmax) bytes to end of array
     
 
 
@@ -1238,7 +1256,7 @@ def save_sl_coefficients(outfile,SL_Object,verbose=0):
 
     # seek to the correct position
     # SL_Object must have the same size as previous dumps... not checking if that is true (yet)
-    f.seek(4 + (ndumps-1)*(8*((SL_Object.lmax)*(SL_Object.lmax+2)+1)*(SL_Object.nmax+1)+324) )
+    f.seek(4 + (ndumps-1)*(8*((SL_Object.lmax)*(SL_Object.lmax+2)+1)*(SL_Object.nmax)+324) )
 
     sl_coefficients_to_file(f,SL_Object)
 
@@ -1287,9 +1305,9 @@ def extract_sl_coefficients(f):
 
 
     [SL_Obj.lmax,SL_Obj.nmax] = np.fromfile(f,dtype='i4',count=2)
-    cosine_flat = np.fromfile(f,dtype='f8',count=((SL_Obj.lmax)*(SL_Obj.lmax+2)+1)*(SL_Obj.nmax+1))
+    cosine_flat = np.fromfile(f,dtype='f8',count=((SL_Obj.lmax)*(SL_Obj.lmax+2)+1)*(SL_Obj.nmax))
 
-    SL_Obj.expcoef = cosine_flat.reshape([((SL_Obj.lmax)*(SL_Obj.lmax+2)+1),(SL_Obj.nmax+1)])
+    SL_Obj.expcoef = cosine_flat.reshape([((SL_Obj.lmax)*(SL_Obj.lmax+2)+1),(SL_Obj.nmax)])
     
     return SL_Obj
 
@@ -1402,7 +1420,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     if exclude:
         #for i in [1,2,3,9,10,11,12,13,14,15]:
         for i in orders:
-            coefs_in[i] = np.zeros(SLObj.nmax+1)
+            coefs_in[i] = np.zeros(SLObj.nmax)
     #
     den0,den1,pot0,pot1,potr,pott,potp,rr = eval_particles(P,coefs_in*halofac,SLObj.sph_file,SLObj.model_file,l1=l1,l2=l2)
     #
@@ -1495,9 +1513,14 @@ def read_binary_sl_coefficients(coeffile):
         
         times[tt] = time0
 
-        for ll in range(0,lmax*(lmax+2)+1):
+        for nn in range(0,nmax):
+
+            coef_array[tt,:,nn] = np.fromfile(f, dtype=np.float,count=lmax*(lmax+2)+1)
+
             
-            coef_array[tt,ll,:] = np.fromfile(f, dtype=np.float,count=nmax)
+        #for ll in range(0,lmax*(lmax+2)+1):
+            
+            #coef_array[tt,ll,:] = np.fromfile(f, dtype=np.float,count=nmax)
 
 
 

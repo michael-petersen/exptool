@@ -10,7 +10,10 @@ import numpy as np
 from scipy import interpolate
 
 # pull in exptool C routines
-from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
+try:
+    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
+except:
+    from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r
 
 
 
@@ -83,6 +86,37 @@ def parse_slgrid(file,verbose=0):
 
 
 def read_cached_table(file,verbose=0,retall=True):
+    '''
+    read_cached_table
+    -----------------------
+
+
+    inputs
+    ----------------------
+    file           : string, input file
+    verbose        : (integer bit flag, default=0)
+    retall         : (boolean, default=True)
+
+
+
+    returns
+    ----------------------
+    if retall:
+       lmax
+       nmax
+       numr
+       cmap
+       rmin
+       rmax
+       scale
+       ltable
+       evtable
+       eftable
+
+    if !retall:
+
+
+    '''
     f = open(file,'rb')
     #
     # read the header
@@ -100,17 +134,19 @@ def read_cached_table(file,verbose=0,retall=True):
     # set up the matrices
     #
     ltable = np.zeros(lmax+1)
-    evtable = np.ones([lmax+1,nmax+1])
-    eftable = np.ones([lmax+1,nmax+1,numr])
+    evtable = np.ones([lmax+1,nmax])
+    eftable = np.ones([lmax+1,nmax,numr])
     #
     #
-    for l in range(0,lmax+1): # I think the padding needs to be here? test.
+    
+    for l in range(0,lmax+1): 
         #
         # The l integer
         #
         ltable[l] = np.fromfile(f, dtype=np.uint32,count=1)
-        evtable[l,1:nmax+1] = np.fromfile(f,dtype='f8',count=nmax)
-        for n in range(1,nmax+1):
+        evtable[l,0:nmax] = np.fromfile(f,dtype='f8',count=nmax)
+        
+        for n in range(0,nmax):
             if verbose==1: print(l,n)
             #
             # loops for different levels go here
