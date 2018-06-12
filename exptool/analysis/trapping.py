@@ -417,6 +417,8 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
             
             clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
+        # it may also be interesting to record this in a different format. e.g. for orbits that we don't expect to be aligned with the bar exactly
+        # also, this is max. could median be useful? or mean?
         theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
 
     # failure on basic kmeans
