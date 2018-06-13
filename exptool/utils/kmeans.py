@@ -79,13 +79,18 @@ class KMeans():
                and len(set([tuple(a) for a in self.mu])) == K)
  
     def find_centers(self, method='random'):
+        
         self.method = method
         X = self.X
         K = self.K
         self.oldmu = random.sample(X, K)
+        
         if method != '++':
             # Initialize to K random centers
+
+            # this has a python2/3 compatibility issue
             self.mu = random.sample(X, K)
+            
         while not self._has_converged():
             self.oldmu = self.mu
             # Assign all points in X to clusters

@@ -618,33 +618,39 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
 
 def legendre_R(lmax, x):
     '''
+    Compute Associated Legendre Polynomials
+
     return an (lmax+1,lmax+1) element array of the legendre polynomials for the l and m spherical harmonic orders.
 
+    see equivalent function in Basis.cc
 
     '''
     p = np.zeros([lmax+1,lmax+1])
-    dp = np.zeros([lmax+1,lmax+1])
-    p[0][0] = pll = 1.0;
+    
+    p[0][0] = 1.0
+    pll = 1.0
     
     if (lmax > 0):
         somx2 = np.sqrt( (1.0 - x)*(1.0 + x) );
         fact = 1.0;
-        
         for m in range(1,lmax+1):
             pll *= -fact*somx2;
             p[m][m] = pll;
             fact += 2.0;
-    #
-    #
-    for m in range(0,lmax):
+    
+    
+    for m in range(0,lmax):#(m=0; m<lmax; m++) {
         pl2 = p[m][m];
-        p[m+1][m] = pl1 = x*(2.*m+1.)*pl2;
+        p[m+1][m] = x*(2*m+1)*pl2
+        pl1 = x*(2*m+1)*pl2
         
         for l in range(m+2,lmax+1):
-            p[l][m] = pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m);
-            pl2 = pl1;
-            pl1 = pll;
-            
+            p[l][m] = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
+            pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
+            pl2 = pl1
+            pl1 = pll
+    
+    
     return p
 
 
@@ -653,6 +659,8 @@ def legendre_R(lmax, x):
 
 def dlegendre_R(lmax, x):
     '''
+    Compute Associated Legendre Polynomials and derivitives
+
     return an (lmax+1,lmax+1) element array of the legendre polynomials for the l and m spherical harmonic orders.
 
     AND
@@ -661,29 +669,36 @@ def dlegendre_R(lmax, x):
 
     (for use in computing forces)
 
+    see comparable call in Basis.cc
+
     '''
     p = np.zeros([lmax+1,lmax+1])
     dp = np.zeros([lmax+1,lmax+1])
     
-    p[0][0] = pll = 1.0;
-    if (lmax > 0):# {
+    p[0][0] = 1.0
+    pll = 1.0
+    
+    if (lmax > 0):
         somx2 = np.sqrt( (1.0 - x)*(1.0 + x) );
         fact = 1.0;
         for m in range(1,lmax+1):#(m=1; m<=lmax; m++) {
             pll *= -fact*somx2;
             p[m][m] = pll;
             fact += 2.0;
-    #
-    #
+    
+    
     for m in range(0,lmax):#(m=0; m<lmax; m++) {
         pl2 = p[m][m];
-        p[m+1][m] = pl1 = x*(2*m+1)*pl2;
-        for l in range(m+2,lmax+1):#(l=m+2; l<=lmax; l++) {
-            p[l][m] = pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m);
-            pl2 = pl1;
-            pl1 = pll;
-    #
-    #
+        p[m+1][m] = x*(2*m+1)*pl2
+        pl1 = x*(2*m+1)*pl2
+        
+        for l in range(m+2,lmax+1):
+            p[l][m] = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
+            pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
+            pl2 = pl1
+            pl1 = pll
+    
+    
     MINEPS=1.e-8
     if (1.0-np.abs(x) < MINEPS):
         if (x>0): x =   1.0 - MINEPS;
@@ -697,7 +712,50 @@ def dlegendre_R(lmax, x):
             #print l
             dp[l][m] = somx2*(x*l*p[l][m] - (l+m)*p[l-1][m]);
             dp[l][l] = somx2*x*l*p[l][l];
+            
     return p,dp
+
+
+def sinecosine_R(mmax, phi):
+    '''
+    Compute vectors of sines and cosines by recursion
+
+
+    '''
+
+    c = np.zeros([mmax+1])
+    s = np.zeros([mmax+1])
+    
+    c[0] = 1.0;
+    s[0] = 0.0;
+
+    c[1] = cos(phi);
+    s[1] = sin(phi);
+
+    for m in range(2,mmax+1):#m=2; m<=mmax; m++) {
+        c[m] = 2.0*c[1]*c[m-1] - c[m-2];
+        s[m] = 2.0*c[1]*s[m-1] - s[m-2];
+
+    return c,s
+
+
+
+def factorial_return_new(lmax):
+    '''
+    factorial from SphericalBasis.cc
+
+
+    '''
+    factorial = np.zeros([lmax+1,lmax+1])
+
+    for l in range(0,lmax+1):
+        for m in range(0,l+1):
+            factorial[l][m] = np.math.factorial(l-m)/np.math.factoria(l+m);
+
+    return factorial
+
+
+
 
 
 def factorial_return(lmax):
@@ -1083,6 +1141,10 @@ def force_eval(r, costh, phi, expcoef,\
 
 
 def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L2=1000):
+  '''
+  check against determine_fields_at_point_sph (also _cyl) in SphericalBasis.cc
+
+  '''
 
   # parse model files
   lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
@@ -1132,8 +1194,9 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
       loffset = 1
       for l in range(1,lmax+1):
 
+        #fac1 = (2.0*l+1.0)/(4.0*M_PI);
+
         # if L truncation is set
-        # is this correct?
         if (l > (L2)) | (l < (L1)): continue
         
         # M loop
