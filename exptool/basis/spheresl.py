@@ -116,7 +116,8 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, s
             else:
                 force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*x2*eftable[l,n,indx]*p0[indx] + (x2 + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l][n]);
 
-            pot_mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
+            pot_mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/\
+                          np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
 
     return dens_mat,force_mat,pot_mat
 
@@ -1197,7 +1198,11 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
         #fac1 = (2.0*l+1.0)/(4.0*M_PI);
 
         # if L truncation is set
-        if (l > (L2)) | (l < (L1)): continue
+        if (l > (L2)) | (l < (L1)):
+          
+          loffset+=(2*l+1)
+          
+          continue
         
         # M loop
         moffset = 0
