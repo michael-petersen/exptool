@@ -7,7 +7,7 @@
 #
 # 08-30-16: print_progress and verbosity keys added
 # 12-03-16: major revisions
-#
+# 06-14-18: fixed evaluation bugs, added documentation, checked Python3 compatibility
 #
 #
 '''  _______..______    __    __   _______ .______       _______     _______. __      
@@ -19,11 +19,17 @@
 spheresl (part of exptool.basis)
     Implementation of Martin Weinberg's SphereSL routines for EXP simulation analysis
 
+see:
+Basis.H/.cc
+SphereSL.H/.cc
+SphericalBasis.H/.cc
+Sphere.H/.cc
+
 
 '''
+
+# python2/3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
-
-
 
 # general python imports
 import numpy as np
@@ -39,8 +45,7 @@ from exptool.io import psp_io
 
 
 
-# pull in C routines
-
+# (try to) pull in C routines
 try:
     from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
 except:
@@ -72,6 +77,33 @@ get_halo_pot
 
 '''
 ###############################################################################
+
+
+class SPHTable(object):
+    '''
+    class handling Spherical Model Grid tables and associated cache files
+
+
+    '''
+    def __init__(self):
+
+        # sizes
+        self.lmax = None
+        self.nmax = None
+
+        # descriptors
+        self.cmap = None
+        self.scale = None
+        
+        # harmonic functions
+        self.evtable = None
+        self.eftable = None
+
+        # spherical table
+        self.xi = None
+        self.d0 = None
+        
+
 
 def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale):
     #
@@ -810,6 +842,13 @@ def get_dens_coefs(l, l_coef, dend):
 
 
 def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
+  '''
+  all_eval_table
+     version of all_eval that reads in cached tables (slower, but standalone)
+
+
+
+  '''
   lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
   xi,rarr,p0,d0 = halo_methods.init_table(mod_file,numr,rmin,rmax,cmap,scale)
   if (L2 == -1): L2 = lmax+1
@@ -839,9 +878,11 @@ def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
   # L loop
   #
   loffset = 1
-  for l in range(1,lmax+1):#(int l=1, loffset=1; l<=lmax; loffset+=(2*l+1), l++) {
-    # at end, add in loffset+=(2*l+1)
-    if (l>(L2+1)) | (l<(L1+1)): continue
+  for l in range(1,lmax+1):
+    
+    if (l>(L2+1)) | (l<(L1+1)):
+      loffset+=(2*l+1)
+      continue
     #
     # M loop
     moffset = 0
