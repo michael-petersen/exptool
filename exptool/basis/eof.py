@@ -1756,10 +1756,10 @@ def reorganize_eof_dict(EOFDict):
     nmax = EOFDict[0].nmax
     #
     # reorganize
-    coef_sums = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0],nmax])
-    coefs_cos = np.zeros([mmax+1,nmax,np.array(EOFDict.keys()).shape[0]])
-    coefs_sin = np.zeros([mmax+1,nmax,np.array(EOFDict.keys()).shape[0]])
-    time_order = np.zeros(np.array(EOFDict.keys()).shape[0])
+    coef_sums = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
+    coefs_cos = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
+    coefs_sin = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
+    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])
     #
     keynum = 0
     for keyval in EOFDict.keys():
@@ -1802,9 +1802,9 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
     mmax=EOFDict[0].mmax
     nmax=EOFDict[0].nmax
     
-    phases = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0],nmax])
-    netphases = np.zeros([mmax+1,np.array(EOFDict.keys()).shape[0]])
-    time_order = np.zeros(np.array(EOFDict.keys()).shape[0])
+    phases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
+    netphases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0]])
+    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])
     
     num = 0
     for keyval in EOFDict.keys():
@@ -1841,8 +1841,8 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
         # what about a power limit? only calculate position for certain power values?
 
         
-        DC['speed'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
-        DC['unphase'][mm] = np.zeros([np.array(EOFDict.keys()).shape[0],nmax])
+        DC['speed'][mm] = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
+        DC['unphase'][mm] = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
         DC['direction'][mm] = np.zeros(nmax)
         
         for nn in range(0,nmax):
