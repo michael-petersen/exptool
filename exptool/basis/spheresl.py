@@ -1182,7 +1182,7 @@ def force_eval(r, costh, phi, expcoef,\
 
 
 
-def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L2=1000):
+def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L2=1000,NO_ODD=False):
   '''
   check against determine_fields_at_point_sph (also _cyl) in SphericalBasis.cc
 
@@ -1244,7 +1244,15 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
           loffset+=(2*l+1)
           
           continue
-        
+
+        # if NO_ODD
+            if (NO_ODD) & (l%2 !=0): 
+                
+                loffset += (2*l+1)
+                
+                continue
+
+              
         # M loop
         moffset = 0
         
