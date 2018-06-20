@@ -12,8 +12,32 @@ import matplotlib
 
 
 class KMeans():
+    '''
+    class to implement K-means in Python
+
+
+    '''
     
     def __init__(self, K, X=None, N=0):
+        '''
+        initialize kmeans
+
+
+        inputs
+        --------------
+        self
+        K
+        X
+        N
+
+
+        returns
+        -------------
+        self
+
+        
+        '''
+        
         self.K = K
         
         try:
@@ -25,7 +49,7 @@ class KMeans():
         except:
 
             if N == 0:
-                raise Exception("If no data is provided, \
+                raise Exception("kmeans.KMeans: If no data is provided, \
                                  a parameter N (number of points) is needed")
             else:
                 self.N = N
@@ -83,13 +107,18 @@ class KMeans():
         self.method = method
         X = self.X
         K = self.K
-        self.oldmu = random.sample(X, K)
+        
+        #self.oldmu = random.sample(X, K)
+
+        self.oldmu = random.sample(list(X), K)
+
         
         if method != '++':
             # Initialize to K random centers
 
             # this has a python2/3 compatibility issue
-            self.mu = random.sample(X, K)
+            #self.mu = random.sample(X, K)
+            self.mu = random.sample(list(X), K)
             
         while not self._has_converged():
             self.oldmu = self.mu
@@ -117,7 +146,8 @@ class KPlusPlus(KMeans):
         return(self.X[ind])
  
     def init_centers(self):
-        self.mu = random.sample(self.X, 1)
+        #self.mu = random.sample(self.X, 1)
+        self.mu = random.sample(list(self.X), 1)
         while len(self.mu) < self.K:
             self._dist_from_centers()
             self.mu.append(self._choose_next_center())
