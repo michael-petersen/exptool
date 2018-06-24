@@ -1246,7 +1246,7 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
           continue
 
         # if NO_ODD
-            if (NO_ODD) & (l%2 !=0): 
+        if (NO_ODD) & (l%2 !=0): 
                 
                 loffset += (2*l+1)
                 

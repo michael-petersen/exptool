@@ -25,15 +25,15 @@ class KMeans():
 
         inputs
         --------------
-        self
-        K
-        X
-        N
+        self      : KMeans class
+        K         : number of clusters
+        X         : array of observations
+        N         : error guard
 
 
         returns
         -------------
-        self
+        self      : Kmeans class
 
         
         '''
@@ -60,19 +60,51 @@ class KMeans():
         self.method = None
  
     def _init_board_gauss(self, N, k):
+        '''
+        _init_board_gauss
+           initialize the guess points
+
+
+        inputs
+        -------------------
+        self
+        N
+        k
+
+
+        returns
+        ------------------
+        self
+        X        : randomly partitioned clusters
+
+
+        '''
+
+        # number of points to put in each cluster
         n = float(N)/k
+        
         X = []
+
+        # set up
         for i in range(k):
+            
             c = (random.uniform(-1,1), random.uniform(-1,1))
+            
             s = random.uniform(0.05,0.15)
+
+            # just reflecting--but this means that the clusters are forced to ahve the same number of points
             x = []
             while len(x) < n:
+                
                 a,b = np.array([np.random.normal(c[0],s),np.random.normal(c[1],s)])
+                
                 # Continue drawing points from the distribution in the range [-1,1]
                 if abs(a) and abs(b)<1:
                     x.append([a,b])
+                    
             X.extend(x)
         X = np.array(X)[:N]
+        
         return X
  
  
@@ -103,6 +135,19 @@ class KMeans():
                and len(set([tuple(a) for a in self.mu])) == K)
  
     def find_centers(self, method='random'):
+        '''
+        find_centers
+           iteratively select new centers
+
+        inputs
+        ----------------
+
+
+        returns
+        ---------------
+
+
+        '''
         
         self.method = method
         X = self.X
@@ -110,6 +155,7 @@ class KMeans():
         
         #self.oldmu = random.sample(X, K)
 
+        # draw K samples from the array of clusters
         self.oldmu = random.sample(list(X), K)
 
         
