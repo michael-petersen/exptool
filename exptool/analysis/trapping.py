@@ -375,6 +375,7 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
     
     
     '''
+    k = K.K
 
     if (rank) & (perc==0.):
         print('evaluate_clusters_polar: Perc must be >0.')
@@ -664,7 +665,9 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
                           maxima=False,\
                           mad=False,\
                           k=2,\
-                          verbose=1): 
+                          verbose=1,
+                              polar=False,\
+                              rank=False,perc=0.): 
     '''
     do_single_kmeans_step: analyze a desired time in the trapping dictionary
 
@@ -678,6 +681,9 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
     t_thresh             :
     maxima               :
     verbose              :
+    polar
+    rank
+    perc
 
     returns
     ----------
@@ -745,7 +751,13 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         X = transform_aps(TrappingInstanceDict[indx],BarInstance)
 
         # do k-means
-        theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],k=k,maxima=maxima,mad=mad)
+
+        if polar:
+            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans_polar(X[closest_aps],k=k,maxima=maxima,rank=rank,perc=perc)
+
+        else:
+            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],k=k,maxima=maxima,mad=mad)
+
 
         if kmeans_plus_flag == 1: sent_to_kmeans_plus += 1
 
@@ -783,7 +795,8 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                    verbose=0,\
                    maxima=False,\
                    mad=False,\
-                       k=2):
+                       k=2,\
+                       polar=False,rank=False,perc=0.):
     '''
     do_kmeans_dict : single processor version of orbit computation
 
@@ -795,6 +808,12 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     t_thresh                 : the maximum time window to allow trapping (guard against random effects)
     criteria                 : dictionary of families to define (see below)
     verbose                  : reporting flag
+    maxima
+    mad                      : use median absolute deviation? must be in cartesian
+    k                        : how many clusters to compute
+    polar                    : calculate cluster statistics in polar coordinates
+    rank                     : use rank-ordered?
+    perc                     : which percentile to draw for rank-ordered
 
 
     returns
@@ -808,7 +827,15 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     
     notes
     -----------
-    criteria, 
+    criteria is a dictionary with the following format:
+        criteria[0] = [(0.,0.5),(33.,251.0),(0.0,0.0008),(0.0,0.005),(0.,1.)] # x1 orbits
+                 ^        ^         ^             ^           ^         ^ 
+                 |        |         |             |           |         | 
+                 |     limits on:   |             |           |         | 
+            family     theta_n    r_freq   sigma-parallel     |    cluster-center
+            number                                    sigma-perpendicular
+
+
     
     
     the Nyquist frequency is calculated based on the minimum spacing of the bar model and is always applied.
@@ -861,7 +888,13 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                 continue
             
             # compute the clustering
-            theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx,k=k,maxima=maxima,mad=mad)
+            if polar:
+                theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans_polar(X[closest_aps],indx,k=k,\
+                                                                                                          maxima=maxima,rank=rank,perc=perc)
+
+            else:
+                
+                theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx,k=k,maxima=maxima,mad=mad)
             
             # check time boundaries
             if midpoint==0: # first step
@@ -876,7 +909,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                 orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x,clusterstd_y,clustermean])
 
         
-        DD = np.array(orbit_dist) # 0:time, 1:theta_n, 2:sigma_x
+        DD = np.array(orbit_dist) # 0:time, 1:theta_n, 2:sigma_x, 3:sigma_y, 4:<x>
         
         #nDD = abs(np.ediff1d(DD[:,1],to_begin=1.0))
         
@@ -918,7 +951,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                 xmean_func(BarInstance.time)]
         
         
-        for nfam,family in enumerate(np.array(criteria.keys())):
+        for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
             # how does this get covered from missing criteria?
             
@@ -998,8 +1031,12 @@ def multi_compute_trapping(holding,nprocs,BarInstance,\
 
     seventh_arg = maxima
     eighth_arg = mad
-    
-    a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg,itertools.repeat(seventh_arg),itertools.repeat(eighth_arg)))
+
+    try:
+        a_vals = pool.map(do_kmeans_dict_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg,itertools.repeat(seventh_arg),itertools.repeat(eighth_arg)))
+        
+    except:
+        a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg,itertools.repeat(seventh_arg),itertools.repeat(eighth_arg)))
     
     # clean up to exit
     pool.close()
@@ -1015,7 +1052,30 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    criteria={},\
                    verbose=0,\
                         maxima=False,\
-                        mad = False):
+                        mad = False,\
+                        polar=False,rank=False,perc=0.\
+                        ):
+    '''
+    do_kmeans_multi
+        multiprocessing-enabled kmeans calculator. Wraps compute_trapping
+
+    inputs
+    ---------------
+    TrappingInstanceDict
+    BarInstance
+    sbuffer
+    t_thresh
+    criteria
+    verbose
+    
+
+    returns
+    ---------------
+
+
+
+
+    '''
     
     nprocs = multiprocessing.cpu_count()
     holding = redistribute_aps(TrappingInstanceDict,nprocs)
@@ -1040,7 +1100,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     #x2_master = re_form_trapping_arrays(trapping_arrays,1)
     trapped = {}
 
-    for nfam,family in enumerate(np.array(criteria.keys())):
+    for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
         trapped[nfam] = re_form_trapping_arrays(trapping_arrays,nfam)
     
