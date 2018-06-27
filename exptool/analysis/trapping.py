@@ -375,6 +375,8 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
     
     
     '''
+    
+    # how many clusters?
     k = K.K
 
     if (rank) & (perc==0.):
@@ -391,7 +393,8 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
         
         clustermean = np.max([np.mean(rad_clusters[i]) for i in range(0,k)])
 
-        theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        #theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        theta_n = np.max([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
     
         if rank:
             # use rank ordered
@@ -399,8 +402,8 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
             organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
             organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
 
-            clusterstd_r = np.max(np.percentile(organized_rad,perc))
-            clusterstd_t = np.max(np.percentile(organized_the,perc))
+            clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
+            clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
 
         else:
             clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(0,k)])
@@ -416,15 +419,16 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
             organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
             organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
 
-            clusterstd_r = np.mean(np.percentile(organized_rad,perc))
-            clusterstd_t = np.mean(np.percentile(organized_the,perc))
+            clusterstd_r = np.mean([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
+            clusterstd_t = np.mean([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
 
         else:
             clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(0,k)])
             clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
             
         clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
-        theta_n = np.mean([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        #theta_n = np.mean([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        theta_n = np.mean([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
 
     return theta_n,clustermean,clusterstd_r,clusterstd_t
 
@@ -843,48 +847,64 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     
     
     '''
-    #
+    
     norb = TrappingInstanceDict['norb']
     nfamilies = len(criteria.keys())
     if nfamilies == 0:
-        print('no families defined?')
-    #
+        print('trapping.do_kmeans_dict: no families defined?')
+        break
+
+    # set up final array
     trapping_array = np.zeros([nfamilies,norb,len(BarInstance.time)],dtype='i1')
     #
     #
     t1 = time.time()
-    #
+
+    # reformat and reconsider me for good printing
     #if (verbose > 0): print 'trapping.do_kmeans_dict: opening angle=%4.3f, OmegaR=%3.2f, sigma_x limit=%4.3f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sigmax_limit,sbuffer)
-    #   
+      
     for indx in range(0,norb):
-        #
+        
         #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
         if (((indx % (norb/20)) == 0) & (verbose > 0)):  
             #
             print(float(indx)/float(norb),'...',end='')
             #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
+
+        # extract times
         time_sequence = np.array(TrappingInstanceDict[indx])[:,0]
-        #
-        #
-        # guard against total aps range being too small (very important for halo!)
+        
+        # guard against total aps range being too small (very important speedup for halo!)
         if time_sequence.size < sbuffer:
+
+            # skip to next orbit
             continue
-        #
-        #
+        
         # transform to bar frame
         X = transform_aps(TrappingInstanceDict[indx],BarInstance)
-        #
-        #
+        
+        # initialize the list of closest apsides for each timestep with an apse
         orbit_dist = []
+
+        # loop through the apsides
         for midpoint in range(0,len(X)):
+            
             relative_aps_time = time_sequence - time_sequence[midpoint]
-            closest_aps = (abs(relative_aps_time)).argsort()[0:sbuffer] # fixed this to include closest aps
-            #
-            #
+
+            # find the closest aps (not necessarily time-symmetric)
+            closest_aps = (abs(relative_aps_time)).argsort()[0:sbuffer] 
+            
+            
             # guard against aps with too large of a timespan (some number of bar periods, preferably)
             if relative_aps_time[closest_aps[-1]] > t_thresh:
+                
+                # set values to always be 1
+                #   would this be better as np.nan?
+                # 
                 orbit_dist.append([0.0,1.0,1.0,1.0,1.0])
                 orbit_dist.append([np.max(BarInstance.time),1.0,1.0,1.0,1.0])
+
+                # skip to next orbit
                 continue
             
             # compute the clustering
@@ -913,7 +933,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         
         #nDD = abs(np.ediff1d(DD[:,1],to_begin=1.0))
         
-        # radial frequency computation
+        # radial frequency computation (spacing between aps!)
         tDD = 1./(abs(np.ediff1d(DD[:,0],to_begin=100.0))+1.e-8)
 
         # make interpolated functions:
@@ -921,7 +941,6 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         #     2. r_frequency vs time
         #     3. sigma_x vs time
         #     4. sigma_y vs time
-        #     5. delta(theta_n) vs time (volitility, disabled for speed now)
         theta_func = interpolate.interp1d(DD[:,0],DD[:,1], kind='nearest',fill_value=0.7)      #1
         #
         frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.0)       #2
@@ -931,9 +950,6 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         sigmay_func = interpolate.interp1d(DD[:,0],abs(DD[:,3]),kind='nearest',fill_value=1.0) #4
 
         xmean_func = interpolate.interp1d(DD[:,0],abs(DD[:,4]),kind='nearest',fill_value=1.0) #5
-        #
-        #volfunc = interpolate.interp1d(DD[:,0],nDD, kind='nearest',fill_value=1.4)            #6
-        #
 
         #
         # apply trapping rules
@@ -954,6 +970,9 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
             # how does this get covered from missing criteria?
+            #    currently cannot miss criteria
+            #
+            #    also, how can we add flexibility here?
             
             trapped = np.where( (metric[0] >= criteria[family][0][0]) & (metric[0] < criteria[family][0][1])\
                       & (metric[1] >= criteria[family][1][0]) & (metric[1] < criteria[family][1][1])\
@@ -963,24 +982,32 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     
             trapping_array[nfam,indx,trapped] = np.ones(len(trapped))
 
-    t2 = time.time()-t1
-    
+    # flag for time elapsed
+    t2 = time.time() - t1
+
+    # if extremely verbose, print timing for each orbit
     if (verbose > 1): print('K-means took {0:4.3f} seconds ({0:4.3f} ms per orbit)'.format(t2, t2/norb*1000))
-        
+
+    # wrap as a numpy array and return
     return np.array(trapping_array)
 
 
-
-
-
-
-
-
-
-
+##############################################
 #
-# interesting strategy with dictionaries here
+# MULTIPROCESSING BLOCK
+#
+#
+##############################################
+
+
+
 def redistribute_aps(TrappingInstanceDict,divisions):
+    '''
+
+
+
+
+    '''
     #TrappingInstanceDict = {}
     #for indx in range(0,len(TrappingInstance.aps)):
     #    TrappingInstanceDict[indx] = TrappingInstance.aps[indx]
@@ -1006,21 +1033,49 @@ def redistribute_aps(TrappingInstanceDict,divisions):
 
 
 def do_kmeans_dict_star(a_b):
-    """Convert `f([1,2])` to `f(1,2)` call."""
+    '''Convert `f([1,2])` to `f(1,2)` call.'''
     return do_kmeans_dict(*a_b)
 
 
 
-def multi_compute_trapping(holding,nprocs,BarInstance,\
+def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                    sbuffer=20,\
                    t_thresh=1.5,\
                    criteria={},\
                    verbose=0,\
                     maxima=False,\
-                               mad=False):
+                               mad=False,\
+                               polar=False,rank=False,perc=0.):
+    '''
+    multi_compute_trapping
+        multiprocessing-enabled kmeans calculator. 
+
+    inputs
+    ---------------
+    DividedTrappingInstanceDict
+    nprocs
+    BarInstance
+    sbuffer
+    t_thresh
+    criteria
+    verbose
+    maxima
+    mad
+    polar
+    rank
+    perc
+    
+
+    returns
+    ---------------
+    a_vals                          : trapping arrays broken up by processor
+
+
+
+    '''
                    
     pool = Pool(nprocs)
-    a_args = [holding[i] for i in range(0,nprocs)]
+    a_args = [DividedTrappingInstanceDict[i] for i in range(0,nprocs)]
     second_arg = BarInstance
     third_arg = sbuffer
     fourth_arg = t_thresh
@@ -1031,12 +1086,37 @@ def multi_compute_trapping(holding,nprocs,BarInstance,\
 
     seventh_arg = maxima
     eighth_arg = mad
+    ninth_arg = polar
+    tenth_arg = rank
+    eleventh_arg = perc
 
     try:
-        a_vals = pool.map(do_kmeans_dict_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg,itertools.repeat(seventh_arg),itertools.repeat(eighth_arg)))
+        # this is the python3 version
+        a_vals = pool.map(do_kmeans_dict_star, zip(a_args, \
+                                                       itertools.repeat(second_arg),\
+                                                       itertools.repeat(third_arg),\
+                                                       itertools.repeat(fourth_arg),\
+                                                       itertools.repeat(fifth_arg),\
+                                                       sixth_arg,\
+                                                       itertools.repeat(seventh_arg),\
+                                                       itertools.repeat(eighth_arg),\
+                                                       itertools.repeat(ninth_arg),\
+                                                       itertools.repeat(tenth_arg),\
+                                                       itertools.repeat(eleventh_arg)))
         
     except:
-        a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),sixth_arg,itertools.repeat(seventh_arg),itertools.repeat(eighth_arg)))
+        # this is the python2 version
+        a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args,\
+                                                       itertools.repeat(second_arg),\
+                                                       itertools.repeat(third_arg),\
+                                                       itertools.repeat(fourth_arg),\
+                                                       itertools.repeat(fifth_arg),\
+                                                       sixth_arg,\
+                                                       itertools.repeat(seventh_arg),\
+                                                       itertools.repeat(eighth_arg),\
+                                                       itertools.repeat(ninth_arg),\
+                                                       itertools.repeat(tenth_arg),\
+                                                       itertools.repeat(eleventh_arg)))
     
     # clean up to exit
     pool.close()
@@ -1057,28 +1137,36 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                         ):
     '''
     do_kmeans_multi
-        multiprocessing-enabled kmeans calculator. Wraps compute_trapping
+        multiprocessing-enabled kmeans calculator. Wraps multi_compute_trapping
 
     inputs
     ---------------
-    TrappingInstanceDict
-    BarInstance
-    sbuffer
-    t_thresh
-    criteria
-    verbose
+    TrappingInstanceDict  : dictionary, for each orbit a list of aps positions in [t,x_inertial,y_inertial] format
+    BarInstance           : pattern.BarInstance, to calculate transformations from aps positions
+    sbuffer               : number of apsides to calculate clustering on
+    t_thresh              : maximum time window from which apsides should be drawn
+    criteria              : dictionary, list of criteria satisfied to make each orbit family
+    verbose               : verbosity flag. [what are the levels?]
+    maxima
+    mad
+    polar
+    rank
+    perc
     
 
     returns
     ---------------
-
+    trapped               : dictionary, with an [norbit,ntime] sized array for each input criteria
 
 
 
     '''
-    
+
+    # find number of CPUs accessible
     nprocs = multiprocessing.cpu_count()
-    holding = redistribute_aps(TrappingInstanceDict,nprocs)
+
+    # divide the aps dictionary up for processors
+    DividedTrappingInstanceDict = redistribute_aps(TrappingInstanceDict,nprocs)
     
     if (verbose > 0):
         print('Beginning kmeans, using {0:d} processors.'.format(nprocs))
@@ -1086,45 +1174,72 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     t1 = time.time()
     freeze_support()
 
-    trapping_arrays = multi_compute_trapping(holding,nprocs,BarInstance,\
+    # pass specific pieces of dictionary
+    trapping_arrays = multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                    sbuffer=sbuffer,\
                    t_thresh=t_thresh,\
                    criteria=criteria,\
                    verbose=verbose,\
-                                                 maxima=maxima,\
-                                                 mad=mad)
+                   maxima=maxima,\
+                   mad=mad,\
+                   polar=polar,rank=rank,perc=perc)
                    
     print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
 
-    #x1_master = re_form_trapping_arrays(trapping_arrays,0)
-    #x2_master = re_form_trapping_arrays(trapping_arrays,1)
+    # go through the dictionary of trapping criteria and re-make the arrays
     trapped = {}
 
     for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
         trapped[nfam] = re_form_trapping_arrays(trapping_arrays,nfam)
     
-    #return x1_master,x2_master
 
     return trapped
 
 
 
 def re_form_trapping_arrays(array,array_number):
+    '''
+    re_form_trapping_arrays
+        helper function that undoes the multiprocessing scramble
+
+    inputs
+    ----------------
+    array           : multidimensional array of orbits
+    array_number    : orbit criteria family id number
+
+
+    returns
+    -----------------
+    net_array       : singledimensional array of orbits
+
+
+    '''
+    
     # the arrays are structured as [processor][x1/x2][norb][ntime]
-    #print array.shape,len(array)
-    #print array[0].shape
+
+    #  compute the total number of orbits across all processors
     norb_master = 0.0
+
     for processor in range(0,len(array)): norb_master += array[processor].shape[1]
+
+    
     #
-    # now initialize new blank array? Or should it dictionary?
+    # now initialize new blank array?
+    #    note that it is initialized as 'i2' to save as much memory as possible
+    # 
     net_array = np.zeros([int(norb_master),int(array[0].shape[2])],dtype='i2')
+
+    # loop over processors to populate final array
     start_index = 0
     for processor in range(0,len(array)):
+        
         end_index = start_index + array[processor].shape[1]
-        #print processor,start_index,end_index
+        
         net_array[start_index:end_index] = array[processor][array_number]
+        
         start_index = end_index
+        
     return net_array
 
 
