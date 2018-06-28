@@ -1001,32 +1001,53 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
 
 
 
-def redistribute_aps(TrappingInstanceDict,divisions):
+def redistribute_aps(TrappingInstanceDict,divisions,verbose=0):
+    '''
+    redistribute_aps
+       set up aps dictionary to be ready for multiple processors
+
+
+    inputs
+    -------------
+    TrappingInstanceDict
+
+
+    returns
+    -------------
+    DividedTrappingInstanceDict
+
+
     '''
 
-
-
-
-    '''
-    #TrappingInstanceDict = {}
-    #for indx in range(0,len(TrappingInstance.aps)):
-    #    TrappingInstanceDict[indx] = TrappingInstance.aps[indx]
+    # initialize holder for particle numbers
     npart = np.zeros(divisions,dtype=object)
-    holders = [{} for x in range(0,divisions)]
+
+    # initialize return structure
+    DividedTrappingInstanceDict = [{} for x in range(0,divisions)]
     average_part = int(np.floor(TrappingInstanceDict['norb'])/divisions)
     first_partition = TrappingInstanceDict['norb'] - average_part*(divisions-1)
-    print('Each processor has {0:d} particles.'.format(average_part))#, first_partition
+
+    if verbose: print('Each processor has {0:d} particles.'.format(average_part))
+        
     low_particle = 0
+    
     for i in range(0,divisions):
         end_particle = low_particle+average_part
-        if i==0: end_particle = low_particle+first_partition
-        #print low_particle,end_particle
+        
+        if i==0:
+            end_particle = low_particle+first_partition
+
         for j in range(low_particle,end_particle):
-            (holders[i])[j-low_particle] = TrappingInstanceDict[j]
+            (DividedTrappingInstanceDict[i])[j-low_particle] = TrappingInstanceDict[j]
+             
         low_particle = end_particle
-        if (i>0): holders[i]['norb'] = average_part
-        else: holders[i]['norb'] = first_partition
-    return holders
+        
+        if (i>0):
+            DividedTrappingInstanceDict[i]['norb'] = average_part
+        else:
+            DividedTrappingInstanceDict[i]['norb'] = first_partition
+            
+    return DividedTrappingInstanceDict
 
 
 
