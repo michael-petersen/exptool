@@ -852,7 +852,8 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     nfamilies = len(criteria.keys())
     if nfamilies == 0:
         print('trapping.do_kmeans_dict: no families defined?')
-        break
+        #break
+        return
 
     # set up final array
     trapping_array = np.zeros([nfamilies,norb,len(BarInstance.time)],dtype='i1')
@@ -1024,13 +1025,18 @@ def redistribute_aps(TrappingInstanceDict,divisions,verbose=0):
 
     # initialize return structure
     DividedTrappingInstanceDict = [{} for x in range(0,divisions)]
+
+    # compute how many particles each processor is responsible for
     average_part = int(np.floor(TrappingInstanceDict['norb'])/divisions)
+
+    # give leftover particles to first processor
     first_partition = TrappingInstanceDict['norb'] - average_part*(divisions-1)
 
     if verbose: print('Each processor has {0:d} particles.'.format(average_part))
         
     low_particle = 0
-    
+
+    # construct the separate processor dictionaries
     for i in range(0,divisions):
         end_particle = low_particle+average_part
         
@@ -1052,7 +1058,7 @@ def redistribute_aps(TrappingInstanceDict,divisions,verbose=0):
 
 
 
-
+# necessary piece for multiprocessing
 def do_kmeans_dict_star(a_b):
     '''Convert `f([1,2])` to `f(1,2)` call.'''
     return do_kmeans_dict(*a_b)
@@ -1066,6 +1072,7 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                    verbose=0,\
                     maxima=False,\
                                mad=False,\
+                               k=2,\
                                polar=False,rank=False,perc=0.):
     '''
     multi_compute_trapping
@@ -1107,9 +1114,10 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
 
     seventh_arg = maxima
     eighth_arg = mad
-    ninth_arg = polar
-    tenth_arg = rank
-    eleventh_arg = perc
+    ninth_arg = k
+    tenth_arg = polar
+    eleventh_arg = rank
+    twelvth_arg = perc
 
     try:
         # this is the python3 version
@@ -1123,7 +1131,8 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                                                        itertools.repeat(eighth_arg),\
                                                        itertools.repeat(ninth_arg),\
                                                        itertools.repeat(tenth_arg),\
-                                                       itertools.repeat(eleventh_arg)))
+                                                       itertools.repeat(eleventh_arg),\
+                                                       itertools.repeat(twelvth_arg)))
         
     except:
         # this is the python2 version
@@ -1137,7 +1146,8 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                                                        itertools.repeat(eighth_arg),\
                                                        itertools.repeat(ninth_arg),\
                                                        itertools.repeat(tenth_arg),\
-                                                       itertools.repeat(eleventh_arg)))
+                                                       itertools.repeat(eleventh_arg),\
+                                                       itertools.repeat(twelvth_arg)))
     
     # clean up to exit
     pool.close()
@@ -1154,6 +1164,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    verbose=0,\
                         maxima=False,\
                         mad = False,\
+                        k = 2,\
                         polar=False,rank=False,perc=0.\
                         ):
     '''
@@ -1170,6 +1181,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     verbose               : verbosity flag. [what are the levels?]
     maxima
     mad
+    k
     polar
     rank
     perc
@@ -1203,6 +1215,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    verbose=verbose,\
                    maxima=maxima,\
                    mad=mad,\
+                   k=k,\
                    polar=polar,rank=rank,perc=perc)
                    
     print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
