@@ -865,7 +865,11 @@ def map_simulation_files(outfile,simulation_directory,simulation_name,verbose=1)
                 current_time = t
 
                 if verbose > 0:
-                    print('Current time: {0:4.3f}'.format(current_time),end='\r', flush=True)
+                    try:
+                        print('Current time: {0:4.3f}'.format(current_time),end='\r', flush=True)
+                    except:
+                        print('Current time: {0:4.3f}'.format(current_time),end='\r')
+                        
                 
         #
         f.close()
