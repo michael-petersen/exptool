@@ -466,6 +466,9 @@ def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
     kmeans_plus_flag = 0
     K = kmeans.KMeans(k,X=ApsArray)
     K.find_centers()
+
+    # add an evaluation for if a cluster ends up with only X members, here hard coded to 2
+    
         
     # find the standard deviation of clusters
     try:
@@ -778,7 +781,9 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
         sigma_y[indx] = clusterstd_y
 
 
-    if (verbose > 1): print('K-means took {0:3.2f} seconds ({1:3.2f} ms per orbit)'.format(t2, t2/norb*1000))
+    if (verbose > 1):
+        t2 = time.time()
+        print('K-means took {0:3.2f} seconds ({1:3.2f} ms per orbit)'.format(t2, t2/norb*1000))
 
     print('skipped_for_aps',skipped_for_aps)
     print('skipped_for_res',skipped_for_res)

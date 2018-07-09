@@ -121,6 +121,12 @@ class KMeans():
         self.clusters = clusters
  
     def _reevaluate_centers(self):
+        '''
+        _reevaluate_centers
+            draw new centers based on which center they are closest to
+            NOTE that this can create asymmetric cluster sizes
+
+        '''
         clusters = self.clusters
         newmu = []
         keys = sorted(self.clusters.keys())
@@ -129,6 +135,12 @@ class KMeans():
         self.mu = newmu
  
     def _has_converged(self):
+        '''
+        _has_converged
+            check to see whether clusters change from one step to the next. if not, declare convergence!
+
+
+        '''
         K = len(self.oldmu)
         return(set([tuple(a) for a in self.mu]) == \
                set([tuple(a) for a in self.oldmu])\

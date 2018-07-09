@@ -27,13 +27,14 @@ TODO:
 1. Add kernel with compact support.
 
 """
-__license__ = 'MIT License <http://www.opensource.org/licenses/mit-license.php>'
 
 import numpy as np
 from numpy import fft
 import scipy as sp
 import scipy.sparse
 import scipy.signal
+
+
 
 def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=False, weights=None):
     """
@@ -194,29 +195,40 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
 
 
 def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, weights=None, npower=6.,ktype='gaussian'):
-    """
-    Performs a gaussian kernel density estimate over a regular grid using a
-    convolution of the gaussian kernel with a 2D histogram of the data.
+    '''
+    fast_kde_two
+        Performs a gaussian kernel density estimate over a regular grid using a
+        convolution of the gaussian kernel with a 2D histogram of the data.
 
-    This function is typically several orders of magnitude faster than 
-    scipy.stats.kde.gaussian_kde for large (>1e7) numbers of points and 
-    produces an essentially identical result.
+        This function is typically several orders of magnitude faster than 
+        scipy.stats.kde.gaussian_kde for large (>1e7) numbers of points and 
+        produces an essentially identical result.
 
-    Input:
-        x: The x-coords of the input data points
-        y: The y-coords of the input data points
-        gridsize: (default: 200x200) A (nx,ny) tuple of the size of the output 
+    inputs
+    ---------------
+    x: The x-coords of the input data points
+    y: The y-coords of the input data points
+    gridsize: (default: 200x200) A (nx,ny) tuple of the size of the output 
             grid
-        extents: (default: extent of input data) A (xmin, xmax, ymin, ymax)
+    extents: (default: extent of input data) A (xmin, xmax, ymin, ymax)
             tuple of the extents of output grid
-        nocorrelation: (default: False) If True, the correlation between the
+    nocorrelation: (default: False) If True, the correlation between the
             x and y coords will be ignored when preforming the KDE.
-        weights: (default: None) An array of the same shape as x & y that 
+    weights: (default: None) An array of the same shape as x & y that 
             weighs each sample (x_i, y_i) by each value in weights (w_i).
             Defaults to an array of ones the same size as x & y.
-    Output:
+    npower:
+
+    ktype: kernel type to use. Options:
+        'gaussian'
+        'epanechnikov'
+        'linear' : not implemented yet
+        
+
+    returns
+    --------------
         A gridded 2D kernel density estimate of the input points. 
-    """
+    '''
     #---- Setup --------------------------------------------------------------
     x, y = np.asarray(x), np.asarray(y)
     x, y = np.squeeze(x), np.squeeze(y)
@@ -295,9 +307,8 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
         cov[0,1] = 0
 
     # Scaling factor for bandwidth
-    scotts_factor = np.power(n, -1.0 / npower) # For 2D
+    scotts_factor = np.power(n, -1.0 / npower) 
 
-    # note that for 2d, scott and silverman are the same implementation
 
 
     #---- Make the kernel -------------------------------------------
@@ -356,13 +367,25 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
 
 
 
-def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, npower=6.,surfacedensity=False,ktype='gaussian',**kwargs):#weights=None, opt_third=None,opt_third_constraint=None):
-    #
-    # quick wrapper to return x and y grids to go along with the kernel densities
-    #
+def total_kde_two(x, y, gridsize=128, extents=1., nocorrelation=False, npower=6.,surfacedensity=False,ktype='gaussian',**kwargs):
+    '''
+    total_kde_two
+         quick wrapper to return x and y grids to go along with the kernel densities
 
-    # this is used to make an in-plane slice by passing abs(third_dimension)
-    #print kwargs.keys()
+
+
+    inputs
+    ---------------------
+
+
+
+    returns
+    --------------------
+
+
+
+
+    '''
 
     # gridsize can be a tuple
     try:
