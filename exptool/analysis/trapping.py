@@ -386,7 +386,8 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
     
     # compute radii and theta values from clusters
     rad_clusters = np.array([np.sum(np.array(K.clusters[i])*np.array(K.clusters[i]),axis=1)**0.5 for i in range(0,k)])
-    the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
+    #the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
+    the_clusters = np.array([np.arctan((np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
 
     if maxima:
         # use maxima
@@ -403,12 +404,16 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
             organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
 
             clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
+
+            # I think this needs an absolute value
             clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
 
         else:
             clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(0,k)])
-            clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(0,k)])
-            
+            #clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(0,k)])
+            clusterstd_t = np.max([np.abs(np.max(the_clusters[i])-np.min(the_clusters[i])) for i in range(0,k)])
+
+
     else:
         
         # not maxima
@@ -424,7 +429,10 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
 
         else:
             clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(0,k)])
-            clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
+            #clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
+            clusterstd_t = np.mean([np.abs(np.max(the_clusters[i])-np.min(the_clusters[i])) for i in range(0,k)])
+
+
             
         clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
         #theta_n = np.mean([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
