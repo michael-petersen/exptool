@@ -479,9 +479,28 @@ def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
     
         
     # find the standard deviation of clusters
+
+    # first, check to make sure no single-point clusters were detected
+    # set rejection threshold
+    min_cluster_size = 1
+
+    
     try:
+        clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])    
+    
+        # eliminate
+        while np.min(clustersize) <= min_cluster_size:
+            w = np.where(clustersize > min_cluster_size)[0]
+            new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
+                        np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
+    
+            K = kmeans.KMeans(k,X=new_aps)
+            K.find_centers()
+            clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+            
         theta_n,clustermean,clusterstd_r,clusterstd_t = \
         evaluate_clusters_polar(K,maxima=maxima,rank=rank,perc=perc)
+
 
 
     # failure on basic kmeans
@@ -492,6 +511,20 @@ def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
         kmeans_plus_flag = 1
         
         try:
+            clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+            
+
+            while np.min(clustersize) <= min_cluster_size:
+                w = np.where(clustersize > min_cluster_size)[0]
+                new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
+                        np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
+    
+                K = kmeans.KPlusPlus(k,X=new_aps)
+                K.init_centers()
+                K.find_centers(method='++')
+                clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+
+
             theta_n,clustermean,clusterstd_r,clusterstd_t = \
                 evaluate_clusters_polar(K,maxima=maxima,rank=rank,perc=perc)
 
