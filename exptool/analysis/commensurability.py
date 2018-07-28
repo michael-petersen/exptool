@@ -16,7 +16,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 # standard imports
 import numpy as np
-from matplotlib import _cntr as cntr
+
+#
+# not relevant here, but removed in matplotlib 2.2, use skimage.measure.find_contour instead
+#
+#from matplotlib import _cntr as cntr
+
+
+
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
