@@ -286,13 +286,26 @@ def _boolrelextrema(data, comparator,
     locs = np.arange(0, datalen)
     results = np.ones(data.shape, dtype=bool)
     main = data.take(locs, axis=axis, mode=mode)
-    for shift in xrange(1, order + 1):
-        plus = data.take(locs + shift, axis=axis, mode=mode)
-        minus = data.take(locs - shift, axis=axis, mode=mode)
-        results &= comparator(main, plus)
-        results &= comparator(main, minus)
-        if(~results.any()):
-            return results
+
+    # this is the legacy python2 version with xrange (keep to avoid breaking)
+    try:
+        for shift in xrange(1, order + 1):
+            plus = data.take(locs + shift, axis=axis, mode=mode)
+            minus = data.take(locs - shift, axis=axis, mode=mode)
+            results &= comparator(main, plus)
+            results &= comparator(main, minus)
+            if(~results.any()):
+                return results
+
+    # but if python2 breaks, shift to python3 version
+    except:
+        for shift in range(1, order + 1):
+            plus = data.take(locs + shift, axis=axis, mode=mode)
+            minus = data.take(locs - shift, axis=axis, mode=mode)
+            results &= comparator(main, plus)
+            results &= comparator(main, minus)
+            if(~results.any()):
+                return results
     return results
 
 
