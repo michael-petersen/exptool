@@ -227,16 +227,16 @@ def print_skeleton(infile,pskel,Rarr,Varr):
 
 def make_fishbone(infile):
     E = np.genfromtxt(infile) 
-
+    #
     rads = np.unique(E[:,0])
     vels = np.unique(E[:,1])
-
+    #
     Rarr,Varr = np.meshgrid(rads,vels)  
     Rarr = Rarr.T; Varr = Varr.T
     Aarr = E[:,2].reshape(rads.size,vels.size)
-    
+    #
     dd = Aarr.T/(np.pi*Rarr.T*Rarr.T)
-
+    #
     return Rarr.T,Varr.T,dd
 
 

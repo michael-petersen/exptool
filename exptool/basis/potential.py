@@ -48,7 +48,10 @@ from exptool.utils import utils
 from exptool.io import psp_io
 from exptool.analysis import pattern
 from exptool.basis import eof
-from exptool.basis import spheresl
+#from exptool.basis import spheresl
+from exptool.basis import spheresl_new as spheresl
+
+
 from exptool.utils import halo_methods
 
 # for interpolation
@@ -993,11 +996,11 @@ def restore_field(filename=''):
     F.d0halo = (np.fromfile(f,dtype='f8',count=F.numrhalo))
     F.ltable = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)))
 
-    F.evtablehalo = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.nmaxhalo+1))).reshape([(F.lmaxhalo+1),(F.nmaxhalo+1)])
-    F.eftablehalo = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.nmaxhalo+1)*(F.numrhalo))).reshape([(F.lmaxhalo+1),(F.nmaxhalo+1),(F.numrhalo)])
+    F.evtablehalo = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.nmaxhalo))).reshape([(F.lmaxhalo+1),(F.nmaxhalo)])
+    F.eftablehalo = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.nmaxhalo)*(F.numrhalo))).reshape([(F.lmaxhalo+1),(F.nmaxhalo),(F.numrhalo)])
 
     F.SL = spheresl.SL_Object()
-    F.SL.expcoef = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.lmaxhalo+1)*(F.nmaxhalo+1))).reshape([(F.lmaxhalo+1)*(F.lmaxhalo+1),(F.nmaxhalo+1)])
+    F.SL.expcoef = (np.fromfile(f,dtype='f8',count=(F.lmaxhalo+1)*(F.lmaxhalo+1)*(F.nmaxhalo))).reshape([(F.lmaxhalo+1)*(F.lmaxhalo+1),(F.nmaxhalo)])
 
     F.disk_use_m = F.mmax
     F.disk_use_n = F.norder
