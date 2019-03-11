@@ -480,14 +480,31 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         #
     accum_cos = np.sum(norm * mcos * vc, axis=2)
     accum_sin = np.sum(norm * msin * vs, axis=2)
+    #print(vc.shape,mcos.shape)
     #
     if VAR:
-        accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
-        accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
+        #
+        # this is the old MISE method
+        #accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
+        #accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
+        #
+        # for jackknife, need to build this for sampT versions
+        print('Do variance...')
+        accum_cos2 = np.zeros([VAR,MMAX+1,NMAX])
+        accum_sin2 = np.zeros([VAR,MMAX+1,NMAX])
+        for T in range(0,VAR):           
+            use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
+            #
+            accum_cos2[T] = np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
+            accum_sin2[T] = np.sum((norm * msin[:,:,use] * vs[:,:,use]),axis=2)
+        #
         return accum_cos,accum_sin,accum_cos2,accum_sin2
     #
     else:
         return accum_cos,accum_sin
+
+
+
 
 
 
@@ -894,7 +911,7 @@ def accumulated_eval_contributions(r, z, phi, accum_cos, accum_sin, potC, rforce
 
 def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                                potC=0, rforceC=0, zforceC=0, potS=0, rforceS=0, zforceS=0,\
-                               rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=0,density=False,eof_file=''):
+                               rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=1,density=False,eof_file=''):
     '''
     accumulated_eval_particles
         -takes a set of particles with standard PSP attributes (see psp_io documentation) and returns potential and forces.
@@ -930,7 +947,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     
     m1         :  minimum azimuthal order to include
     m2         :  maximum azimuthal order to include
-    verbose    :  verbosity (1=print progress)
+    verbose    :  verbosity (1=print errors, 2=print progress)
 
     outputs
     --------------
@@ -951,7 +968,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
         rmin,rmax,dR,zmin,zmax,dZ = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ASCALE,HSCALE=HSCALE,NUMX=numx,NUMY=numy,CMAP=CMAP)
 
     # check to see if density works and flag is properly set
-    if (dens == 0) & (density == True):
+    if (dens == 0) & (density == True) & (verbose > 0):
         print('eof.accumulated_eval_particles: cannot compute density (functions not specified). moving on without...')
         density = False
     
@@ -975,7 +992,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     # cycle particles
     for part in range(0,norb):
         
-        if (verbose > 0) & ( ((float(part)+1.) % 1000. == 0.0) | (part==0)): utils.print_progress(part,norb,'eof.accumulated_eval_particles')
+        if (verbose > 1) & ( ((float(part)+1.) % 1000. == 0.0) | (part==0)): utils.print_progress(part,norb,'eof.accumulated_eval_particles')
             
         phi = PHI[part]
         X,Y,ix,iy = return_bins(R[part],Particles.zpos[part],rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
@@ -1162,7 +1179,7 @@ def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000,density=
     -----------------------
     p0
     p
-    fr
+a    fr
     fp
     fz
     r
@@ -1178,6 +1195,8 @@ def compute_forces(PSPInput,EOF_Object,verbose=1,nprocs=-1,m1=0,m2=1000,density=
     rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(EOF_Object.eof_file)
     XMIN,XMAX,dX,YMIN,YMAX,dY = set_table_params(RMAX=rmax,RMIN=rmin,ASCALE=ascale,HSCALE=hscale,NUMX=numx,NUMY=numy,CMAP=cmap)
 
+    #
+    # none of these pass a density--they need to be fixed for that.
     if nprocs > 1:
         if density:
             p0,p,d0,d,fr,fp,fz,r = find_forces_multi(PSPInput,nprocs,EOF_Object.cos,EOF_Object.sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=m1,m2=m2,verbose=verbose,density=True)
@@ -1675,7 +1694,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
 # visualizing routines
 #
 
-def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False):
+def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False,density=False):
     '''
     make_eof_wake: evaluate a simple grid of points along an axis
 
@@ -1725,8 +1744,14 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
             cos_coefs_in[i] = np.zeros(EOFObj.nmax)
             sin_coefs_in[i] = np.zeros(EOFObj.nmax)
     #
-   # p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P, cos_coefs_in, sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
-    p0,p,d0,d,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=True)
+   # p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P,
+   # cos_coefs_in,
+   # sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
+    if density:
+        p0,p,d0,d,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=True)
+    else:
+        p0,p,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=False)
+
     #
     #
     wake = {}
@@ -1737,10 +1762,12 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
 
         if m1 < 1:
             wake['P'] = (p+p0).reshape([xline.shape[0],zline.shape[0]])
-            wake['D'] = (d+d0).reshape([xline.shape[0],zline.shape[0]])
+            if density:
+                wake['D'] = (d+d0).reshape([xline.shape[0],zline.shape[0]])
         else:
             wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
-            wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
+            if density:
+                wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
             
         wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
         wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
@@ -1751,10 +1778,12 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
 
         if m1 < 1:
             wake['P'] = p + p0
-            wake['D'] = d + d0
+            if density:
+                wake['D'] = d + d0
         else:
             wake['P'] = p
-            wake['D'] = d
+            if density:
+                wake['D'] = d
             
         wake['fR'] = fr
         wake['R'] = R
@@ -1924,6 +1953,9 @@ def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0
 def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
     '''
     compute_variance : do variance computation on coefficients
+    using the MISE implementation
+    
+    deprecated 01.30.2019
 
     inputs
     -------------

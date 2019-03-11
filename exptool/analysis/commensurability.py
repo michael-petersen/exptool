@@ -207,7 +207,8 @@ def map_skeleton(Rarr,Varr,Aarr,\
         
     
     return ridge_trace
-    
+
+
     
 def print_skeleton(infile,pskel,Rarr,Varr):
 
