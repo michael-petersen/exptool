@@ -6,6 +6,9 @@
 #    08-27-2016
 #    01-02-2017 first fixes
 #    03-29-2017 compare_dump and label improvements
+#    03-15-2019 improve documentation and write TO-DOs
+
+# "I've stolen all the algorithms!"
 
 '''
 ____    ____  __       _______. __    __       ___       __       __   ________   _______ 
@@ -20,7 +23,7 @@ visualize.py : part of exptool
 # WISHLIST:
 -add position overlays to velocity or dispersion plots (see velocity.py)
 
-
+# GENERAL USAGE
 from exptool.observables import visualize
 
 fig = visualize.show_dump('/path/to/OUTFILE','comp')
@@ -28,16 +31,11 @@ ax1,ax2,ax3,ax4 = fig.get_axes()
 
 visualize.compare_dumps('/scratch/mpetersen/Disk001/OUT.run001.01000','/work/mpetersen/Disk001thick/OUT.run001t.01000','star',type='pos',label1='Fiducial',label2='Thick Basis')
 
-
-
+# turn the output files into a movie
 ffmpeg -framerate 20 -i out%05d.png -c:v libx264 -r 30 -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" ~/Desktop/Disk022trans.mp4
 
-
-To make a movie, set specifications make sense:
-
+#To make a movie, set specifications make sense:
 visualize.show_dump('/scratch/mpetersen/Disk004/OUT.run004.01000','star',type='pos',transform=True,gridsize=129,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=5.,cwheel='magma',barfile='/scratch/mpetersen/Disk004/run004_m2n1_barpos.dat')
-
-
 
 '''
 
@@ -51,11 +49,15 @@ from exptool.io import psp_io
 from exptool.utils import kde_3d
 from exptool.analysis import pattern
 
+# bring in the exptool native plotting style
+from exptool.utils import style
+
 # register new colormaps if necessary
 import colormaps as cmaps
 plt.register_cmap(name='viridis', cmap=cmaps.viridis)
 plt.register_cmap(name='magma', cmap=cmaps.magma)
 
+# ^ deprecated for Python3
 
 
 
@@ -74,10 +76,13 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     slice_width=0.1
 
 
-    '''
-    # TODO:
+
+    TODO:
+    ------------------------
     # add kwargs to handle opt_third
 
+    '''
+    
     # XY
     kdeX,kdeY,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,gridsize=gridsize,extents=face_extents,weights=PSPDump.mass,\
                                                   #opt_third=abs(PSPDump.zpos),opt_third_constraint=slice_width,\
@@ -119,7 +124,8 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
     levels_edge = np.round(np.linspace(np.log10(0.9*eps),maxlev_edge,cres),2)
 
 
-    #print 'Increase factor:',np.max(levels)/np.max(levels_edge)
+    # if an increase factor for the projection is desired...
+    #print('Increase factor:',np.max(levels)/np.max(levels_edge))
 
     XY = kdePOSXY
     ZY = kdePOSZY
@@ -263,27 +269,29 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
     INPUTS
     ------------------------------
-    infile
-    comp
-    type='pos'
-    transform=True             : align bar axis to X axis
+    infile                     : input PSP file
+    comp                       : string name of component to visualize. also takes list in [,] format
+    type                       : (string, default='pos') type of visualization ('pos','Xvel','Yvel','Zvel','Rvel','Tvel')
+    transform                  : (boolean, default=True) align bar axis to X axis
     gridsize=64                : evenly spaced bins between -face_extents, face_extents
-    cres=24
-    face_extents=0.06
-    edge_extents=0.02
+    cres=24                    : number of color elements
+    face_extents=0.06          : in-plane extent for KDE mapping
+    edge_extents=0.02          : vertical extent for KDE mapping
     slice_width=0.1            : slice width for density determination
     clevels                    : force contour levels
-    barfile
-    ktype
-    npower
-    cwheel
+    barfile                    : filename for the bar
+    ktype                      : kernel input for KDE
+    npower                     : power-law exponent for the KDE kernel (lower means more compact)
+    cwheel                     : the colormap to use
 
     OUTPUTS
     ------------------------------
-
+    fig                        : figure with access to different axes (ax1,ax2,ax3,ax4)
 
     TODO
     ------------------------------
+    -add the ability to scale the spatial dimensions as desired
+    -eliminate slice_width, or at least make more utilitarian
 
     '''
 

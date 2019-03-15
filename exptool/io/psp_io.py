@@ -11,6 +11,8 @@
 #
 #    12-08-2016 cleaned up subdividing inputs. needs much more cleaning, particularly eliminating many 'self' items from the Input class.
 #                  should also set up dictionary dump by default, could just engineer in at the end?
+#
+#    03-11-2019 set up to read yaml-derived input files. A method to diagnose problems would be amazing--currently written elsewhere.
 
 
 '''
@@ -22,7 +24,7 @@
 | _|   |_______/    | _|    _____|__|  \______/  
                            |______|
 psp_io
-      input and output of Martin Weinberg's PSP files
+      input and output of Martin Weinberg's exp PSP files
 
 
 
@@ -120,7 +122,7 @@ class Input():
         # do the components have niatr/ndatr? to be deprecated once I figure out how to write them properly
             
         #
-        # set mode based on inputs
+        # set mode based on inputs (internal only)
         #
         # 0: failure mode
         # 1: read in orbits from single file 

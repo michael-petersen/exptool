@@ -21,13 +21,17 @@ BarDetermine
 
 
 TODO:
--Python3 print to file
--Filtering algorithms for bar determination
+-Filtering algorithms for bar determination (e.g. look at better time-series algorithms)
 
 
 BASIC USAGE:
 
+# to transform a PSP output to have the bar on the X axis
+PSPTransform = pattern.BarTransform(PSPInput)
 
+# to read in an existing bar file
+BarInstance = pattern.BarDetermine()
+BarInstance.read_bar(bar_file)
 
 '''
 
@@ -175,10 +179,10 @@ class BarDetermine():
             try:
                 # check to see if bar file has already been created
                 self.read_bar(kwargs['file'])
-                print('trapping.BarDetermine: BarInstance sucessfully read.')
+                print('pattern.BarDetermine: BarInstance sucessfully read.')
             
             except:
-                print('trapping.BarDetermine: no compatible bar file found.')
+                print('pattern.BarDetermine: no compatible bar file found.')
                 
 
         return None
