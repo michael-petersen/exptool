@@ -3,9 +3,9 @@
 
 ### Version 0.3
 exptool is primarily collection of analysis methods used to analyze _n_-body simulations, primarily those running with _EXP_, though any _n_-body
-code could use the methodology.
+code could use the methodology (Generation 1).
 
-Recently (2018), exptool has expanded to be an all-purpose dynamical framework for studying disc galaxies.
+Recently (2018), exptool has expanded to be an all-purpose dynamical framework for studying disc galaxies (Generation 2).
 
 The tests/ directory contains simulation outputs to play with, as well as some usage examples for methods.
 
