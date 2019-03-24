@@ -1,7 +1,4 @@
-
-#  12-08-16: cleanup. needs to be merged with neutrapping.
-#  12-23-17: break out bar finding algorithms to the more general pattern.py
-'''
+"""
 .___________..______          ___      .______   .______    __  .__   __.   _______ 
 |           ||   _  \        /   \     |   _  \  |   _  \  |  | |  \ |  |  /  _____|
 `---|  |----`|  |_)  |      /  ^  \    |  |_)  | |  |_)  | |  | |   \|  | |  |  __  
@@ -10,7 +7,10 @@
     |__|     | _| `._____/__/     \__\ | _|      | _|      |__| |__| \__|  \______| 
 trapping.py (part of exptool)
 
-
+EDITS:
+  12-08-16: cleanup. needs to be merged with neutrapping.
+  12-23-17: break out bar finding algorithms to the more general pattern.py
+  03-XX-19: work on homogenizing docstrings and general commenting
 
 CLASSES:
 ApsFinding
@@ -19,11 +19,15 @@ ComputeTrapping (under construction)
 
 TODO:
 
+-Upload example
 -Current work is on the kmeans implementations for generalize for all simulations
 
 
 
-MAIN REFERENCE:
+MAIN REFERENCES:
+Petersen, Weinberg, & Katz (2019a)
+[https://ui.adsabs.harvard.edu/#abs/2019arXiv190205081P/abstract]
+
 Petersen, Weinberg, & Katz (2016)
 [http://adsabs.harvard.edu/abs/2016MNRAS.463.1952P]
 
@@ -43,7 +47,7 @@ Some combination of these quantities will define the bar.
 
 
 
-'''
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 
@@ -71,11 +75,6 @@ from exptool.analysis import pattern
 
 
 class ApsFinding():
-
-    #
-    # class to compute trapping
-    #
-
     '''
     ApsFinding: a class to find aps
 
@@ -84,7 +83,7 @@ class ApsFinding():
     >>> A = trapping.ApsFinding()
     >>> simulation_directory = '/scratch/mpetersen/Disk001/'
     >>> f = open(simulation_directory+'simfiles.dat','w')
-    >>> for x in range(000,1000): print >>f,simulation_directory+'OUT.run001.{0:05d}'.format(x)
+    >>> for x in range(000,1000): print(simulation_directory+'OUT.run001.{0:05d}'.format(x))
     >>> f.close()
     >>> trapping_comp = 'star'
     >>> TrappingInstance = A.determine_r_aps(simulation_directory+'simfiles.dat',trapping_comp,nout=1000,out_directory=simulation_directory,return_aps=True)
@@ -138,7 +137,9 @@ class ApsFinding():
 
         self.slist = filelist
 
-
+        #
+        # stamps the output file with the current time. do we like this?
+        #
         tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
            
         f = open(out_directory+'apshold'+tstamp+'.dat','wb+')
@@ -167,7 +168,7 @@ class ApsFinding():
             Ob = psp_io.Input(self.SLIST[i],comp=comp,nout=nout,verbose=self.verbose)
             Oc = psp_io.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
 
-            # compute 2d radial positions
+            # compute radial positions
             if threedee:
                 Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos + Oa.zpos*Oa.zpos)**0.5
                 Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos + Ob.zpos*Ob.zpos)**0.5
@@ -241,6 +242,13 @@ class ApsFinding():
 
 
     def read_aps_file(self,aps_file):
+        """read in an aps file
+
+
+
+        Todo:
+            would be great if this looked for the most probable, perhaps by recent date?
+        """
 
         f = open(aps_file,'rb')
 
@@ -282,30 +290,8 @@ class ApsFinding():
 
         
     
-#
-# some definitions--these are probably not the final resting place for these.
-#
-        
-def get_n_snapshots(simulation_directory):
-    #
-    # find all snapshots
-    #
-    dirs = os.listdir( simulation_directory )
-    n_snapshots = 0
-    for file in dirs:
-        if file[0:4] == 'OUT.':
-            try:
-                if int(file[-5:]) > n_snapshots:
-                    n_snapshots = int(file[-5:])
-            except:
-                n_snapshots = n_snapshots
-    return n_snapshots
-
-
-
 
 class ComputeTrapping:
-
     '''
     Class to be filled out with the trapping dictionary solver once it is out of prototyping.
 
@@ -315,11 +301,11 @@ class ComputeTrapping:
         pass
 
 
-#
-# how to read and write arrays
-#
 
 def write_trapping_file(array,times,filename,tdtype='i1'):
+    """write trapping arrays to file
+
+    """
     f = open(filename,'wb')
     np.array([array.shape[0],array.shape[1]],dtype='i').tofile(f)
     np.array(times,dtype='f').tofile(f)
@@ -328,6 +314,9 @@ def write_trapping_file(array,times,filename,tdtype='i1'):
 
 
 def read_trapping_file(t_file,tdtype='i1'):
+    """read trapping arrays from file
+
+    """
     f = open(t_file,'rb')
     [norb,ntime] = np.fromfile(f,dtype='i',count=2)
     bar_times = np.fromfile(f,dtype='f',count=ntime)
@@ -359,8 +348,8 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
         
     inputs
     -------------
-    K
-    maxima
+    K             : number of clusters
+    maxima        : (boolean, False) if True, use the maximum value from the clusters
     rank
     perc
     

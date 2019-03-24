@@ -1,4 +1,4 @@
-# exptool: python analysis of exp files
+# exptool: python dynamics using basis function expansions
 ## msp, 2014-present
 
 ### Version 0.3

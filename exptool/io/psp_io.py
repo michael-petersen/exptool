@@ -931,6 +931,30 @@ def map_simulation_files(outfile,simulation_directory,simulation_name,verbose=1)
 
 
 
+#
+# some definitions--these are probably not the final resting place for these.
+#
+        
+def get_n_snapshots(simulation_directory,prefix='OUT.'):
+    #
+    # find all snapshots
+    #
+    dirs = os.listdir( simulation_directory )
+    n_snapshots = 0
+    for file in dirs:
+        if file[0:4] == prefix:
+            try:
+                if int(file[-5:]) > n_snapshots:
+                    n_snapshots = int(file[-5:])
+            except:
+                n_snapshots = n_snapshots
+    return n_snapshots
+
+
+
+
+        
+
 '''
 # shrinking example: make a PSP file smaller than the original
 
