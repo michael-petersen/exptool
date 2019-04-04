@@ -31,6 +31,7 @@ The tests/ directory contains simulation outputs to play with, as well as some u
 #### Publications using exptool
 <ol>
 <b> Generation 2</b>
+<li value="6"> <b>Petersen, M. S.</b>, Weinberg, M. D., and Katz, N. <a href='https://ui.adsabs.harvard.edu/#abs/2019arXiv190308203P/abstract'><i>Using Harmonic Decomposition to Understand Barred Galaxy Evolution</i></a>. arXiv e-prints.</li>
 <li value="5"> <b>Petersen, M. S.</b>, Weinberg, M. D., and Katz, N. <a href='https://ui.adsabs.harvard.edu/#abs/2019arXiv190302566P/abstract'><i>Using Torque to Understand Barred Galaxy Evolution</i></a>. arXiv e-prints.</li>
 <li value="4"> <b>Petersen, M. S.</b>, Weinberg, M. D., and Katz, N. <a href='https://ui.adsabs.harvard.edu/#abs/2019arXiv190205081P/abstract'><i>Using Commensurabilities and Orbit Structure to Understand Barred Galaxy Evolution</i></a>. arXiv e-prints.</li>
 <br>

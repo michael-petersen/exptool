@@ -17,6 +17,14 @@
 
 utils.py: part of exptool
 
+todo
+--------------------
+break into different modules.
+
+brainstorming ideas:
+1. 1d data treatments (e.g. smoothing/signal processing)
+2. 2d data treatments (e.g. kde wrappers)
+3. style elements (e.g. printing, plot styles)
 
 
 What's included:
@@ -32,6 +40,9 @@ quick_contour : quick and dirty 2-d histogram sampling
 argrelextrema : robust method to find local minima/maxima (needs better documentation!)
 savitzky_golay : smoothing using a savitzky_golay filter
 
+
+
+unwrapped_phases = unwrap_phase(times,phases,max_periods=1000)
 
 
 '''
@@ -135,7 +146,7 @@ def binnormalhist(array,bins,weights=None):
 
 def quick_contour(ARR1,ARR2,weights=None,X=None,Y=None,resolution=25):
     #
-    # Quickly bin data
+    # Quickly bin data (BRUTE FORCE)
     #
     # Depends: numpy import as np
     #
@@ -450,35 +461,61 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve( m[::-1], y, mode='valid')
 
 
-#
-# unwrap phase
-#
-def unwrap_phase(phase_array,tol=-np.pi,clock=False):
-    #
-    unwrapped_array = np.zeros_like(phase_array)
-    #
-    k = 0
-    for indx,val in enumerate(phase_array):
-        #
-        if (indx > 0) & (indx < len(unwrapped_array)-1):
-            difference_left = val - phase_array[indx-1]
-            difference_right = phase_array[indx+1] - val
-            if clock:
-                if (difference_left > tol) & (difference_right > 0):
-                    k -= 1
-            else:
-                if (difference_left < tol) & (difference_right > 0):
-                    k += 1
-            #
-            unwrapped_array[indx] = val + 2.*np.pi*k
-        #
-        else:
-            unwrapped_array[indx] = val
-    return unwrapped_array
 
+def unwrap_phase(times,phases,max_periods=1000):
+    """
+    unwrap raw phase information
+    
+    -the big advantage of this new algorithm is that it can go clockwise or counterclockwise
+    (finally)
+    
+    -assumes phases were calculated using arctan2
 
+    inputs
+    -------------
+    times
+    phases
+    max_periods : (int, default=1000) maximum number of periods expected
+    
+    outputs
+    -------------
+    unwrapped_phase : (array, same size as phases) the unwrapped phase
+    
+    """
+    # check data validity
+    if (times.size != phases.size):
+        raise ValueError('unwrap_phases: times and phases must be equal size.')
+    
+    # check if phase is outside of boundaries
+    if ((np.nanmax(phases)>2.*np.pi) | (np.nanmin(phases) < -np.pi)):
+        raise ValueError('unwrap_phases: Values are outside of the accepted phase boundaries.')
+        
+    if np.nanmin(phases) < 0:
+        phases += np.pi
+        
+    if (np.nanmax(phases) - np.nanmin(phases) < np.pi):
+        print('unwrap_phases WARNING: Were the phases calculated with arctan2?')
+        
+    # initialize phase array    
+    unwrapped_phase = np.zeros(phases.size)
+    unwrapped_phase[0] = phases[0]
 
+    offset_array = np.arange(-max_periods,max_periods,1)
 
+    for t in range(1,times.size):
+    
+        # generate the blank array
+        shifted_array = phases[t]+(2*np.pi*offset_array)
+    
+        # find the closest in absolute difference
+        closest = np.abs(shifted_array - unwrapped_phase[t-1]).argmin()
+        #print(closest)
+        #print(shifted_array[closest])
+        unwrapped_phase[t] = shifted_array[closest]
+        
+    return unwrapped_phase
+    
+    
 
 
 

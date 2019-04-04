@@ -86,6 +86,8 @@ import matplotlib as mpl
 from exptool.utils import utils
 from exptool.io import psp_io
 
+from ..utils import utils
+
 # hold off for now...
 try:
     from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
@@ -1841,32 +1843,63 @@ def reorganize_eof_dict(EOFDict):
 
 
 
-def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1.5*np.pi):
+def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1.5*np.pi,nonan=False,signal_threshold=0.005):
     '''
     working phase calculations
 
-    TODO:
+
+    inputs
+    ---------------
+    EOFDict : (dictionary) dictionary with keys as above
+    filter  : (bool, default=True) if True, apply a smoothing filter to data
+    smooth_box : (int, default=101) if filtering, how many timesteps to consider
+    smooth_order : (int, default=2) if filtering, what order to smooth
+    tol : (float, default=-3pi/2) tolerance for considering bar turnaround
+    nonan   : (bool, default=False) if False, nan values that are below signal threshold
+    signal_threshold : (float, default=0.005) threshold that the signal must reach in order to count for frequency calculation
+
+    outputs
+    --------------
+    EOFDict : (dictionary) input dictionary with phase information added
+
+    todo
+    -------------
        - check how robust calculations are
+       - apply new smoothing routines
+       - what about a power limit? only calculate position for certain power values?
 
 
     '''
+
+    # pull mmax and nmax for ease of computing
     mmax=EOFDict[0].mmax
     nmax=EOFDict[0].nmax
-    
-    phases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
-    netphases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0]])
-    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])
+
+    # calculate the raw phases
+
+    # initialize the arrays
+    phases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax]) # array per radial order
+    netphases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0]])   # array where radial orders are weighted into one azimuthal order
+    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])           # time indices
+    signal = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax]) # 1 if the signal is too low to finalize calculation
+
     
     num = 0
     for keyval in EOFDict.keys():
         for mm in range(1,mmax+1):
             for nn in range(0,nmax):
                 phases[mm,num,nn] = np.arctan2(EOFDict[keyval].sin[mm,nn],EOFDict[keyval].cos[mm,nn])
+                signal[mm,num,nn] = np.sqrt(EOFDict[keyval].cos[mm,nn]*EOFDict[keyval].cos[mm,nn] +\
+                                                EOFDict[keyval].sin[mm,nn]*EOFDict[keyval].sin[mm,nn])/\
+                                                np.sum(np.sqrt(EOFDict[keyval].cos[0]*EOFDict[keyval].cos[0]))
+
             #
             netphases[mm,num] = np.arctan2(np.sum(EOFDict[keyval].sin[mm,:]),np.sum(EOFDict[keyval].cos[mm,:]))
         time_order[num] = EOFDict[keyval].time
         num += 1
-    
+
+
+    # initialize the output dictionary
     DC = {}
     DC['time'] = time_order[time_order.argsort()]
     DC['phase'] = {}
@@ -1874,22 +1907,26 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
     DC['unphase'] = {}
     DC['speed'] = {}
     DC['netspeed'] = {}
+    DC['signal'] = {}
 
 
     # direction will range from 0. (completely clockwise) to 1. (completely counterclockwise)
     DC['direction'] = {}
     
-    
+
+    # put phases in time order
     for mm in range(1,mmax+1):
         DC['phase'][mm] = phases[mm,time_order.argsort(),:]
         DC['netphase'][mm] = netphases[mm,time_order.argsort()]
-    
+        DC['signal'][mm] = signal[mm,time_order.argsort(),:]
+
+    # do a finite differencing the calculate the phases
     for mm in range(1,mmax+1):
         
         # if desired, could put in blocks for unreasonable values here?
         #goodphase = np.where( DC['phase'][:,nterm] )
 
-        # what about a power limit? only calculate position for certain power values?
+        
 
         
         DC['speed'][mm] = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
@@ -1908,7 +1945,17 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
                 clock = True
                 
 
-            DC['unphase'][mm][:,nn] = utils.unwrap_phase(DC['phase'][mm][:,nn],tol=tol,clock=clock)
+            #DC['unphase'][mm][:,nn] = utils.unwrap_phase(DC['phase'][mm][:,nn],tol=tol,clock=clock)
+
+            # make all positive, because we are finite differencing: phase will then be positive
+            tmp_unphase = np.abs(utils.unwrap_phase(DC['time'],DC['phase'][mm][:,nn]))
+
+            if not nonan:
+                # zero the bad signal
+                DC['unphase'][mm][(DC['signal'][mm][:,nn] > signal_threshold),nn] = tmp_unphase[DC['signal'][mm][:,nn] > signal_threshold]
+                DC['unphase'][mm][(DC['signal'][mm][:,nn] < signal_threshold),nn] = np.nan
+            else:
+                DC['unphase'][mm][:,nn] = tmp_unphase
 
             if filter:
                 DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(DC['unphase'][mm][:,nn],smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
@@ -1916,13 +1963,21 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
             else:
                 DC['speed'][mm][:,nn] = np.ediff1d(DC['unphase'][mm][:,nn],to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
 
-
+            # reset the initial value
+            DC['speed'][mm][0,nn] = DC['speed'][mm][1,nn]
+                
         if filter:
-            DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            #DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['time'],DC['netphase'][mm]),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+
             
         else:
-            DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
-        
+            #DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+            DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['time'],DC['netphase'][mm]),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
+
+        # reset the initial value
+        DC['netspeed'][mm][0] = DC['netspeed'][mm][1]
+
     return DC
 
 
