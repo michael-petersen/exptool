@@ -2271,7 +2271,11 @@ def quick_plot_coefs(coeffile,label=''):
 
     #for label in ax.get_xticklabels(): label.set_rotation(30); label.set_horizontalalignment("right")
 
-    cmap = mpl.cm.gnuplot
+    try:
+        cmap = mpl.cm.magma
+    except:
+        cmap = mpl.cm.gnuplot
+        
     norm = mpl.colors.BoundaryNorm(boundaries=np.arange(1,len(DC['sum'].keys())+1,1), ncolors=256)
     cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
     cb1.set_label('Azimuthal Order, $\mu$',size=24)
@@ -2280,3 +2284,32 @@ def quick_plot_coefs(coeffile,label=''):
 
 
     
+def rotate_coefficients(cos,sin,rotangle=0.):
+    """
+    helper definition to rotate coefficients (or really anything)
+    
+    inputs
+    -----------
+    cos : input cosine coefficients
+    sin : input sine coefficients
+    rotangle : float value for uniform rotation, or array of length cos.size
+    
+    returns
+    -----------
+    cos_rot : rotated cosine coefficients
+    sin_rot : rotated sine coefficients
+    
+    todo
+    -----------
+    add some sort of clockwise/counterclockwise check?
+    
+    """
+    cosT = np.cos(rotangle)
+    sinT = np.sin(rotangle)
+    
+    cos_rot =  cosT*cos + sinT*sin
+    sin_rot = -sinT*cos + cosT*sin
+    
+    return cos_rot,sin_rot
+
+

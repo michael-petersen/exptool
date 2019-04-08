@@ -23,11 +23,13 @@ TODO:
          
 
 '''
+
+# compatibility imports
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-
-from exptool.orbits import orbit
-from exptool.basis import potential
+# exptool imports
+from ..orbits import orbit
+from ..basis import potential
 
 # standard imports
 import numpy as np

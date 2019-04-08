@@ -44,15 +44,15 @@ import numpy as np
 import time
 
 # exptool classes
-from exptool.utils import utils
-from exptool.io import psp_io
-from exptool.analysis import pattern
-from exptool.basis import eof
-#from exptool.basis import spheresl
-from exptool.basis import spheresl_new as spheresl
+from ..utils import utils
+from ..io import psp_io
+from ..analysis import pattern
+from . import eof
+from . import spheresl
+#from exptool.basis import spheresl_new as spheresl
 
 
-from exptool.utils import halo_methods
+from ..utils import halo_methods
 
 # for interpolation
 from scipy.interpolate import UnivariateSpline

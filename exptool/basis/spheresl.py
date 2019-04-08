@@ -1326,7 +1326,7 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
                 pot1[part] += np.sum(fac1* legs[l][m] * expcoef[loffset+moffset] * potd[l]);
                 potr[part] += np.sum(fac1* legs[l][m] * expcoef[loffset+moffset] * dpot[l]);
                 pott[part] += np.sum(fac1*dlegs[l][m] * expcoef[loffset+moffset] * potd[l]);
-                
+                # no potp when m=0
                 moffset+=1;
                 
           else:
@@ -1703,5 +1703,51 @@ def read_binary_sl_coefficients(coeffile):
 
 
     return times,coef_array
+
+
+
+
+
+
+def rotate_sl_coefficients(SL,rotangle=0.):
+    """
+    helper definition to rotate SL coefficients 
+    
+    inputs
+    -----------
+    SL : input array of 
+    rotangle : float value for uniform rotation, or array of length cos.size
+    
+    returns
+    -----------
+    SLrot : rotated array of coefficients
+    
+    todo
+    -----------
+    fix the recursion relation for the off-diagonal terms
+    add some sort of clockwise/counterclockwise check?
+    
+    """
+    cosT = np.cos(rotangle)
+    sinT = np.sin(rotangle)
+    
+    SLrot = np.copy(SL)
+    nmax = SLout.shape[2]
+    
+    # automate me please: the pattern is obvious-ish!
+    # focus on the squares
+    cos_terms = [2,5,7,10,12,14,17,19,21,23,26,28,30,32,34,37,39,41,43,45,47]
+    
+    # always offset by 1...
+    sin_terms = [3,6,8,11,13,15,18,20,22,24,27,29,31,33,35,38,39,41,43,45,47]
+    
+    SL[:,cos_terms,:]
+    for tmpcos in cos_terms:
+        for nn in range(0,nmax):
+            SLrot[:,tmpcos,nn] = cosT*SL[:,tmpcos,nn] + sinT*SL[:,tmpcos+1,nn]
+            SLrot[:,tmpcos+1,nn] = -sinT*SL[:,tmpcos,nn] + cosT*SL[:,tmpcos+1,nn]
+
+    return SLrot
+
 
 
