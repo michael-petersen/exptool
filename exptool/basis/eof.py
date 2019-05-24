@@ -89,10 +89,11 @@ from exptool.io import psp_io
 from ..utils import utils
 
 # hold off for now...
-try:
-    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
-except:
-    from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
+#try:
+#    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
+#except:
+    
+from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 
 #############################################################################################
 #
@@ -169,13 +170,14 @@ def eof_params(file,verbose=0):
 
 
 
-def parse_eof(file):
+def parse_eof(file,flipped=True):
     '''
     parse_eof
 
     inputs
     --------
     file    :   (string) input cache filename
+    flipped :   (boolean, default=True) switch for C-style reading
 
     returns
     --------
@@ -223,8 +225,14 @@ def parse_eof(file):
                 rforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
                 
             for k in range(0,numx+1):
-                zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+                # a version that is flipped
+                if flipped: 
+                    zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)[::-1]
+                else:
+                    zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+
+
+
             if (dens==1):
                 for k in range(0,numx+1):
                     densc[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
@@ -240,8 +248,13 @@ def parse_eof(file):
                 rforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
                 
             for k in range(0,numx+1):
-                zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+                if flipped: 
+                    zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)[::-1]
+                else:                 
+                    zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+
+
+
             if (dens==1):
                 for k in range(0,numx+1):
                     denss[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
@@ -334,21 +347,29 @@ def return_bins(r,z,\
     X = (r_to_xi(r,CMAP,ASCALE) - rmin)/dR
     Y = (z_to_y(z,hscale=HSCALE) - zmin)/dZ
 
+
     # nearest (floor) integer bin
-    ix = ( np.floor((r_to_xi(r,CMAP,ASCALE) - rmin)/dR) ).astype(int)
-    iy = ( np.floor((z_to_y(z,hscale=HSCALE) - zmin)/dZ) ).astype(int)
+    #ix = ( np.floor((r_to_xi(r,CMAP,ASCALE) - rmin)/dR) ).astype(int)
+    #iy = ( np.floor((z_to_y(z,hscale=HSCALE) - zmin)/dZ)
+    #).astype(int)
+
+    # don't  call out again
+    ix = (X).astype(int)
+    iy = (Y).astype(int)
     
     #
     # check the boundaries and set guards
     #
     ix[(ix < 0)] = 0
     X[(ix < 0)] = 0
+    X[(X < 0)] = 0
     
     ix[(ix >= numx)] = numx - 1
     X[(ix >= numx)]  = numx - 1
     
     iy[(iy < 0)] = 0
     Y[(iy < 0)] = 0
+    Y[(Y < 0)] = 0
     
     iy[(iy >= numy)] = numy - 1
     Y[(iy >= numy)]  = numy - 1

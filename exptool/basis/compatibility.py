@@ -84,9 +84,11 @@ def z_to_y(z, hscale):
     '''
     compute z position to y table mapping
 
+    22-5-2019, precision work:
+    if we increase MIN_DOUBLE, does that help push everything into the plane?
 
     '''
-    return z /( np.abs(z)+1.e-10) * np.arcsinh( np.abs(z/hscale));
+    return (z /( np.abs(z)+1.e-8)) * np.arcsinh( np.abs(z/hscale));
 
 
 def y_to_z(y, hscale):

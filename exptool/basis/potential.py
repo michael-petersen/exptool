@@ -436,8 +436,8 @@ class Fields():
             Fields.set_field_parameters(self)
 
 
-        r2val = (xval*xval + yval*yval)**0.5  + 1.e-10
-        r3val = (r2val*r2val + zval*zval)**0.5  + 1.e-10
+        r2val = (xval*xval + yval*yval)**0.5  + 1.e-15
+        r3val = (r2val*r2val + zval*zval)**0.5  + 1.e-15
         costh = zval/r3val
         phival = np.arctan2(yval,xval)
 

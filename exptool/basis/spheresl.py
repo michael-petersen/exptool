@@ -1726,13 +1726,14 @@ def rotate_sl_coefficients(SL,rotangle=0.):
     -----------
     fix the recursion relation for the off-diagonal terms
     add some sort of clockwise/counterclockwise check?
+    develop a way to handle single timesteps
     
     """
     cosT = np.cos(rotangle)
     sinT = np.sin(rotangle)
     
     SLrot = np.copy(SL)
-    nmax = SLout.shape[2]
+    nmax = SLrot.shape[2]
     
     # automate me please: the pattern is obvious-ish!
     # focus on the squares
