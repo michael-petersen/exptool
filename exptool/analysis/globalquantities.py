@@ -22,7 +22,7 @@ from exptool.io import psp_io
 
 class MassDistribution():
     '''
-    class to calculate basic mass distribution quantities for models, including aribtray component mixing
+    class to calculate basic mass distribution quantities for models, including arbitrary component mixing
 
     '''
 

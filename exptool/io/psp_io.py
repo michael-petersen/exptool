@@ -424,8 +424,14 @@ class Input():
         headStr = (head[0].decode())
         #headStr = str( head[0])#, encoding='utf8' )
 
-        head_sep = head[0].split('\n')
+        # unfortunate python compatibility kludge (thanks to MDW for
+        # pointing this out)
+        try:
+            head_sep = headStr.split('\n')
+        except:
+            head_sep = head[0].split('\n')
 
+            
         P = {}
 
         for param in head_sep:
@@ -744,9 +750,8 @@ class PSPDump():
 #
 
 class particle_holder(object):
-    #
-    # all the quantities you could ever want to fill in your own dump.
-    #
+    '''all the quantities you could ever want to fill in your own PSP-style output.
+    '''
     infile = None
     comp = None
     nbodies = None
@@ -764,6 +769,8 @@ class particle_holder(object):
 
 
 def convert_to_dict(ParticleInstance):
+    '''if a dictionary is preferred, convert the phase-space to a dictionary.
+    '''
     ParticleInstanceDict = {}
     ParticleInstanceDict['xpos'] = ParticleInstance.xpos
     ParticleInstanceDict['ypos'] = ParticleInstance.ypos
@@ -777,42 +784,10 @@ def convert_to_dict(ParticleInstance):
 
     
 
-#
-# this really shouldn't even be an option anymore.
-def subdivide_particles(ParticleInstance,loR=0.,hiR=1.0,zcut=1.0,loT=-np.pi,hiT=np.pi,transform=False,bar_angle=None):
-    #
-    # if transform=True, requires ParticleInstance.xbar to be defined
-    #
-    R = (ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
-    if transform==False:
-        particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut))[0]
-    #if transform==True:
-    #    # compute the bar lag
-    #    ParticleInstanceTransformed = trapping.BarTransform(ParticleInstance,bar_angle=bar_angle)
-    #    BL = ( (np.arctan2(ParticleInstanceTransformed.ypos,ParticleInstanceTransformed.xpos) + np.pi/2.) % np.pi) - np.pi/2.
-    #    # look for particles in the wedge relative to bar angle
-    #    particle_roi = np.where( (R > loR) & (R < hiR) & (abs(ParticleInstance.zpos) < zcut) & (BL > loT) & (BL < hiT))[0]
-    #
-    # fill a new array with particles that meet this criteria
-    #
-    holder = particle_holder()
-    holder.xpos = ParticleInstance.xpos[particle_roi]
-    holder.ypos = ParticleInstance.ypos[particle_roi]
-    holder.zpos = ParticleInstance.zpos[particle_roi]
-    holder.xvel = ParticleInstance.xvel[particle_roi]
-    holder.yvel = ParticleInstance.yvel[particle_roi]
-    holder.zvel = ParticleInstance.zvel[particle_roi]
-    holder.mass = ParticleInstance.mass[particle_roi]
-    holder.infile = ParticleInstance.infile
-    holder.comp = ParticleInstance.comp
-    holder.nbodies = ParticleInstance.nbodies
-    return holder
-
 
 def subdivide_particles_list(ParticleInstance,particle_roi):
-    #
-    # fill a new array with particles that meet this criteria
-    #
+    '''fill a new array with particles that meet this criteria
+    '''
     holder = particle_holder()
     holder.xpos = ParticleInstance.xpos[particle_roi]
     holder.ypos = ParticleInstance.ypos[particle_roi]
@@ -829,10 +804,10 @@ def subdivide_particles_list(ParticleInstance,particle_roi):
 
 
 
-#
-# can this get infile, etc?
-#
+
 def mix_particles(ParticleInstanceArray):
+    '''flatten arrays from multiprocessing into one ParticleInstance.
+    '''
     n_instances = len(ParticleInstanceArray)
     n_part = 0
     for i in range(0,n_instances):
@@ -873,9 +848,8 @@ def mix_particles(ParticleInstanceArray):
 # manipulate file lists
 
 def get_n_snapshots(simulation_directory):
-    #
-    # find all snapshots
-    #
+    '''find all snapshots
+    '''
     dirs = os.listdir( simulation_directory )
     n_snapshots = 0
     for file in dirs:
