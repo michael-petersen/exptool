@@ -786,13 +786,13 @@ def force_eval(r, z, phi, \
     #
     
     fac  = accum_cos[1:,:] * ccos;
-    p0   = np.sum(   accum_cos[0] *  (   potC[0,:,ix,iy] * c00 +    potC[0,:,ix+1,iy  ] * c10 +    potC[0,:,ix,iy+1] * c01 +    potC[0,:,ix+1,iy+1] * c11 ));
-    p    = np.sum(mask * fac * (   potC[1:,:,ix,iy] * c00 +    potC[1:,:,ix+1,iy  ] * c10 +    potC[1:,:,ix,iy+1] * c01 +    potC[1:,:,ix+1,iy+1] * c11 ));
-    fr   = np.sum(mask * fac * (rforceC[1:,:,ix,iy] * c00 + rforceC[1:,:,ix+1,iy  ] * c10 + rforceC[1:,:,ix,iy+1] * c01 + rforceC[1:,:,ix+1,iy+1] * c11 ));
-    fz   = np.sum(mask * fac * (zforceC[1:,:,ix,iy] * c00 + zforceC[1:,:,ix+1,iy  ] * c10 + zforceC[1:,:,ix,iy+1] * c01 + zforceC[1:,:,ix+1,iy+1] * c11 ));
+    p    = np.sum(mask * fac *   (   potC[1:,:,ix,iy] * c00 +    potC[1:,:,ix+1,iy  ] * c10 +    potC[1:,:,ix,iy+1] * c01 +    potC[1:,:,ix+1,iy+1] * c11 ));
+    fr   = np.sum(mask * fac *   (rforceC[1:,:,ix,iy] * c00 + rforceC[1:,:,ix+1,iy  ] * c10 + rforceC[1:,:,ix,iy+1] * c01 + rforceC[1:,:,ix+1,iy+1] * c11 ));
+    fz   = np.sum(mask * fac *   (zforceC[1:,:,ix,iy] * c00 + zforceC[1:,:,ix+1,iy  ] * c10 + zforceC[1:,:,ix,iy+1] * c01 + zforceC[1:,:,ix+1,iy+1] * c11 ));
 
-    fr0  = np.sum(accum_cos[0] * (rforceC[0,:,ix,iy] * c00 + rforceC[0,:,ix+1,iy  ] * c10 + rforceC[0,:,ix,iy+1] * c01 + rforceC[0,:,ix+1,iy+1] * c11 ));
-    fz0  = np.sum(accum_cos[0] * (zforceC[0,:,ix,iy] * c00 + zforceC[0,:,ix+1,iy  ] * c10 + zforceC[0,:,ix,iy+1] * c01 + zforceC[0,:,ix+1,iy+1] * c11 ));
+    p0   = np.sum(accum_cos[0] * (   potC[0 ,:,ix,iy] * c00 +    potC[0 ,:,ix+1,iy  ] * c10 +    potC[0 ,:,ix,iy+1] * c01 +    potC[0 ,:,ix+1,iy+1] * c11 ));
+    fr0  = np.sum(accum_cos[0] * (rforceC[0 ,:,ix,iy] * c00 + rforceC[0 ,:,ix+1,iy  ] * c10 + rforceC[0 ,:,ix,iy+1] * c01 + rforceC[0 ,:,ix+1,iy+1] * c11 ));
+    fz0  = np.sum(accum_cos[0] * (zforceC[0 ,:,ix,iy] * c00 + zforceC[0 ,:,ix+1,iy  ] * c10 + zforceC[0 ,:,ix,iy+1] * c01 + zforceC[0 ,:,ix+1,iy+1] * c11 ));
 
     # switch factor for azimuthal force
     fac = accum_cos[1:,:] * ssin;

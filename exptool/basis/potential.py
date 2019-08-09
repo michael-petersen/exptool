@@ -383,8 +383,8 @@ class Fields():
             Fields.set_field_parameters(self)
 
 
-        r2val = (xval*xval + yval*yval)**0.5  + 1.e-10
-        r3val = (r2val*r2val + zval*zval)**0.5  + 1.e-10
+        r2val = np.sqrt(xval*xval + yval*yval)  + 1.e-10
+        r3val = np.sqrt(r2val*r2val + zval*zval)  + 1.e-10
         costh = zval/r3val
         phival = np.arctan2(yval,xval)
 
@@ -420,8 +420,11 @@ class Fields():
                 
         fzhalo = -1.*(zval*halofr - r2val*haloft)/r3val
 
-        # this is now returning the total potential in both disk and halo case
-        return diskfr,frhalo,diskfp,-1.*halofp,diskfz,fzhalo,diskp,(halop + halop0)
+        # this is now returning the total potential in both disk and
+        # halo case
+
+        # fix to have the correct disk potential value
+        return diskfr,frhalo,diskfp,-1.*halofp,diskfz,fzhalo,-1.*diskp,(halop + halop0)
 
 
             
