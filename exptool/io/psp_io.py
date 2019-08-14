@@ -353,7 +353,8 @@ class Input():
         self.comp_pos = np.zeros(self.ncomp,dtype=np.uint64)                  # byte position of COMPONENT HEADER for returning easily
         self.comp_pos_data = np.zeros(self.ncomp,dtype=np.uint64)             # byte position of COMPONENT DATA for returning easily
         self.comp_data_end = np.zeros(self.ncomp,dtype=np.uint64)             # byte position of COMPONENT DATA END for returning easily
-
+        self.comp_indexing = np.zeros(self.ncomp,dtype='int')                 # are the particles being indexed?
+        
         # generic PSP items worth making accessible
         self.comp_titles = ['' for i in range(0,self.ncomp)]
         self.comp_expansions = ['' for i in range(0,self.ncomp)]
@@ -431,17 +432,47 @@ class Input():
         except:
             head_sep = head[0].split('\n')
 
+
+        #print(head_sep[1])
             
         P = {}
 
+        # log subparameters from the 'parameters' stanza
+        subpars = {}
+        subpars['indexing'] = False # default value
+        self.comp_indexing[present_comp] = 0
+        # THIS IS DISGUSTING BUT I DON'T HAVE ANOTHER GOOD IDEA
+        
+
         for param in head_sep:
             if ':' in param: # guard against filler spaces
-                P[param.split(':')[0].strip()] = param.split(':')[1].strip()
+
+                if (param.split(':')[0].strip()=='parameters') & ('}' in param):
+                    subparamlist = param.split('{')[1].strip('}').split(',')
+
+                    for subparam in subparamlist:
+                        subpars[subparam.split(':')[0].strip()] = subparam.split(':')[1].strip()
+                        # what else might we want from this list?
+
+                else:
+                    
+                    P[param.split(':')[0].strip()] = param.split(':')[1].strip()
+
+
+        # check to see if indexing is true
+        if subpars['indexing'] == 'true':
+            self.comp_indexing[present_comp] = 1
+            
+        
+        #print(P.keys())
 
         self.comp_pos_data[present_comp] = self.f.tell()            # save where the data actually begins
 
         # 8 is the number of fields (m,x,y,z,vx,vy,vz,p)
-        comp_length = nbodies*(self.floatl*8 + 4*niatr + self.floatl*ndatr)
+
+        # plus the possibility of a long integer (i8) index leading
+        comp_length = nbodies*(8*self.comp_indexing[present_comp] + self.floatl*8 + 4*niatr + self.floatl*ndatr)
+        
         self.comp_data_end[present_comp] = self.f.tell() + comp_length                         # where does the data from this component end?
         
         self.comp_titles[present_comp] = P['name']
@@ -460,12 +491,21 @@ class Input():
         #
 
         if self.floatl==4:
-            fstring = 'f,f,f,f,f,f,f,f'
+
+            if self.comp_indexing[self.which_comp] == 1:
+                fstring = 'l,f,f,f,f,f,f,f,f'
+            else:
+                fstring = 'f,f,f,f,f,f,f,f'
+                
             for i in range(0,self.comp_niatr[self.which_comp]): fstring += ',i'
             for i in range(0,self.comp_ndatr[self.which_comp]): fstring += ',f'
 
         else:
-            fstring = 'd,d,d,d,d,d,d,d'
+            if self.comp_indexing[self.which_comp] == 1:
+                fstring = 'l,d,d,d,d,d,d,d,d'
+            else:
+                fstring = 'd,d,d,d,d,d,d,d'
+
             for i in range(0,self.comp_niatr[self.which_comp]): fstring += ',i'
             for i in range(0,self.comp_ndatr[self.which_comp]): fstring += ',d'
 
@@ -492,16 +532,30 @@ class Input():
 
 
             #
-            # populate known attributes
+            # populate known attributes: needs to be shifted for indexing...
             #
-            self.mass = out['f0'][0]
-            self.xpos = out['f1'][0]
-            self.ypos = out['f2'][0]
-            self.zpos = out['f3'][0]
-            self.xvel = out['f4'][0]
-            self.yvel = out['f5'][0]
-            self.zvel = out['f6'][0]
-            self.pote = out['f7'][0]
+            if self.comp_indexing[self.which_comp] == 1:
+
+                self.index = out['f0'][0]
+                self.mass  = out['f1'][0]
+                self.xpos  = out['f2'][0]
+                self.ypos  = out['f3'][0]
+                self.zpos  = out['f4'][0]
+                self.xvel  = out['f5'][0]
+                self.yvel  = out['f6'][0]
+                self.zvel  = out['f7'][0]
+                self.pote  = out['f8'][0]
+
+            else:
+            
+                self.mass = out['f0'][0]
+                self.xpos = out['f1'][0]
+                self.ypos = out['f2'][0]
+                self.zpos = out['f3'][0]
+                self.xvel = out['f4'][0]
+                self.yvel = out['f5'][0]
+                self.zvel = out['f6'][0]
+                self.pote = out['f7'][0]
 
             
             #
