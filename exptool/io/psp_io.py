@@ -2,10 +2,11 @@
 #
 # Python PSP reader
 #
-#    MSP 10.25.14
-#    Added to exptool 12.3.15
-#    Constructed to theoretically handle niatr/ndatr 3.7.16
-#    niatr/ndatr verified 5.26.16
+#    10-25-2014 in original form, Michael S Petersen, michael.petersen@roe.ac.uk
+#
+#    12-03-2015 committed to exptool
+#
+#    03-07-2016 constructed to theoretically handle niatr/ndatr
 #
 #    08-27-2016 added compatibility for dictionary support, the long-term goal of the reader once I commit to re-engineering everything.
 #
@@ -13,7 +14,9 @@
 #                  should also set up dictionary dump by default, could just engineer in at the end?
 #
 #    03-11-2019 set up to read yaml-derived input files. A method to diagnose problems would be amazing--currently written elsewhere.
-
+#
+#    08-14-2019 handle indexing=True from exp component inputs
+#
 
 '''
 .______     _______..______       __    ______   
@@ -27,6 +30,9 @@ psp_io
       input and output of Martin Weinberg's exp PSP files
 
 
+usage
+      PSPDump = psp_io.Input(pspfile,component_name_as_string)
+
 
 
 '''
@@ -38,9 +44,6 @@ import numpy as np
 import os
 
 
-
-
-#from exptool.analysis import trapping
 
 
 class Input():
@@ -97,11 +100,13 @@ class Input():
     '''
 
     def __init__(self, infile, comp=None, nout=None, verbose=0, orbit_list=None, infile_list=None, validate=True):
+        """initialize a PSP Input object.
 
+        """
+        
         #
         # set input parameters
         # 
-        
         self.infile = infile
         self.comp = comp
         self.nout = nout
@@ -118,9 +123,6 @@ class Input():
         # override validate flag if component
         if self.comp != None: validate=False
 
-        #
-        # do the components have niatr/ndatr? to be deprecated once I figure out how to write them properly
-            
         #
         # set mode based on inputs (internal only)
         #

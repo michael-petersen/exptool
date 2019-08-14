@@ -1,17 +1,24 @@
+"""
 #
 # orbit.py
 #
 #    part of exptool: orbit input/output from simulations, pure data processing convenience.
 #
-#    11.12.16 formalized class structure, provided example usage.
-#    11.19.16 documented definitions; considered for generic upgrade.
-#    11.20.16 do generic upgrade to make a single utility
-#    04.07.17 update orbit mapping to use memory mapping capability (2x speedup!). dangerous if PSP structure changes between dumps (unlikely)
+#    11-12-2016 formalized class structure, provided example usage.
+#    11-19-2016 documented definitions; considered for generic upgrade.
+#    11-20-2016 do generic upgrade to make a single utility
+#    04-07-2017 update orbit mapping to use memory mapping capability (2x speedup!). dangerous if PSP structure changes between dumps (unlikely)
 #
+#    TODO:
+        eliminate Python2 print formatting
+        make indexing work
+#   
 #    WISHLIST:
 #       orbit plotting routines
 #       may want saving capability, though 1000 dumps takes 6s, so perhaps no problem
 #
+"""
+
 
 # future compatibility: let's make this Python 3 setup
 from __future__ import print_function
