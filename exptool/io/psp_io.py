@@ -606,6 +606,8 @@ class Input():
 
                 setattr(self, 'd'+str(dbl_attr), out['f'+str(int(8 + self.comp_niatr[self.which_comp] + dbl_attr))][0][self.OLIST])
 
+            # ...this will help the memory footprint A LOT
+            del out
 
 
     def break_info_string(self):
