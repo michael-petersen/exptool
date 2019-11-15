@@ -1,15 +1,6 @@
+"""
 #
-# this is
-# _______   ______    _______ 
-#|   ____| /  __  \  |   ____|
-#|  |__   |  |  |  | |  |__   
-#|   __|  |  |  |  | |   __|  
-#|  |____ |  `--'  | |  |     
-#|_______| \______/  |__|
-#
-#
-#
-
+# this is eof.py
 
 # 08-17-16: bug found in accumulate() where call to get_pot() didn't pass MMAX,NMAX
 # 08-19-16: cmap consistency added
@@ -22,13 +13,7 @@
 
 # 12-28-17: MASSIVE speed up (x10) from making array-based computation.
 
-'''
- _______   ______    _______ 
-|   ____| /  __  \  |   ____|
-|  |__   |  |  |  | |  |__   
-|   __|  |  |  |  | |   __|  
-|  |____ |  `--'  | |  |     
-|_______| \______/  |__|
+##################################################3
 eof (part of exptool.basis)
     Implementation of Martin Weinberg's EmpOrth9thd routines for EXP simulation analysis
 
@@ -63,7 +48,7 @@ usage examples
 #   3) accumulate particles to find coefficients
 #
 
-'''
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 

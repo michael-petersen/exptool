@@ -1,16 +1,10 @@
 """
-.___________..______          ___      .______   .______    __  .__   __.   _______ 
-|           ||   _  \        /   \     |   _  \  |   _  \  |  | |  \ |  |  /  _____|
-`---|  |----`|  |_)  |      /  ^  \    |  |_)  | |  |_)  | |  | |   \|  | |  |  __  
-    |  |     |      /      /  /_\  \   |   ___/  |   ___/  |  | |  . `  | |  | |_ | 
-    |  |     |  |\  \----./  _____  \  |  |      |  |      |  | |  |\   | |  |__| | 
-    |__|     | _| `._____/__/     \__\ | _|      | _|      |__| |__| \__|  \______| 
 trapping.py (part of exptool)
 
 EDITS:
   12-08-16: cleanup. needs to be merged with neutrapping.
   12-23-17: break out bar finding algorithms to the more general pattern.py
-  03-XX-19: work on homogenizing docstrings and general commenting
+  03-01-19: work on homogenizing docstrings and general commenting
 
 CLASSES:
 ApsFinding
@@ -25,7 +19,7 @@ TODO:
 
 
 MAIN REFERENCES:
-Petersen, Weinberg, & Katz (2019a)
+Petersen, Weinberg, & Katz (2020a)
 [https://ui.adsabs.harvard.edu/#abs/2019arXiv190205081P/abstract]
 
 Petersen, Weinberg, & Katz (2016)
