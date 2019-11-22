@@ -7,6 +7,12 @@ two pieces:
 1. to view a galaxy on the sky in some way (LOS usefulness)
 2. to convert simulation coordinates into physical units
                       
+
+TODO:
+1. add single point rotation
+2. add minimum finder for rotation (both trajectory and point)
+3. make velocity optional
+
 '''
 
 # standard libraries
@@ -144,3 +150,69 @@ def de_rotate_points(PSPDump,xrotation,yrotation,zrotation):
     
     return PSPOut
 
+
+
+
+
+
+def compute_spherical(x,y,z,vx,vy,vz,usecartesian=False):
+    """return the spherical coordinates and corresponding velocities
+    also optionally return the re-computed cartesian for checking.
+
+    inputs
+    ----------------
+    x
+    y
+    z
+    vx
+    vy
+    vz
+    usecartesian=False
+
+    returns
+    ----------------
+    r3
+    theta
+    phi
+    vr
+    vtheta
+    vphi,
+    if usecartesian=True:
+       xvel
+       yvel
+       zvel
+
+
+    """
+
+    r3 = np.sqrt(x*x + y*y + z*z)
+    r2 = np.sqrt(z*x + y*y)
+
+    # azimuthal angle
+    phi   = np.arctan2(y,x)
+
+    # polar angle
+    theta = np.arccos(-z/r3) - np.pi/2.
+
+    cost = (z/(r3+1.e-18))
+    sint = np.sqrt(1. - cost*cost)
+    cosp = np.cos(phi)
+    sinp = np.sin(phi)
+
+    vr      = sint*(cosp*vx + sinp*vy) + cost*vz
+    vphi    = (-sinp*vx + cosp*vy)
+    vtheta  = (cost*(cosp*vx + sinp*vy) - sint*vz)
+
+    xvel = vr * sint*cosp + vtheta * cost*cosp - sinp*vphi
+    yvel = vr * sint*sinp + vtheta * cost*sinp + cosp*vphi
+    zvel = vr * cost      - vtheta * sint
+
+    if usecartesian:
+        return r3,theta,phi,vr,vtheta,vphi,xvel,yvel,zvel
+    else:
+        return r3,theta,phi,vr,vtheta,vphi
+
+
+
+
+    
