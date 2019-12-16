@@ -262,8 +262,8 @@ class Input():
             #
             # if returning a single dump, drop into the full component_read loop
             #
-            if self.verbose >= 1:
-                Input.break_info_string(self)
+            #if self.verbose >= 1:
+            #    Input.break_info_string(self)
 
             #
             # 
@@ -461,6 +461,7 @@ class Input():
                     P[param.split(':')[0].strip()] = param.split(':')[1].strip()
 
 
+        subpars = P
         # check to see if indexing is true
         if subpars['indexing'] == 'true':
             self.comp_indexing[present_comp] = 1

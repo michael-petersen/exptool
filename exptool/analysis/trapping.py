@@ -169,6 +169,8 @@ class ApsFinding():
                 Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos + Oc.zpos*Oc.zpos)**0.5
 
             else:
+                # do these need the squares? otherwise we might cut
+                # out some computation
                 Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
                 Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
                 Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5

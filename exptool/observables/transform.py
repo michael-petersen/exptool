@@ -23,7 +23,7 @@ import time
 from exptool.io import psp_io
 
 
-def rotate_points(PSPDump,xrotation,yrotation,zrotation):
+def rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True):
     '''
     rotate_points
         take a PSP dump and return the positions/velocities rotated by a specified set of angles
@@ -51,17 +51,19 @@ def rotate_points(PSPDump,xrotation,yrotation,zrotation):
     b = yrotation*radfac#np.pi/3.   # yrotation
     c = zrotation*radfac#np.pi      # zrotation
     
-    # construct the rotation matrix
+    # construct the rotation matrix TAIT-BRYAN method (x-y-z,
+    # extrinsic rotations)
     Rx = np.array([[1.,0.,0.],[0.,np.cos(a),np.sin(a)],[0.,-np.sin(a),np.cos(a)]])
     Ry = np.array([[np.cos(b),0.,-np.sin(b)],[0.,1.,0.],[np.sin(b),0.,np.cos(b)]])
     Rz = np.array([[np.cos(c),np.sin(c),0.,],[-np.sin(c),np.cos(c),0.],[0.,0.,1.]])
     Rmatrix = np.dot(Rx,np.dot(Ry,Rz))
+
+    # construct the rotation matrix EULER ANGLES (z-x-z) (phi, theta, psi)
     
     # structure the points for rotation
 
     # note: no guard against bad PSP here.
     pts = np.array([PSPDump.xpos,PSPDump.ypos,PSPDump.zpos])
-    vpts = np.array([PSPDump.xvel,PSPDump.yvel,PSPDump.zvel])
     
     #
     # instantiate new blank PSP item
@@ -76,17 +78,19 @@ def rotate_points(PSPDump,xrotation,yrotation,zrotation):
     #
 
     # and velocity
-    tmp = np.dot(vpts.T,Rmatrix)
-    PSPOut.xvel = tmp[:,0]
-    PSPOut.yvel = tmp[:,1]
-    PSPOut.zvel = tmp[:,2]
+    if velocity:
+        vpts = np.array([PSPDump.xvel,PSPDump.yvel,PSPDump.zvel])
+        tmp = np.dot(vpts.T,Rmatrix)
+        PSPOut.xvel = tmp[:,0]
+        PSPOut.yvel = tmp[:,1]
+        PSPOut.zvel = tmp[:,2]
     #
     
     return PSPOut
 
 
 
-def de_rotate_points(PSPDump,xrotation,yrotation,zrotation):
+def de_rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True):
     '''
     rotate_points
         take a PSP dump and return the positions/velocities derotated by a specified set of angles
@@ -126,7 +130,6 @@ def de_rotate_points(PSPDump,xrotation,yrotation,zrotation):
 
     # note: no guard against bad PSP here.
     pts = np.array([PSPDump.xpos,PSPDump.ypos,PSPDump.zpos])
-    vpts = np.array([PSPDump.xvel,PSPDump.yvel,PSPDump.zvel])
     
     #
     # instantiate new blank PSP item
@@ -141,11 +144,15 @@ def de_rotate_points(PSPDump,xrotation,yrotation,zrotation):
     #
 
     # and velocity
-    tmp = np.dot(vpts.T,Rmatrix)
-    PSPOut.xvel = tmp[:,0]
-    PSPOut.yvel = tmp[:,1]
-    PSPOut.zvel = tmp[:,2]
+    if velocity:
+
+        vpts = np.array([PSPDump.xvel,PSPDump.yvel,PSPDump.zvel])
+        tmp = np.dot(vpts.T,Rmatrix)
+        PSPOut.xvel = tmp[:,0]
+        PSPOut.yvel = tmp[:,1]
+        PSPOut.zvel = tmp[:,2]
     #
+
     PSPOut.mass = PSPDump.mass
     
     return PSPOut
