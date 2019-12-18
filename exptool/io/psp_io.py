@@ -15,8 +15,8 @@ written by Martin Weinberg.
 
 
 TODO
--check translator for old PSP files
--add protection for missing yaml
+-check translator for old PSP files: add default values for components, as in yaml
+-add protection for missing yaml?
 -add handling for split PSP files
 -add handling for multiple components simultaneously
 -add _make_dataframe
@@ -108,11 +108,10 @@ class Input:
 
         # TODO: if PSP changes, this will have to be altered
         if self._float_len == 4:
-            *_, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(
-                f, dtype=np.uint32, count=6)
+            _1,_2, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(f, dtype=np.uint32, count=6)
+            
         else:
-            nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(
-                f, dtype=np.uint32, count=4)
+            nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(f, dtype=np.uint32, count=4)
 
         # information string from the header
         head = np.fromfile(f, dtype=np.dtype((np.bytes_, infostringlen)),
@@ -123,11 +122,9 @@ class Input:
             head_normal = head[0].decode()
             head_dict = yaml.safe_load(head_normal)
         except:
-            head_sep = head[0].split('\n')
-            head_dict = dict()
-            for param in head_sep:
-                head_dict[param.split(':')[0].strip()] = param.split(':')[1].strip()
-
+            # backward_compatibility
+            head_dict = self._read_compatible_header(head)
+            
         comp_data_pos = f.tell()  # byte position where component data begins
 
         # the default fields are (m, x, y, z, vx, vy, vz, p)
@@ -150,6 +147,33 @@ class Input:
         f.seek(comp_data_end)
 
         return data
+    
+    def _read_compatible_header(self,head):
+        """read the old style of PSP header
+        
+        handling could be more general: this may have failure cases that I have not foreseen.
+        
+        """
+        
+        head_sep = head[0].decode().split(':')
+        head_dict = dict()
+        head_dict['parameters'] = dict()
+        head_dict['parameters']['indexing'] = 0
+        
+        for istanza,stanza in enumerate(head_sep):
+            
+            if istanza==0:
+                head_dict['name'] = stanza.strip()
+                
+            if istanza==1:
+                head_dict['id'] = stanza.strip()
+                
+            if istanza > 1:
+                stanza_sep = stanza.split(',')
+                for param in stanza_sep:
+                    head_dict['parameters'][param.split('=')[0].strip()] = param.split('=')[1].strip()
+
+        return head_dict
 
     def _read_master_header(self):
         """read the master header of the PSP file"""
@@ -340,7 +364,6 @@ def mix_particles(ParticleInstanceArray):
         final_holder.pote[first_part:first_part+n_instance_part] = ParticleInstanceArray[i].pote
         first_part += n_instance_part
     return final_holder
-
 
 
 
