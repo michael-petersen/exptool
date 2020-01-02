@@ -490,6 +490,10 @@ def find_barangle(time,BarInstance,interpolate=True):
     #    but feels like it only goes one direction?
     #
     '''
+    # place in a guard against nan values
+    BarInstance.pos[BarInstance.pos == np.nan] = 0.
+
+    
     sord = 0 # should this be a variable?
     #
     if (interpolate):

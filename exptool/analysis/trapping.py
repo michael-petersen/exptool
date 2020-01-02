@@ -675,7 +675,7 @@ def transform_aps(ApsArray,BarInstance):
     
     inputs
     ------------------
-    ApsArray        :
+    ApsArray        : the array of apsides
     BarInstance     :
 
     outputs
@@ -764,7 +764,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
 
 
         # find the closest aps
-        relative_aps_time = abs(TrappingInstanceDict[indx][:,0] - desired_time)
+        relative_aps_time = np.abs(TrappingInstanceDict[indx][:,0] - desired_time)
         closest_aps = (relative_aps_time).argsort()[0:sbuffer]
 
         # block loop if furthest aps is above some time threshold

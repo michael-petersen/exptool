@@ -23,18 +23,21 @@ import time
 from exptool.io import psp_io
 
 
-def rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True):
+def rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True,euler=False):
     '''
     rotate_points
         take a PSP dump and return the positions/velocities rotated by a specified set of angles
 
     inputs
     ------------------
-    PSPDump
+    PSPDump     : input set of points
     xrotation   : rotation into/out of page, in degrees
-    yrotation
-    zrotation
-
+    yrotation   :
+    zrotation   : 
+    velocity    : boolean
+        if True, return velocity transformation as well
+    euler       : boolean
+        if True, transform as ZXZ' convention
 
 
     returns
@@ -58,7 +61,18 @@ def rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True):
     Rz = np.array([[np.cos(c),np.sin(c),0.,],[-np.sin(c),np.cos(c),0.],[0.,0.,1.]])
     Rmatrix = np.dot(Rx,np.dot(Ry,Rz))
 
-    # construct the rotation matrix EULER ANGLES (z-x-z) (phi, theta, psi)
+    # construct the rotation matrix EULER ANGLES (z-x-z) (phi, theta,
+    # psi)
+    # follow the Wolfram Euler angle conventions
+    if euler:
+        phi = a
+        theta = b
+        psi = c
+        D = np.array([[np.cos(phi),np.sin(phi),0.,],[-np.sin(phi),np.cos(phi),0.],[0.,0.,1.]])
+        C = np.array([[1.,0.,0.],[0.,np.cos(theta),np.sin(theta)],[0.,-np.sin(theta),np.cos(theta)]])
+        B = np.array([[np.cos(psi),np.sin(psi),0.,],[-np.sin(psi),np.cos(psi),0.],[0.,0.,1.]])
+        Rmatrix = np.dot(B,np.dot(C,D))
+
     
     # structure the points for rotation
 

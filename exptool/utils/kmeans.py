@@ -146,7 +146,7 @@ class KMeans():
                set([tuple(a) for a in self.oldmu])\
                and len(set([tuple(a) for a in self.mu])) == K)
  
-    def find_centers(self, method='random'):
+    def find_centers(self, method='random',nitermax=1000):
         '''
         find_centers
            iteratively select new centers
@@ -177,13 +177,20 @@ class KMeans():
             # this has a python2/3 compatibility issue
             #self.mu = random.sample(X, K)
             self.mu = random.sample(list(X), K)
+
+        # put in a guard against 
+        iter = 0
             
-        while not self._has_converged():
+        while (not self._has_converged()) & (iter<nitermax):
             self.oldmu = self.mu
             # Assign all points in X to clusters
             self._cluster_points()
             # Reevaluate centers
             self._reevaluate_centers()
+            iter += 1
+
+        if iter==nitermax:
+            print('kmeans.kmeans.find_centers: Maximum iterations hit. Check conditions.')
 
 
 
