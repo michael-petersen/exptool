@@ -1,27 +1,14 @@
 #############################################
-#
-#.______     ______   .___________. _______ .__   __. .___________. __       ___       __      
-#|   _  \   /  __  \  |           ||   ____||  \ |  | |           ||  |     /   \     |  |     
-#|  |_)  | |  |  |  | `---|  |----`|  |__   |   \|  | `---|  |----`|  |    /  ^  \    |  |     
-#|   ___/  |  |  |  |     |  |     |   __|  |  . `  |     |  |     |  |   /  /_\  \   |  |     
-#|  |      |  `--'  |     |  |     |  |____ |  |\   |     |  |     |  |  /  _____  \  |  `----.
-#| _|       \______/      |__|     |_______||__| \__|     |__|     |__| /__/     \__\ |_______|
-#                                                                                              
+#                                                                  
 #  potential.py
 #    An exptool utility to handle energy and kappa calculations
 #
 #    MSP 10.1.2015
 #
-#
-# http://patorjk.com/software/taag/#p=display&f=Star%20Wars&t=potential
+#    MSP 26 Apr 2020 revised for more graceful bar transform handling
 #
 '''
-.______     ______   .___________. _______ .__   __. .___________. __       ___       __      
-|   _  \   /  __  \  |           ||   ____||  \ |  | |           ||  |     /   \     |  |     
-|  |_)  | |  |  |  | `---|  |----`|  |__   |   \|  | `---|  |----`|  |    /  ^  \    |  |     
-|   ___/  |  |  |  |     |  |     |   __|  |  . `  |     |  |     |  |   /  /_\  \   |  |     
-|  |      |  `--'  |     |  |     |  |____ |  |\   |     |  |     |  |  /  _____  \  |  `----.
-| _|       \______/      |__|     |_______||__| \__|     |__|     |__| /__/     \__\ |_______|
+
 potential (part of exptool.basis)
     construct instances that are combinations of different components
 
@@ -1223,7 +1210,7 @@ class EnergyKappa():
 #
 # this is EXCLUSIVELY temporary until a better format is decided on
 #
-def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_bonus='',nhalo=1000000,transform=False):
+def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_file='',nhalo=1000000,transform=True):
     '''
     input
     -----------------------------------
@@ -1247,15 +1234,13 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
     BarInstance = pattern.BarDetermine()
 
     if transform:
-        if bar_bonus == '':
-            BarInstance.read_bar(simulation_directory+simulation_name+'_barpos.dat')
-        else:
-            BarInstance.read_bar(simulation_directory+simulation_name+'_'+bar_bonus+'_barpos.dat')
+        BarInstance.read_bar(bar_file)
             
-    # reset the derivative
+        # reset the derivative
         BarInstance.frequency_and_derivative(spline_derivative=2)
-    
-        PSPDump = psp_io.Input(infile,validate=True)
+
+        # put in modern psp reader format
+        PSPDump = psp_io.Input(infile,legacy=False)
     
         patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
     

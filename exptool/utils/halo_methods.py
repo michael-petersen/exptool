@@ -189,7 +189,9 @@ def read_sph_model_table(file):
 
 
 def init_table(modelfile,numr,rmin,rmax,cmap=0,scale=1.0,spline=True):
-    
+    """
+    make the model table and the cachefile agree on abscissa
+    """
     R1,D1,M1,P1 = read_sph_model_table(modelfile)
     
     fac0 = 4.*np.pi

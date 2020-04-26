@@ -1,11 +1,5 @@
 
 '''
- __  .__   __. .___________. _______   _______ .______          ___   .___________. _______ 
-|  | |  \ |  | |           ||   ____| /  _____||   _  \        /   \  |           ||   ____|
-|  | |   \|  | `---|  |----`|  |__   |  |  __  |  |_)  |      /  ^  \ `---|  |----`|  |__   
-|  | |  . `  |     |  |     |   __|  |  | |_ | |      /      /  /_\  \    |  |     |   __|  
-|  | |  |\   |     |  |     |  |____ |  |__| | |  |\  \----./  _____  \   |  |     |  |____ 
-|__| |__| \__|     |__|     |_______| \______| | _| `._____/__/     \__\  |__|     |_______|
 integrate.py: part of exptool
          integration technique(s)
 
@@ -56,7 +50,7 @@ def clock_transform(xarray,yarray,thetas):
 
 def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
                        rotfreq=0.,no_odd=False,\
-                       halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1,verbose=0,force=False,ap_max=1000):
+                       halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1,verbose=0,force=False,ap_max=1000,apse=False):
     '''
 
 
@@ -147,13 +141,14 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
         vzarray[step]   = vzarray[step-1]   + (0.5*(force_zarray[step-1]+force_zarray[step])    *dt)
         
         # check for completion of aps criteria
-        if step > 1:
-            rstep0 = (xarray[step-2]*xarray[step-2] + yarray[step-2]*yarray[step-2])
-            rstep1 = (xarray[step-1]*xarray[step-1] + yarray[step-1]*yarray[step-1])
-            rstep2 = (xarray[step]*xarray[step] + yarray[step]*yarray[step])
+        if apse:
+            if step > 1:
+                rstep0 = (xarray[step-2]*xarray[step-2] + yarray[step-2]*yarray[step-2])
+                rstep1 = (xarray[step-1]*xarray[step-1] + yarray[step-1]*yarray[step-1])
+                rstep2 = (xarray[step]*xarray[step] + yarray[step]*yarray[step])
             
-            if (rstep1 > rstep0) & (rstep1 > rstep2):
-                n_aps += 1
+                if (rstep1 > rstep0) & (rstep1 > rstep2):
+                    n_aps += 1
 
         step += 1
         

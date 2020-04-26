@@ -735,8 +735,8 @@ def legendre_R(lmax, x):
     
     for m in range(0,lmax):#(m=0; m<lmax; m++) {
         pl2 = p[m][m];
-        p[m+1][m] = x*(2*m+1)*pl2
-        pl1 = x*(2*m+1)*pl2
+        p[m+1][m] = x*(2.*m+1)*pl2
+        pl1       = x*(2.*m+1)*pl2
         
         for l in range(m+2,lmax+1):
             p[l][m] = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
@@ -744,6 +744,7 @@ def legendre_R(lmax, x):
             pl2 = pl1
             pl1 = pll
     
+    p[~np.isfinite(p)] = 0.
     
     return p
 
@@ -765,6 +766,9 @@ def dlegendre_R(lmax, x):
 
     see comparable call in Basis.cc
 
+    -----------------
+    some dangerous bug in here where nan values can be returned near limits
+
     '''
     p = np.zeros([lmax+1,lmax+1])
     dp = np.zeros([lmax+1,lmax+1])
@@ -783,15 +787,16 @@ def dlegendre_R(lmax, x):
     
     for m in range(0,lmax):#(m=0; m<lmax; m++) {
         pl2 = p[m][m];
-        p[m+1][m] = x*(2*m+1)*pl2
-        pl1 = x*(2*m+1)*pl2
+        p[m+1][m] = x*(2.*m+1)*pl2
+        pl1       = x*(2.*m+1)*pl2
         
         for l in range(m+2,lmax+1):
             p[l][m] = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
-            pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
-            pl2 = pl1
-            pl1 = pll
-    
+            pll     = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
+            pl2     = pl1
+            pl1     = pll
+
+    p[~np.isfinite(p)] = 0.
     
     MINEPS=1.e-8
     if (1.0-np.abs(x) < MINEPS):
@@ -805,14 +810,20 @@ def dlegendre_R(lmax, x):
         for m in range(0,l):#(m=0; m<l; m++):
             #print l
             dp[l][m] = somx2*(x*l*p[l][m] - (l+m)*p[l-1][m]);
-            dp[l][l] = somx2*x*l*p[l][l];
-            
+        # outside the m loop
+        dp[l][l] = somx2*x*l*p[l][l];
+
+    #p[np.isnan(p)]=0.
+    dp[~np.isfinite(dp)] = 0.
+
     return p,dp
 
 
 def sinecosine_R(mmax, phi):
     '''
     Compute vectors of sines and cosines by recursion
+
+    from src/Basis.cc
 
 
     '''
@@ -823,8 +834,8 @@ def sinecosine_R(mmax, phi):
     c[0] = 1.0;
     s[0] = 0.0;
 
-    c[1] = cos(phi);
-    s[1] = sin(phi);
+    c[1] = np.cos(phi);
+    s[1] = np.sin(phi);
 
     for m in range(2,mmax+1):#m=2; m<=mmax; m++) {
         c[m] = 2.0*c[1]*c[m-1] - c[m-2];
@@ -838,13 +849,19 @@ def factorial_return_new(lmax):
     '''
     factorial from SphericalBasis.cc
 
+    adapted to follow Wolfram conventions
+    https://mathworld.wolfram.com/SphericalHarmonic.html
+
 
     '''
     factorial = np.zeros([lmax+1,lmax+1])
 
     for l in range(0,lmax+1):
         for m in range(0,l+1):
-            factorial[l][m] = np.math.factorial(l-m)/np.math.factoria(l+m);
+            factorial[l][m] = np.sqrt(\
+                                          ((2*l+1)/4*np.pi) *\
+                                          (np.math.factorial(l-m)/np.math.factorial(l+m))\
+                                          )
 
     return factorial
 
@@ -854,9 +871,32 @@ def factorial_return_new(lmax):
 
 def factorial_return(lmax):
     '''
-    return an (lmax+1,lmax+1) element array of factorial terms for spherical harmonics.
+    return factorial terms for spherical harmonics.
 
-    see functional form of spherical harmonics.
+
+    inputs
+    ---------------
+    lmax      : maximum harmonic order to compute factorials for.
+
+
+    returns
+    ---------------
+    factorial : an (lmax+1,lmax+1) element array of factorial terms.
+
+
+    comes from SphereSL.cc accumulate():
+
+    for (int l=0; l<=lmax; l++) {
+      for (int m=0; m<=l; m++) {
+	factorial[l][m] = sqrt( (0.5*l+0.25)/M_PI * 
+				exp(lgamma(1.0+l-m) - lgamma(1.0+l+m)) );
+	if (m != 0) factorial[l][m] *= M_SQRT2;
+      }
+    }
+
+    also see functional form of spherical harmonics,
+    https://mathworld.wolfram.com/SphericalHarmonic.html
+    eq. 6
 
     '''
     factorial = np.zeros([lmax+1,lmax+1])
@@ -1027,7 +1067,7 @@ def all_eval(r, costh, phi, expcoef,\
       if verbose >=4: print('spheresl.all_eval: reducing nmax.')
       evtable = evtable[:,0:nmax]
       eftable = eftable[:,0:nmax]
-      expcoef = expcoef[:,0,nmax]   
+      expcoef = expcoef[:,0:nmax]   
 
 
 
@@ -1119,7 +1159,10 @@ def force_eval(r, costh, phi, expcoef,\
              evtable,eftable,\
              no_odd=False,verbose=0):
     '''
-    force_eval: simple workhorse to evaluate the spherical basis forces
+    force_eval: simple workhorse to evaluate the spherical basis
+             forces
+
+    what is this a copy of?
 
     inputs
     -------
@@ -1694,13 +1737,6 @@ def read_binary_sl_coefficients(coeffile):
         for nn in range(0,nmax):
 
             coef_array[tt,:,nn] = np.fromfile(f, dtype=np.float,count=lmax*(lmax+2)+1)
-
-            
-        #for ll in range(0,lmax*(lmax+2)+1):
-            
-            #coef_array[tt,ll,:] = np.fromfile(f, dtype=np.float,count=nmax)
-
-
 
     return times,coef_array
 
