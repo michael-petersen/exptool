@@ -31,10 +31,10 @@ ext_modules.append(accumulate_c)
                              
     
 setup(name='exptool',
-      version='0.2',
-      description='EXP analysis in Python',
+      version='0.3',
+      description='exp analysis in Python',
       author='Michael Petersen',
-      author_email='mpete0@astro.umass.edu',
+      author_email='michael.petersen@roe.ac.uk',
       license='New BSD',
       #long_description=long_description,
       url='https://github.com/michael-petersen/exptool',
