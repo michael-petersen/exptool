@@ -11,12 +11,7 @@
 # "I've stolen all the algorithms!"
 
 '''
-____    ____  __       _______. __    __       ___       __       __   ________   _______ 
-\   \  /   / |  |     /       ||  |  |  |     /   \     |  |     |  | |       /  |   ____|
- \   \/   /  |  |    |   (----`|  |  |  |    /  ^  \    |  |     |  | `---/  /   |  |__   
-  \      /   |  |     \   \    |  |  |  |   /  /_\  \   |  |     |  |    /  /    |   __|  
-   \    /    |  | .----)   |   |  `--'  |  /  _____  \  |  `----.|  |   /  /----.|  |____ 
-    \__/     |__| |_______/     \______/  /__/     \__\ |_______||__|  /________||_______|
+
 visualize.py : part of exptool
                       
 
@@ -260,7 +255,7 @@ def kde_disp(PSPDump,velarr,gridsize=64,cres=24,face_extents=0.06,edge_extents=0
 
       
 
-def show_dump(infile,comp,type='pos',transform=True,\
+def show_dump(infile,comp,nout=-1,type='pos',transform=True,\
               # parameters for the plot
               gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.,cwheel=cm.gnuplot,**kwargs):
     '''
@@ -299,7 +294,11 @@ def show_dump(infile,comp,type='pos',transform=True,\
 
 
     if np.array(comp).size == 1:
-        PSPDump = psp_io.Input(infile,comp=comp)
+
+        if nout < 0:
+            PSPDump = psp_io.Input(infile,comp=comp)
+        else:
+            PSPDump = psp_io.Input(infile,comp=comp,nout=nout)
 
     else:
         # allow for multiple components to be mixed together
