@@ -25,8 +25,27 @@ class OutCoef(object):
 
     example usage
     ------------
-    SL = outcoef.OutCoef(indir+'outcoef.dark.'+runtag)
-    plt.plot(SL.T,SL.coefs[:,0,0])
+import matplotlib.pyplot as plt
+    import outcoef
+    
+    # for a spherical component 'dark':
+    Sph = outcoef.OutCoef(indir+'outcoef.dark.'+runtag)
+    
+    # then show the lowest-order (0,0) term
+    m = 0
+    n = 0
+    plt.plot(Sph.T,Sph.coefs[:,m,n])
+    
+    # similarly, for a cylinder component 'star':
+    Cyl = outcoef.OutCoef(indir+'outcoef.star.'+runtag)
+    
+    # again show the lowest-order (0,0) term
+    plt.plot(Cyl.T,Cyl.coefs[:,0,m,n]) # the 0 in the second spot of coefs indicates cosine term, see below.
+    
+    notes
+    -------
+    any other/better ideas for how to bring in the coefficients and make them more user-friendly would be welcome,
+    just let me know how you are using/want to use them.
 
     """
 
