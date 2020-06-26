@@ -87,6 +87,7 @@ from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 #    note that the tables are currently constructed elsewhere,
 #    contingent on converting a Sturm-Louiville eigenfunction solver to compile stand-alone
 #
+
 def eof_params(file,verbose=0):
     '''
     eof_params: extract basic parameters from a cachefile
@@ -112,27 +113,53 @@ def eof_params(file,verbose=0):
 
     '''
     f = open(file,'rb')
-    #
-    # read the header
-    #
-    a = np.fromfile(f, dtype=np.uint32,count=7)
-    mmax = a[0]
-    numx = a[1]
-    numy = a[2]
-    nmax = a[3]
-    norder = a[4]
-    dens = a[5]
-    cmap = a[6]
-    #
-    # second header piece
-    #
-    a = np.fromfile(f, dtype='<f8',count=6)
-    rmin = a[0]
-    rmax = a[1]
-    ascale = a[2]
-    hscale = a[3]
-    cylmass = a[4]
-    tnow = a[5]
+
+    # Check for magic number
+    tmagic = np.fromfile(f, dtype='<i4', count=1)
+    hmagic = 0xc0a57a1
+
+    if tmagic[0] == hmagic:
+      ssize = np.fromfile(f, dtype='<i4', count=1)
+      cbufs = np.fromfile(f, dtype='<c', count=ssize[0])
+      data = yaml.load(cbufs.tostring())
+
+      mmax    = data['mmax']
+      numx    = data['numx']
+      numy    = data['numy']
+      nmax    = data['nmax']
+      norder  = data['norder']
+      dens    = data['dens']
+      cmap    = data['cmap']
+      rmin    = data['rmin']
+      rmax    = data['rmax']
+      ascale  = data['ascl']
+      hscale  = data['hscl']
+      cylmass = data['cmass']
+      tnow    = data['time']
+
+    else:
+      #
+      # read the header
+      #
+      f.seek(0, 0)
+      a = np.fromfile(f, dtype=np.uint32,count=7)
+      mmax = a[0]
+      numx = a[1]
+      numy = a[2]
+      nmax = a[3]
+      norder = a[4]
+      dens = a[5]
+      cmap = a[6]
+      #
+      # second header piece
+      #
+      a = np.fromfile(f, dtype='<f8',count=6)
+      rmin = a[0]
+      rmax = a[1]
+      ascale = a[2]
+      hscale = a[3]
+      cylmass = a[4]
+      tnow = a[5]
 
     if (verbose):
 
@@ -153,16 +180,13 @@ def eof_params(file,verbose=0):
     return rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens
 
 
-
-
-def parse_eof(file,flipped=True):
+def parse_eof(file):
     '''
     parse_eof
 
     inputs
     --------
     file    :   (string) input cache filename
-    flipped :   (boolean, default=True) switch for C-style reading
 
     returns
     --------
@@ -178,13 +202,22 @@ def parse_eof(file,flipped=True):
 
     '''
 
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(file,verbose=0)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(file,verbose=1)
     #
     # open the eof_file
     f = open(file,'rb')
 
-    # skip past the header info, already grabbed it
-    f.seek(76)
+    # Check for magic number
+    #
+    tmagic = np.fromfile(f, dtype='<i4', count=1)
+    hmagic = 0xc0a57a1
+
+    # New cache header?
+    if tmagic[0] == hmagic:
+      ssize = np.fromfile(f, dtype='<i4', count=1)
+      f.seek(8+ssize[0])
+    else:
+      f.seek(76)
     
     #
     # initialize blank arrays
@@ -210,14 +243,8 @@ def parse_eof(file,flipped=True):
                 rforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
                 
             for k in range(0,numx+1):
-                # a version that is flipped
-                if flipped: 
-                    zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)[::-1]
-                else:
-                    zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-
-
-
+                zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             if (dens==1):
                 for k in range(0,numx+1):
                     densc[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
@@ -233,13 +260,8 @@ def parse_eof(file,flipped=True):
                 rforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
                 
             for k in range(0,numx+1):
-                if flipped: 
-                    zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)[::-1]
-                else:                 
-                    zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-
-
-
+                zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
+                
             if (dens==1):
                 for k in range(0,numx+1):
                     denss[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
@@ -248,7 +270,6 @@ def parse_eof(file,flipped=True):
     f.close()
     
     return potC,rforcec,zforcec,densc,potS,rforces,zforces,denss
-
 
 
 def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY=64,CMAP=0):
