@@ -7,7 +7,6 @@ from numpy.linalg import eig, inv
 
 # plotting elements
 import matplotlib.pyplot as plt
-%matplotlib inline
 import matplotlib.cm as cm
 import matplotlib as mpl
 mpl.rcParams['font.weight'] = 'medium'

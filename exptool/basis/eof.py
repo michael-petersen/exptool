@@ -173,6 +173,7 @@ def eof_params(file,verbose=0):
         print('ASCALE,HSCALE={0:5.4f},{1:5.4f}'.format(ascale,hscale))
         print('CYLMASS={0:5.4f}'.format(cylmass))
         print('TNOW={0:5.4f}'.format(tnow))
+        if tmagic[0] == hmagic: print('NEWSTYLE')
 
 
     f.close()
