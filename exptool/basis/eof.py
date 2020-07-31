@@ -519,7 +519,7 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         #accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
         #
         # for jackknife, need to build this for sampT versions
-        print('Do variance...')
+        if verbose: print('Do variance...')
         accum_cos2 = np.zeros([VAR,MMAX+1,NMAX])
         accum_sin2 = np.zeros([VAR,MMAX+1,NMAX])
         for T in range(0,VAR):           
@@ -1104,7 +1104,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
 ############################################################################################
 
 
-def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,VAR=False):
+def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,VAR=False,nanblock=False):
     '''
     compute_coefficients:
          take a PSP input file and eof_file and compute the cofficients
@@ -1134,6 +1134,22 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
 
 
     '''
+
+    # check for nan values in the input file
+    nanvals = np.where( np.isnan(PSPInput.xpos) | np.isnan(PSPInput.ypos) | np.isnan(PSPInput.zpos))[0]
+
+    if nanvals > 0:
+        print('eof.compute_coefficients: NaN values found in output file {}.'.format(PSPInput.infile))
+
+        if nanblock:
+            # exit
+            pass
+        else:
+            # put the particles somewhere they will do less damage...
+            PSPInput.xpos[nanvals] = 0.
+            PSPInput.ypos[nanvals] = 0.
+            PSPInput.zpos[nanvals] = 0.
+    
 
     EOF_Out = EOF_Object()
     EOF_Out.time = PSPInput.time
@@ -1286,6 +1302,12 @@ def accumulate_star(a_b):
 
 
 def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=0,no_odd=False,VAR=False):
+    """
+    start the multi-processor accumulation.
+
+    arguments are listed in order.
+
+    """
     pool = multiprocessing.Pool(nprocs)
     a_args = [holding[i] for i in range(0,nprocs)]
     second_arg = potC

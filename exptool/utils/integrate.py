@@ -74,6 +74,7 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
     verbose         : (bool)   if True, report timing diagnostics
     force           : (bool)   if Tre, return force fields ('FX','FY','FZ')
     ap_max          : (int)    maximum number of apsides to integrate through
+    apse            : (bool)
 
     outputs
     --------------
@@ -89,7 +90,6 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
     t0 = time.time()
     
     times = np.arange(0,nint,1)*dt
-
 
     # this needs a guard for mismatched size at some point
     barpos = 2.*np.pi*rotfreq*times
