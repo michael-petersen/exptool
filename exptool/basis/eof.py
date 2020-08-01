@@ -51,6 +51,8 @@ usage examples
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+# set up a master debug...
+debug = False
 
 # general definitions
 import struct
@@ -451,7 +453,7 @@ def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx
     return Vc,Vs
 
 
-def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0,no_odd=False,VAR=False):
+def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,ASCALE,HSCALE,CMAP,verbose=0,no_odd=False,VAR=0):
     '''
     accumulate
        workhorse for adding all the numbers together
@@ -472,15 +474,15 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
     12 ASCALE
     13 HSCALE
     14 CMAP
-    15 verbose=0
-    16 no_odd=False
-    17 VAR=False
+    15 verbose          : (int, default=0)        if >0, print successively more information
+    16 no_odd           : (bool, default=False)   if True, skip all odd orders in accumulation
+    17 VAR              : (int, default=0)        if >0, the number of variance partitions
 
 
     outputs
     ---------------
-    accum_cos           : cosine coefficients
-    accum_sin           :   sine coefficients
+    accum_cos           : (numpy array)           cosine coefficients
+    accum_sin           : (numpy array)           sine coefficients
 
 
     '''
@@ -518,15 +520,16 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         #accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
         #accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
         #
-        # for jackknife, need to build this for sampT versions
-        if verbose: print('Do variance...')
+        # for jackknife, need to build this for sampT versions. see EmpCylSL::accumulate()
+        if verbose > 1: print('Do variance...')
         accum_cos2 = np.zeros([VAR,MMAX+1,NMAX])
         accum_sin2 = np.zeros([VAR,MMAX+1,NMAX])
+        upscale = float(r.size)/(np.floor(np.sqrt(r.size)))
         for T in range(0,VAR):           
             use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
             #
-            accum_cos2[T] = np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
-            accum_sin2[T] = np.sum((norm * msin[:,:,use] * vs[:,:,use]),axis=2)
+            accum_cos2[T] = upscale*np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
+            accum_sin2[T] = upscale*np.sum((norm * msin[:,:,use] * vs[:,:,use]),axis=2)
         #
         return accum_cos,accum_sin,accum_cos2,accum_sin2
     #
@@ -1327,7 +1330,8 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
     fifteenth_arg[0] = verbose
     sixteenth_arg = no_odd
     seventeenth_arg = VAR
-    
+
+    # this is a bad way to do python2/3 compatibility
     try:
         a_coeffs = pool.map(accumulate_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                 itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
@@ -1376,6 +1380,8 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
 
     # sum over processes
     scoefs = np.sum(np.array(a_coeffs),axis=0)
+
+    if debug: print('DEBUG eof.py: scoefs.shape=',scoefs.shape)
     
     a_cos = scoefs[0]
     a_sin = scoefs[1]

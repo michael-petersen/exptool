@@ -473,14 +473,18 @@ class Fields():
     
     def rotation_curve(self,rvals=np.linspace(0.0001,0.1,100),mono=False,angle=0.):
         '''
-        returns the rotation curve alone the x axis for quick and dirty viewing. rotate potential first if desired!
+        returns the rotation curve, computed as$ v_c = \sqrt{r|F_r|}$.
+
+        by default, returns the values for the disk and halo where x>0, y=0.
+        (so rotate potential first if desired!)
 
 
         inputs
         --------------
-        self           :                            the Field instance
-        rvals          : (default=sampling to 0.1)  what rvalues to evaluate
-        mono           : (default=False)            use only the monopole?
+        self           : (Field instance)                 
+        rvals          : (float, default=sampling to 0.1)  what rvalues to evaluate
+        mono           : (bool, default=False)            use only the monopole?
+        angle          : (float, default=0.)
 
         returns
         --------------
@@ -537,7 +541,7 @@ class Fields():
 
     def resonance_positions(self,rvals=np.linspace(0.0001,0.1,100),mono=False):
         '''
-        calculate simple resonance lines for modeling purposes
+        calculate simple resonance lines for modelling purposes
 
         inputs
         --------------
