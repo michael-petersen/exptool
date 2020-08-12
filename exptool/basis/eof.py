@@ -516,15 +516,18 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
     #
     if VAR:
         #
-        # this is the old MISE method
+        # this is the old MISE method: PCAEOF
         #accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
         #accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
         #
-        # for jackknife, need to build this for sampT versions. see EmpCylSL::accumulate()
+        # for jackknife, need to build this for sampT versions. see EmpCylSL::accumulate(), PCAVAR
         if verbose > 1: print('Do variance...')
         accum_cos2 = np.zeros([VAR,MMAX+1,NMAX])
         accum_sin2 = np.zeros([VAR,MMAX+1,NMAX])
-        upscale = float(r.size)/(np.floor(np.sqrt(r.size)))
+
+        # consider the best way to do this...
+        upscale = 1.# float(r.size)/(np.floor(np.sqrt(r.size)))
+        
         for T in range(0,VAR):           
             use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
             #
@@ -548,9 +551,9 @@ def show_basis(eof_file,plot=False,sine=False):
 
     inputs
     ------------
-    eof_file
-    plot
-    sine
+    eof_file    : (string)
+    plot        : (bool, default=False)
+    sine        : (bool, default=False)
 
 
     returns
@@ -1118,8 +1121,8 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
     PSPInput       :
     eof_file       :
     verbose        :
-    no_odd         :
-    nprocs_max     :
+    no_odd         : (bool, default False) if True, skip the odd m functions
+    nprocs_max     : (int, default -1) the maximum number of processes to use for computation. will default to using all processors
  
 
     returns
@@ -1189,7 +1192,8 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
         
     else:
         # single processor implementation (12.18.2017)
-        #print('eof.compute_coefficients: This definition has not yet been generalized to take a single processor.')
+        print('eof.compute_coefficients: Starting single processor version.')
+        # add in timings here!
 
         if VAR:
             a_cos,a_sin,a_cos2,a_sin2 = accumulate(PSPInput,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd,VAR=VAR)
@@ -1197,6 +1201,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
         else:
             a_cos,a_sin = accumulate(PSPInput,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
 
+        # add end timer
 
     EOF_Out.cos = a_cos
     EOF_Out.sin = a_sin

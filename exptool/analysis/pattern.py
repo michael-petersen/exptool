@@ -22,7 +22,8 @@ BarDetermine
 
 TODO:
 -Filtering algorithms for bar determination (e.g. look at better time-series algorithms)
-
+-Need a partial pattern calculator for bars that grow and
+disappear. Perhaps also in eof.py?
 
 BASIC USAGE:
 

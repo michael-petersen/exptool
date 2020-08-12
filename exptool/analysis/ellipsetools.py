@@ -1,17 +1,12 @@
 '''
- _______  __       __       __  .______     _______. _______ .___________.  ______     ______    __          _______.
-|   ____||  |     |  |     |  | |   _  \   /       ||   ____||           | /  __  \   /  __  \  |  |        /       |
-|  |__   |  |     |  |     |  | |  |_)  | |   (----`|  |__   `---|  |----`|  |  |  | |  |  |  | |  |       |   (----`
-|   __|  |  |     |  |     |  | |   ___/   \   \    |   __|      |  |     |  |  |  | |  |  |  | |  |        \   \    
-|  |____ |  `----.|  `----.|  | |  |   .----)   |   |  |____     |  |     |  `--'  | |  `--'  | |  `----.----)   |   
-|_______||_______||_______||__| | _|   |_______/    |_______|____|__|      \______/   \______/  |_______|_______/    
-                                                           |______|                                                  
+
 ellipse_tools.py: part of exptool
           basic ellipse fitting tools
 
 
-
 # basic use: do ellipse fits to find the bar position angle
+
+# requires the image to already be created; this process can be streamlined.
 
 simulation_directory = '/scratch/mpetersen/Disk004/'
 simulation_name = 'run004'
