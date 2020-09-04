@@ -75,6 +75,9 @@ from exptool.io import psp_io
 
 from ..utils import utils
 
+# should put in some block for if yaml doesn't exist.
+import yaml
+
 # hold off for now...
 #try:
 #    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
@@ -131,13 +134,25 @@ def eof_params(file,verbose=0):
       nmax    = data['nmax']
       norder  = data['norder']
       dens    = data['dens']
-      cmap    = data['cmap']
+      #cmap    = data['cmap']
       rmin    = data['rmin']
       rmax    = data['rmax']
       ascale  = data['ascl']
       hscale  = data['hscl']
       cylmass = data['cmass']
       tnow    = data['time']
+        
+      try:
+        cmapr   = data["cmap" ]
+        cmap    = data["cmap" ]
+      except:
+        cmapr   = data["cmapr"]
+        cmap    = data["cmapr" ]
+
+      try:
+          cmapz = data["cmapz"]
+      except:
+          cmapz = 0;
 
     else:
       #
@@ -181,6 +196,8 @@ def eof_params(file,verbose=0):
     f.close()
     
     return rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens
+
+
 
 
 def read_eof_file(file):
