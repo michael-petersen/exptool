@@ -10,12 +10,8 @@
 # 06-14-18: fixed evaluation bugs, added documentation, checked Python3 compatibility
 #
 #
-'''  _______..______    __    __   _______ .______       _______     _______. __      
-    /       ||   _  \  |  |  |  | |   ____||   _  \     |   ____|   /       ||  |     
-   |   (----`|  |_)  | |  |__|  | |  |__   |  |_)  |    |  |__     |   (----`|  |     
-    \   \    |   ___/  |   __   | |   __|  |      /     |   __|     \   \    |  |     
-.----)   |   |  |      |  |  |  | |  |____ |  |\  \----.|  |____.----)   |   |  `----.
-|_______/    | _|      |__|  |__| |_______|| _| `._____||_______|_______/    |_______|
+'''     
+
 spheresl (part of exptool.basis)
     Implementation of Martin Weinberg's SphereSL routines for EXP simulation analysis
 
@@ -162,59 +158,6 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0,
 
     return dens_mat,force_mat,pot_mat
 
-
-
-'''      
-
-def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale):
-    #
-    # needs the potential table to be defined
-    #
-    numr = d0.shape[0]
-    dens_mat = np.zeros([lmax+1,nmax])
-    pot_mat = np.zeros([lmax+1,nmax])
-    force_mat = np.zeros([lmax+1,nmax])
-
-    x = r_to_xi(x,cmap,scale);
-    
-    if (cmap==1):
-        if (x<-1.0): x=-1.0;
-        if (x>=1.0): x=1.0-1.0e-08;
-    if (cmap==2):
-        if (x<xmin): x=xmin;
-        if (x>xmax): x=xmax;
-    
-    dxi = xi[1]-xi[0]
-    
-    indx = int(np.floor( (x-np.min(xi))/(dxi) ))
-    
-    if (indx<0): indx = 0;
-    if (indx>numr-2): indx = numr - 2;
-    
-    x1 = (xi[indx+1] - x)/(dxi);
-    x2 = (x - xi[indx])/(dxi);
-    
-    fac = d_xi_to_r(x,cmap,scale)/dxi;
-    
-    for l in range(0,lmax+1):
-
-        for n in range(0,nmax):
-        
-            dens_mat[l][n] = (x1*eftable[l][n][indx] + x2*eftable[l,n,indx+1])*np.sqrt(evtable[l,n]) * (x1*d0[indx] + x2*d0[indx+1]);
-
-            if indx == 0:
-                # do a forced advance of the indx by one if running into the edge
-                # 01-05-16: fixes a bug where the center of the determination fell apart
-                force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,0]*p0[0] - 2.0*x2*eftable[l,n,1]*p0[1] + (x2 + 0.5)*eftable[l,n,2]*p0[2]) / np.sqrt(evtable[l][n]);
-            else:
-                force_mat[l][n] = fac * ((x2 - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*x2*eftable[l,n,indx]*p0[indx] + (x2 + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l][n]);
-
-            pot_mat[l][n] = (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/\
-                          np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
-
-    return dens_mat,force_mat,pot_mat
-
-'''
 
 def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap, scale):#, int which):
     #
