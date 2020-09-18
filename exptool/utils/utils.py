@@ -8,13 +8,6 @@
 ####################################################################
 
 '''
- __    __  .___________. __   __          _______.
-|  |  |  | |           ||  | |  |        /       |
-|  |  |  | `---|  |----`|  | |  |       |   (----`
-|  |  |  |     |  |     |  | |  |        \   \    
-|  `--'  |     |  |     |  | |  `----.----)   |   
- \______/      |__|     |__| |_______|_______/    
-
 utils.py: part of exptool
 
 todo
@@ -43,6 +36,11 @@ savitzky_golay : smoothing using a savitzky_golay filter
 
 
 unwrapped_phases = unwrap_phase(times,phases,max_periods=1000)
+
+
+TODO
+from scipy.signal import argrelextrema
+supersedes argrelextema here. Can cut this out of code perhaps?
 
 
 '''
