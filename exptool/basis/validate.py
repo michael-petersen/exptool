@@ -16,14 +16,14 @@ import matplotlib.pyplot as plt
 
 
 
-from . import eof
+from ..basis import eof
 
 
 
 
 """------------------------------------------------------------
 CYLINDRICAL BASIS----------------------------------------------
-"""------------------------------------------------------------
+------------------------------------------------------------"""
 def show_eof_basis(eof_file,plot=False,sine=False):
     '''
     show_basis: demonstration plots for eof_files
