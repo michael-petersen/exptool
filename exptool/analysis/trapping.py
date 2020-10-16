@@ -175,18 +175,21 @@ class ApsFinding():
                 Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
                 Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
                 
-            # use logic to find aps
-            aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
+            # use logic to find aps: protect on indices
+            sortedindicies = Oa.index.argsort()
+            aps = np.logical_and( Ob.R[sortedindicies] > Oa.R[sortedindicies], Ob.R[sortedindicies] > Oc.R[sortedindicies] )
 
-            
-            indx = np.array([i for i in range(0,len(Ob.xpos))])
+            #aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
+
+            # is there a reason for this?
+            #indx = np.array([i for i in range(0,len(Ob.xpos))])
 
             x = Ob.xpos[aps]
             y = Ob.ypos[aps]
             z = Ob.zpos[aps]
-            numi = indx[aps]
+            #numi = indx[aps]
 
-            norb = len(numi)
+            norb = len(z)#len(numi)
 
             if self.verbose > 0:
                     print('Current time: {4.3f}'.format(Ob.time),end='\r', flush=True)

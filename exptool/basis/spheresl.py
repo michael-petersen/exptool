@@ -8,7 +8,7 @@
 # 08-30-16: print_progress and verbosity keys added
 # 12-03-16: major revisions
 # 06-14-18: fixed evaluation bugs, added documentation, checked Python3 compatibility
-#
+# 10-08-20: add factorial correction; need to be careful about bookkeeping between exp and exptool.
 #
 '''     
 
@@ -1730,4 +1730,24 @@ def rotate_sl_coefficients(SL,rotangle=0.):
     return SLrot
 
 
+
+def correct_SL_coefs(SLin):
+    """apply the factorial correction to coefficients from EXP for
+    interfacing with exptool integration"""
+    expcoef_copy = np.copy(SLin)
+    lmaxhalo = int(np.sqrt(expcoef_copy.shape[0])) - 1
+    nmaxhalo = expcoef_copy.shape[1]
+    print(expcoef_copy.shape)
+    factorial = spheresl.factorial_return(6)
+    print(lmaxhalo,nmaxhalo)
+    indx = 0
+    for l in range(0,lmaxhalo+1):
+        for m in range(0,l+1):
+            #print(l,n)
+            expcoef_copy[indx] *= factorial[l,m]
+            indx += 1
+            if m>0:
+                expcoef_copy[indx] *= factorial[l,m]
+                indx+=1
+    return expcoef_copy
 
