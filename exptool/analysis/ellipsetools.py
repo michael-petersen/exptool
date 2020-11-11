@@ -43,6 +43,9 @@ import numpy as np
 
 from matplotlib import _cntr as cntr
 
+from skimage.measure import find_contours
+
+
 
 
 from numpy.linalg import eig, inv

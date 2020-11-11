@@ -42,10 +42,11 @@ from exptool.io import psp_io
 
 
 # (try to) pull in C routines
-try:
-    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
-except:
-    from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r
+#try:
+#    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r
+#except:
+
+from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r
 
 
 # special math imports
