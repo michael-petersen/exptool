@@ -219,7 +219,7 @@ def read_eof_file(file):
     return D
     
 
-def parse_eof(file):
+def parse_eof(file,verbose=0):
     '''
     parse_eof
 
@@ -241,7 +241,7 @@ def parse_eof(file):
 
     '''
 
-    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(file,verbose=1)
+    rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(file,verbose=verbose)
     #
     # open the eof_file
     f = open(file,'rb')
