@@ -7,8 +7,12 @@ coordinates, as per Gaia instructions.
 # TODO: find where I did the Cartesian velocities.
 # TODO: add the translation to the solar location (rather, away from)
 
+# add EXAMPLES
+
+
 """
 
+legacy = False
 
 import numpy as np
 
@@ -262,7 +266,6 @@ def rotate_errors(a,d,pmra_e,pmdec_e,pmcorr):
     
     return cov_to
 
-#print(G)
 
 def rotate_to_galactic(a,d,dist):
     """eq 3.68, but built for speed"""
@@ -309,5 +312,23 @@ def rotate_velocities_observed(l,b,mul,mub):
     mud = np.sum(q*muicrs,axis=0)
     #print(mul,mub)
     return mua,mud
+
+
+
+def haversine(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance between two points 
+    on a sphere (specified in decimal degrees)
+    """
+    # convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = (np.pi/180.)*lon1, (np.pi/180.)*lat1, (np.pi/180.)*lon2, (np.pi/180.)*lat2
+
+    # haversine formula 
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    c = 2. * np.arcsin(np.sqrt(a)) 
+    return (180./np.pi)*c
+    
 
 

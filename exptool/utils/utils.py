@@ -60,6 +60,15 @@ from scipy.linalg import qr,solve_triangular,lu_factor,lu_solve
 import matplotlib.pyplot as plt
 
 
+def xnorm(vec):
+    return np.sqrt(vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2])
+
+def xprod(vec1,vec2):
+    return np.array([vec1[1]*vec2[2] - vec2[1]*vec1[2],
+                     vec1[2]*vec2[0] - vec2[2]*vec1[0],
+                     vec1[0]*vec2[1] - vec2[0]*vec1[1]])
+
+
 def print_progress(current_n,total_n,module):
     #
     # print progress with a tracking bar
