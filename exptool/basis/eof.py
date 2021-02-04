@@ -204,7 +204,7 @@ def read_eof_file(file):
     """wrapper for parse_eof to return a dictionary"""
     D = dict()
 
-    potC,rforcec,zforcec,densc,potS,rforces,zforces,denss = parse_eof(file)
+    potc,rforcec,zforcec,densc,potS,rforces,zforces,denss = parse_eof(file)
 
     D['potC'] = potc
     D['rforceC'] = rforcec
