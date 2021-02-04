@@ -350,6 +350,11 @@ def r_to_zeta(r):
 def get_potl(lmax, nmax, r):
     """
     get the Hernquist potential value 
+
+    inputs
+    lmax : 
+    nmax :
+    r    :
     
     """
     
