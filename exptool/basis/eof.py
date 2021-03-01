@@ -436,7 +436,8 @@ def get_pot(r,z,cos_array,sin_array,\
     
     # find the corresponding bins
     X,Y,ix,iy = return_bins(r,z,rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
-    
+
+    # set up the bilinear interpolation
     delx0 = ix + 1.0 - X;
     dely0 = iy + 1.0 - Y;
     delx1 = X - ix;
@@ -446,9 +447,6 @@ def get_pot(r,z,cos_array,sin_array,\
     c10 = delx1*dely0;
     c01 = delx0*dely1;
     c11 = delx1*dely1;
-    
-    #Vc = np.zeros([MMAX+1,NMAX])
-    #Vs = np.zeros([MMAX+1,NMAX])
     
     Vc = fac * ( cos_array[:,:,ix,iy] * c00 + cos_array[:,:,ix+1,iy] * c10 + cos_array[:,:,ix,iy+1] * c01 + cos_array[:,:,ix+1,iy+1] * c11 )
     

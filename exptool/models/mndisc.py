@@ -11,10 +11,6 @@ MiyamotoNagai
 """
 import numpy as np
 
-from scipy.interpolate import UnivariateSpline
-
-from exptool.basis import eof
-
 
 class MiyamotoNagai(object):
     """an instantiation of a Miyamoto-Nagai disc
