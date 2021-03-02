@@ -16,8 +16,10 @@ tracer particles
 """
 import numpy as np
 
+import matplotlib.pyplot as plt
 from scipy import interpolate
-
+from scipy.integrate import quad
+from scipy.special import erf
 
 class DF:
     """simple and straightforward DF construction.
@@ -25,7 +27,7 @@ class DF:
 
     """
 
-    def __init__(self, filename,NE=1000,NR=1000,Rmax=2,Rmin=1e-4,verbose=0):
+    def __init__(self, modfile,NE=1000,NR=1000,Rmax=2,Rmin=1e-4,verbose=0):
         """
         inputs
         ------------
@@ -36,10 +38,11 @@ class DF:
         (fix to also take RDMP?
         
         """
+        self.verbose = verbose
         
         sphmod = np.genfromtxt(modfile,skip_header=4)
 
-        self.R,self.D,self.M,self.P = sphmod[:,0],sphmod[:,1],sphmod[:,2],sphmod[:,3]
+        self.Ri,self.D,self.M,self.P = sphmod[:,0],sphmod[:,1],sphmod[:,2],sphmod[:,3]
 
         # set the parameters
         self.NE = NE
@@ -48,31 +51,38 @@ class DF:
 
         self.R  = np.logspace(np.log10(Rmin),np.log10(Rmax),num=int(NR))
         
+        # set integration relative precision
+        self.EPSREL = 1e-6     
 
-        self.EPSREL = 1e-6     # integration relative precision
-
-        _construct_interpolations()
-        _set_energy_range()
-
+        self._construct_interpolations()
+        self._set_energy_range()
+        
+        # this is the slow step.
+        self._compute_distribution_function()
 
 
 
     def _construct_interpolations(self):
         # do spline representations of the other quantities to make a function
-        self.nu   = interpolate.UnivariateSpline(R,D,s=0)
-        self.Mcum = interpolate.UnivariateSpline(R,M,s=0)
-        self.psi  = interpolate.UnivariateSpline(R,-1*P,s=0)
+        self.nu   = interpolate.UnivariateSpline(self.Ri,self.D,s=0)(self.R)
+        self.Mcum = interpolate.UnivariateSpline(self.Ri,self.M,s=0)(self.R)
+        self.psi  = interpolate.UnivariateSpline(self.Ri,-1*self.P,s=0)(self.R)
+        
 
         # total mass
-        self.Mtot = np.nanmax(M)
+        self.Mtot = np.nanmax(self.Mcum)
 
         # compute gradients (can always make sure this worked!)
-        self.dndp   = np.gradient(nu,   psi,edge_order=2)
-        self.d2nd2p = np.gradient(dndp, psi,edge_order=2)
+        self.dndp   = np.gradient(self.nu,   self.psi,edge_order=2)
+
+        #plt.plot(self.R,self.dndp)
+
+
+        self.d2nd2p = np.gradient(self.dndp, self.psi,edge_order=2)
 
         # make into interpolateable functions
-        self.dndpfunc = interpolate.splrep(R,nu, s=0)
-        self.psifunc = interpolate.splrep(R,psi, s=0)
+        self.dndpfunc = interpolate.splrep(self.R,self.nu, s=0)
+        self.psifunc = interpolate.splrep(self.R, self.psi, s=0)
 
 
     def _compute_distribution_function(self):
@@ -86,11 +96,12 @@ class DF:
 
         self.DF = f(self.E)               # here we build the DF
 
-        # check whether DF is physical - if not, check for rounding errors in integration, try increasing/decreasing NR, NE
+        # validate
         if np.any (self.DF < 0): 
-            print("      *  Exit. DF < 0, see df.dat" )
+            print("distributionfunction.DF: DF < 0, try increasing/decreasing NR,NE, check for integration rounding errors" )
         else: 
-            print("      *  DF >= 0, all good" )
+            if verbose:
+                print("distributionfunction.DF: DF >= 0, all good" )
 
         if self.verbose:
             print("done!")
@@ -133,7 +144,7 @@ class DF:
         self.maxPLikelihood = np.array(maxPLikelihood)
 
 
-    def rhoS(r,aS=2.,bS=5.0,gS=0.1,rsS = 0.2):
+    def rhoS(self,r,aS=2.,bS=5.0,gS=0.1,rsS = 0.2):
         """alpha-beta-gamma density profile, massless tracers (think: stars)
 
            NB: gS needs to be >0, see Appendix A of EP19
@@ -142,7 +153,7 @@ class DF:
 
         return r**(-gS) * (rsS**aS + r**aS )**((gS-bS)/aS) 
 
-    def simple_density(r,alphaS,rcore,rtrunc,wtrunc):   
+    def simple_density(self,r,alphaS,rcore,rtrunc,wtrunc):   
         """
         one-power model with a core for formal non-divergence, PLUS a truncation.
     
@@ -152,17 +163,17 @@ class DF:
         return rho *  (1. - erf( (r-rtrunc)/wtrunc ))
 
 
-    def reweight(self,alpha,rcore=1.e-6,rtrunc=0.5,wtrunc=0.1):
+    def _construct_reweight(self,alpha,rcore=1.e-6,rtrunc=0.5,wtrunc=0.1):
         """
         reweight the distribution function to a different distribution
 
 
         """
         # non-normalized total mass
-        MS  =  4 * pi * quad( lambda r: r*r * simple_density(r,alpha,rcore,rtrunc,wtrunc) , 0., np.inf)[0]
-        MSr  = np.vectorize(lambda x: 4*pi *  quad( lambda r: r*r * stellar_density(r,alphaS=alphaS) /MS , 0., x  )[0]  )
+        MS  =  4 * np.pi * quad( lambda r: r*r * self.simple_density(r,alpha,rcore,rtrunc,wtrunc) , 0., np.inf)[0]
+        MSr  = np.vectorize(lambda x: 4*np.pi *  quad( lambda r: r*r * self.simple_density(r,alpha,rcore,rtrunc,wtrunc) /MS , 0., x  )[0]  )
 
-        nuS  =   simple_density(self.R,alpha,rcore,rtrunc,wtrunc) / MS
+        nuS  =   self.simple_density(self.R,alpha,rcore,rtrunc,wtrunc) / MS
         MScum = MSr(self.R)  # stellar cumulative mass
 
         dndpS   = np.gradient(nuS,   self.psi)
@@ -171,11 +182,27 @@ class DF:
 
         # compute the distribution function
         self.DFS = fS(self.E)
+        
+    def reweight(self,EE,norm=True):
+        """at a given energy (EE), compute the reweighting for the secondary DF
+        
+        
+        """
+        
+        # check for DF and DFS
+        try:
+            self.DFS==1
+            self.DF==1
+        except:
+            print('distributionfunction.DF.reweight: missing both DFs')
+        
 
         # now for each EE, compute the weights
-        #probs = np.interp(EE, E, DFS)/ np.interp(EE, E, DF)
-        #norm = np.sum(probs)
-        #probs = probs/norm
+        self.probs      = np.interp(EE, self.E, self.DFS)/ np.interp(EE, self.E, self.DF)
+        
+        if norm:
+            normval    = np.sum(probs)
+            self.probs = self.probs/normval
 
 
 
@@ -277,3 +304,4 @@ class DF:
 
         
         
+
