@@ -22,12 +22,8 @@ old usage technique:
 R,D,M,P,DP = twopower.gen_model(15.,1.,0.01,rtarget=1.,alpha=1.,beta=2.,rtrunc=30,wtrunc=5,rmax=2.)
 twopower.write_model(outputfile,R,D,M,P)
 
+
 '''
-
-# disable python2 support
-#from __future__ import absolute_import, division, print_function, unicode_literals
-
-
 
 # general python imports
 import numpy as np
@@ -35,13 +31,6 @@ import math
 import time
 import sys
 import os
-
-
-# exptool imports
-#from exptool.utils import utils
-#from exptool.utils import halo_methods
-#from exptool.io import psp
-
 
 
 def Hernquist(r,a,rc=0,rho0=1.,beta=0):
