@@ -332,3 +332,90 @@ def haversine(lon1, lat1, lon2, lat2):
     
 
 
+def define_transformation_matrix(C1,C2,D1,D2,start=0):
+    """define a rotation matrix to go from ICRS to arbitrary rotation
+    
+    takes two points on the sphere and returns the transformation that 
+    puts the points along the latitude=0 plane
+    
+    default will produce ICRS->GAL?
+    
+    inputs
+    ------------
+    C1      :
+        the azimuthal coordinate of the first point
+    C2      :
+        the polar coordinate of the first point
+    D1      :
+        the azimuthal coordinate of the second point
+    D2      :
+        the polar coordinate of the second point
+    start   : 
+        the final rotation angle defining (0,0)
+    
+    returns
+    ------------
+    A       : 3x3 array
+        the transformation array, such that r' = Ar transforms r->r'
+    
+    
+    """
+    # find the pole from the defined plane
+    rC    = [np.cos(C1)*np.cos(C2),np.sin(C1)*np.cos(C2),np.sin(C2)]
+    rD    = [np.cos(D1)*np.cos(D2),np.sin(D1)*np.cos(D2),np.sin(D2)]
+    CD    = np.cross(rC,rD)
+    pole1 = np.arctan2(CD[1],CD[0])
+    pole2 = np.arctan2(CD[2],np.sqrt(CD[0]*CD[0]+CD[1]*CD[1]))
+    
+    # see Gaia convention
+    phi   = start*np.pi/180.
+    theta = (90.-(180./np.pi)*pole2)*np.pi/180.
+    psi   = ((180./np.pi)*pole1+90.)*np.pi/180.
+    
+    # see Wolfram convention
+    D     = np.array([[np.cos(phi),np.sin(phi),0],[-np.sin(phi),np.cos(phi),0],[0,0,1]])
+    C     = np.array([[1,0,0],[0,np.cos(theta),np.sin(theta)],[0,-np.sin(theta),np.cos(theta)]])
+    B     = np.array([[np.cos(psi),np.sin(psi),0],[-np.sin(psi),np.cos(psi),0],[0,0,1]])
+
+    A     = np.dot(D,np.dot(C,B))
+    
+    return A
+    
+
+def rotate_arbitrary(a,d,Aprime):
+    """eq 3.68, """
+    #mu = return_muicrs(a,d,mua,mud)
+    #mugal = np.dot(return_gaia_Agprime(),mu) # eq. 3.68
+    
+    # solve for positions
+    ricrs = return_ricrs(a,d)
+    rgal = np.dot(Aprime,ricrs)
+
+    # implement eq 3.63
+    ell,b = np.arctan2(rgal[1],rgal[0]),np.arctan2(rgal[2],np.sqrt(rgal[0]*rgal[0]+rgal[1]*rgal[1]))
+
+    return ell,b
+
+
+def rotate_velocities_arbitrary(a,d,mua,mud,Aprime):
+    """eq 3.68, """
+    mu = return_muicrs(a,d,mua,mud)
+    mugal = np.dot(Aprime,mu) # eq. 3.68
+    
+    # solve for positions
+    ricrs = return_ricrs(a,d)
+    rgal = np.dot(Aprime,ricrs)
+
+    # implement eq 3.63
+    ell,b = np.arctan2(rgal[1],rgal[0]),np.arctan2(rgal[2],np.sqrt(rgal[0]*rgal[0]+rgal[1]*rgal[1]))
+    
+    p = return_pgal(ell,b)
+    q = return_qgal(ell,b)
+    
+    mul = np.sum(p*mugal,axis=0)
+    mub = np.sum(q*mugal,axis=0)
+    #print(mul,mub)
+    return mul,mub
+
+
+
