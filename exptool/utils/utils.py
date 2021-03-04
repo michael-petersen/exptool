@@ -546,3 +546,35 @@ def bilinear_interpolation(x, y, points):
 
 
 
+
+def sky_hist_2d(x,y,xbins,ybins,weights=None):
+    """easy 2d histogram for the surface of a sphere (aka the sky)"""
+    
+    
+    X,Y = np.meshgrid(ravals,decvals)
+    
+    if weights is None:
+        weights = np.ones(x.size)
+        
+        
+    
+    dx = np.abs(xbins[1]-xbins[0])
+    dy = np.abs(ybins[1]-ybins[0])
+    img = np.zeros([xbins.size,ybins.size])
+    #Nxindx = (np.floor((x - np.nanmin(xbins))/(dx))).astype('int')
+    #Nyindx = (np.floor((y - np.nanmin(ybins))/(dy))).astype('int')
+    Nxindx = (np.round((x - np.nanmin(xbins))/(dx))).astype('int')
+    Nyindx = (np.round((y - np.nanmin(ybins))/(dy))).astype('int')
+
+
+    for xval in range(0,xbins.size):
+        for yval in range(0,ybins.size):
+            w = np.where((Nxindx==xval) & (Nyindx==yval))[0]
+            if len(w) > 0:
+                img[xval,yval] += np.nansum(weights[w])#/(np.cos(yval*np.pi/180.))#*np.cos(yval*np.pi/180.))
+
+    return X,Y,img.T/np.cos(Y*np.pi/180.)
+    #return X,Y,np.cos(Y*np.pi/180.)
+
+
+
