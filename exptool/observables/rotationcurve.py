@@ -16,7 +16,7 @@ TODO
      u^{n+1} = u^n ( (d/(u^n [2dconvolve] p)) [2dconvolve] p )
    where u^n is the nth estimate of the 2d maximum likelihood solution (u^0=d), d is the original
    PSF-convolved image, p is the 2d PSF, and [2dconvolve] is the 2d convolution.
-3. more practically, turn this all into fits
+3. more practically, turn this all into fits, ideally Bayesian.
 
 '''
 
