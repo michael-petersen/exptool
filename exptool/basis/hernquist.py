@@ -20,6 +20,9 @@ This code is a mixture of two Hernquist implementations:
 1. straight Hernquist+Ostriker (1992) equations
 2. Weinberg's numerically-favourable implementation
 
+Much of the Weinberg numerically-favourable version stems from
+Clutton-Brock (1973) notation.
+
 '''
 
 # no more python2 compatibility; only assuming python3 from now on.
