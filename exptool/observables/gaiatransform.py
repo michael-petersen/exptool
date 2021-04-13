@@ -421,3 +421,40 @@ def rotate_velocities_arbitrary(a,d,mua,mud,Aprime):
 
 
 
+
+def rotate_errors(a,d,pmra_e,pmdec_e,pmcorr):
+    ricrs = return_ricrs(a,d)
+    picrs = return_picrs(a,d)
+    qicrs = return_qicrs(a,d)
+
+    rgal = np.dot(return_gaia_Agprime(),ricrs)
+
+    # implement eq 3.63
+    ell = np.arctan2(rgal[1],rgal[0])
+    b = np.arctan2(rgal[2],np.sqrt(rgal[0]*rgal[0]+rgal[1]*rgal[1]))
+
+    pgal = return_pgal(ell,b)
+    qgal = return_qgal(ell,b)
+
+    pqgal = np.stack((pgal, qgal), axis=-1)
+    pqicrs = np.stack((picrs, qicrs), axis=-1)
+    
+    cov = np.array([[pmra_e*pmra_e,pmra_e*pmdec_e*pmcorr],[pmra_e*pmdec_e*pmcorr,pmdec_e*pmdec_e]])
+
+    if hasattr(a,'size'):
+        G = np.einsum('anb,acn->nbc', pqgal,
+                      np.einsum('ji,ink->jkn', return_gaia_Agprime(), pqicrs))
+
+        cov_to = np.einsum('nba,nac->nbc', G,
+                           np.einsum('ijn,nki->njk', cov, G))
+        
+    else:
+        G = np.einsum('ab,ac->bc', pqgal,
+                      np.einsum('ji,ik->jk', return_gaia_Agprime(), pqicrs))
+
+        cov_to = np.einsum('ba,ac->bc', G,
+                           np.einsum('ij,ki->jk', cov, G))
+    
+    return cov_to
+
+    
