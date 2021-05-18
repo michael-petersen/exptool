@@ -1,7 +1,9 @@
 """
 reader for the split phase-space protocol (SPL) files from EXP
 
-
+module load python
+module load cuda
+python3 setup.py install --user
 
 
 
@@ -61,49 +63,85 @@ class Input:
         
         # initial check for file validity
         try:
-            f = open(self.filename, 'rb')
-            f.close()
+            self.f = open(self.filename, 'rb')
+            #self.f.close()
         except Exception:
             raise IOError('Failed to open "{}"'.format(filename))
 
         # test for split PSP files
         # TODO
 
+        self.master_header = dict()
+        self.comp_map = dict()
+        self.comp_head = dict()
+        self.nbodies = 0
+
         # do an initial read of the header
         self._read_primary_header()
-        
+
+        # now we can query out a specific component
+        self._make_file_list(comp)
+
+        self.f.close()
 
 
     def _read_primary_header(self):
 
         self.f.seek(0)
-        self.time, = np.fromfile(f, dtype='<f8', count=1)
-        self._nbodies_tot, self._ncomp = np.fromfile(f, dtype=np.uint32,count=2)
+        self.time, = np.fromfile(self.f, dtype='<f8', count=1)
+        self._nbodies_tot, self._ncomp = np.fromfile(self.f, dtype=np.uint32,count=2)
         #print(time,_nbodies_tot,_ncomp)
 
         # process the subheaders to
+        data_start = 16# halo, guaranteed first component loation...
 
+        for comp in range(0,self._ncomp):
+            self.f.seek(data_start) 
+            # manually do headers
+            _1,_2,self.nprocs, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(f, dtype=np.uint32, count=7)
 
+            # need to figure out what to do with nprocs...it has to always be the same, right?
+            head = np.fromfile(self.f, dtype=np.dtype((np.bytes_, infostringlen)),count=1)
+            head_normal = head[0].decode()
 
+            try:
+                head_dict = yaml.safe_load(head_normal)
+            except:
+                head_dict = backup_yaml_parse(head)
 
+            #
+            head_dict['nint_attr'] = nint_attr
+            head_dict['nfloat_attr'] = nfloat_attr
+            # data starts at 
+            skip_ahead = 4*7 + infostringlen + data_start
+            self.comp_map[head_dict['name']] = skip_ahead
+            self.comp_head[head_dict['name']] = head_dict
+            try:
+                self.indexing = head_dict['parameters']['indexing']
+            except:
+                self.indexing = head_dict['indexing']=='true'
+            data_start = skip_ahead + nprocs*1024
+    
         
-    def _make_file_list(f,comp_map,comp):
+    def _make_file_list(self,comp):
         
-        f.seek(comp_map[comp])
+        self.f.seek(self.comp_map[comp])
         
         PBUF_SZ = 1024
         PBUF_SM = 32
+
+        self.subfiles = []
     
-        for procnum in range(0,nprocs):
-            PBUF = np.fromfile(f, dtype=np.dtype((np.bytes_, PBUF_SZ)),count=1)
+        for procnum in range(0,self.nprocs):
+            PBUF = np.fromfile(self.f, dtype=np.dtype((np.bytes_, PBUF_SZ)),count=1)
             subfile = PBUF[0].split(b'\x00')[0].decode()
+            self.subfiles.append(subfile)
             #print(subfile)
             # and then in here, also read the individual files
             #tbl = _read_component_data(indir,subfile,head_dict)
             #print(tbl.keys())
     
 
-            #_make_file_list(f,comp_map,'bulge')
 
 
 
@@ -279,7 +317,7 @@ def _make_file_list(f,comp_map,comp,nprocs):
         #print(tbl.keys())
     
 
-_make_file_list(f,comp_map,'bulge')
+_make_file_list(f,comp_map,'bulge',nprocs)
 
 
 
