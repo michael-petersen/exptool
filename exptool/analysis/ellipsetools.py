@@ -41,7 +41,8 @@ from exptool.utils import utils
 
 import numpy as np
 
-from matplotlib import _cntr as cntr
+#from matplotlib import _cntr as cntr
+
 
 from skimage.measure import find_contours
 
@@ -673,14 +674,15 @@ class EllipseFinder():
         # ^^ generated self.clevels
 
         # instantiate the contour class object
-        c = cntr.Cntr(self.xarr,self.yarr,self.posarr)
+        #c = cntr.Cntr(self.xarr,self.yarr,self.posarr)
 
         
         indx_aval = 0.
         
         for contour_indx,contour_value in enumerate(self.clevels):
 
-            res = c.trace(contour_value,nchunk=4)                                     # trace the individual contours
+            #res = c.trace(contour_value,nchunk=4)                                     # trace the individual contours
+            res = find_contours(self.posarr,contour_value)
             
             if (len(res)>0):                                      # guard against non-existent contours
                 

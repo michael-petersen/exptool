@@ -106,7 +106,10 @@ class NFW(object):
         """
         prefac = 4*np.pi*self.rho0*self.a*self.a*self.a
         return prefac * ( np.log1(1+r/self.a) - (r/self.a)/(1+r/self.a))
-        
+
+    def rforce(self,r):
+
+        return 0.
 
 
 class MiyamotoNagai(object):

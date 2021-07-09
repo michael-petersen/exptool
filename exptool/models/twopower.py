@@ -3,8 +3,8 @@
 #  twopower.py
 #     Compute twopower halo models
 #
-# 10-29-2017: First construction
-# 04-Feb-2021: revamp
+# 20 Oct 2017: First construction
+# 04 Feb 2021: revamp
 #
 #
 '''
