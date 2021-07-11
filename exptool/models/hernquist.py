@@ -3,7 +3,8 @@
 #  hernquist.py
 #     Compute analytic Hernquist models
 #
-# 10-29-2017: First construction
+# 29 Oct 2017: First construction
+# 11 Jul 2021: Much more usable (read:correct) now!
 #
 # Generalization is (BT 2.64)
 #
@@ -30,8 +31,9 @@
 hernquist (part of exptool.models)
     Implementation of the analytic Hernquist models
 
-H = Hernquist(np.linspace(0.001,1.,300))
+#H = Hernquist(np.linspace(0.001,1.,300))
 
+# how does one construct a R D M P table if they want to from this?
 
 
 
@@ -48,30 +50,31 @@ import sys
 import os
 
 
-# exptool imports
-from exptool.utils import utils
-from exptool.utils import halo_methods
-from exptool.io import psp_io
-
-
-
-
-
-
-
 class Hernquist():
-    def __init__(self,radii,rscl=1.0):
-        self.r = radii
-        self.rscl = 1.0
-        self.m = Hernquist.get_mass(self)
-        self.d = Hernquist.get_dens(self)
-        self.p = Hernquist.get_pot(self)
-    def get_mass(self):
-        return self.r *self.r * np.power((self.r + self.rscl),-2.)
-    def get_dens(self):
-        return self.rscl * (2.*np.pi*self.r)**-1. * (self.r + self.rscl)**-3.
-    def get_pot(self):
-        return -1. * ( (self.r+self.rscl)**-1.)
+    """The classic Hernquist model.
+    Hernquist has a gravitational radii of 6rscl.
+    """
+    def __init__(self,rscl=1.0,G=1,M=1):
+        self.rscl = rscl
+        self.G    = G
+        self.M    = M
+        self.rho0 = self.get_rho0()
+    def get_rho0(self):
+        """solving BT08, eq. 2.66 at r==1000a"""
+        rs = 1000.
+        return self.M*(2*(1+rs)*(1+rs))/(rs*rs)/(4*np.pi*np.power(self.rscl,3))
+    def get_mass(self,r):
+        """BT08, eq. 2.66"""
+        rs = r/self.rscl
+        return 4*np.pi*self.rho0*np.power(self.rscl,3)*(rs*rs)/(2*(1+rs)*(1+rs))
+    def get_dens(self,r):
+        """BT08, eq. 2.64, with alpha=1, beta=4"""
+        alpha = 1
+        beta  = 4
+        return self.rho0 * (r/self.rscl)**(-alpha) * (1. + r/self.rscl)**(-beta+alpha)
+    def get_pot(self,r):
+        """BT08, eq. 2.67"""
+        return -4*np.pi*self.G*self.rho0 *self.rscl*self.rscl * ( (2*(1.+r/self.rscl))**-1.)
 
 
 
