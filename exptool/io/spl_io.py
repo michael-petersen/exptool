@@ -91,9 +91,12 @@ class Input:
         self._read_primary_header()
 
         # now we can query out a specific component
-        self._make_file_list(comp)
+        self._make_file_list(self.comp)
 
         self.f.close()
+
+        # given the comp, pull the data.
+        self._pull_data()
 
 
     def _read_primary_header(self):
