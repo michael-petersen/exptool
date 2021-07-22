@@ -5,7 +5,7 @@
 #
 #     
 #
-# 04-Feb-21: first introduced.
+# 04 Feb 21: first introduced.
 #
 '''     
 
@@ -22,6 +22,11 @@ This code is a mixture of two Hernquist implementations:
 
 Much of the Weinberg numerically-favourable version stems from
 Clutton-Brock (1973) notation.
+
+Did you know that the scale radius (a) of the Hernquist sphere is related
+to the half-mass radius as 
+r_{M_1/2} = (1+np.sqrt(2.))*a
+? [From Herquist & Ostriker 1992, after equation 2.2]
 
 '''
 
@@ -48,6 +53,7 @@ from scipy.special import gamma
 from scipy.special import gegenbauer
 from scipy.special import factorial
 from scipy.special import eval_gegenbauer
+from scipy.special import sph_harm
 
 # multiprocessing imports
 import multiprocessing

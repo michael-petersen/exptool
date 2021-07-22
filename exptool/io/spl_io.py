@@ -52,6 +52,17 @@ class Input:
             deprecated compatibility parameter. use nbodies instead.
         
         """
+        self.verbose = verbose
+
+        if comp == None:
+            print('spl_io.py: no component specified. Aborting.')
+            return
+
+        self.comp = comp
+
+        # set up assuming the directory of the main file is the same
+        # as the subfiles. could add verbose flag to warn?
+        self.indir = filename.split('SPL')[0]
 
         
         self.filename = filename
@@ -98,7 +109,7 @@ class Input:
         for comp in range(0,self._ncomp):
             self.f.seek(data_start) 
             # manually do headers
-            _1,_2,self.nprocs, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(f, dtype=np.uint32, count=7)
+            _1,_2,self.nprocs, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(self.f, dtype=np.uint32, count=7)
 
             # need to figure out what to do with nprocs...it has to always be the same, right?
             head = np.fromfile(self.f, dtype=np.dtype((np.bytes_, infostringlen)),count=1)
@@ -112,7 +123,7 @@ class Input:
             #
             head_dict['nint_attr'] = nint_attr
             head_dict['nfloat_attr'] = nfloat_attr
-            # data starts at 
+            # data starts at ...
             skip_ahead = 4*7 + infostringlen + data_start
             self.comp_map[head_dict['name']] = skip_ahead
             self.comp_head[head_dict['name']] = head_dict
@@ -120,7 +131,7 @@ class Input:
                 self.indexing = head_dict['parameters']['indexing']
             except:
                 self.indexing = head_dict['indexing']=='true'
-            data_start = skip_ahead + nprocs*1024
+            data_start = skip_ahead + self.nprocs*1024
     
         
     def _make_file_list(self,comp):
@@ -136,29 +147,64 @@ class Input:
             PBUF = np.fromfile(self.f, dtype=np.dtype((np.bytes_, PBUF_SZ)),count=1)
             subfile = PBUF[0].split(b'\x00')[0].decode()
             self.subfiles.append(subfile)
-            #print(subfile)
-            # and then in here, also read the individual files
-            #tbl = _read_component_data(indir,subfile,head_dict)
-            #print(tbl.keys())
-    
-
-
-
-
-
-
-
-def _read_component_data(indir,subfile,comp_header):
-        """read in all data for component"""
+            
+    def _pull_data(self):
         
-        g = open(indir+subfile,'rb')
+
+        # read in the first one
+        tbl = self._read_component_data(self.subfiles[0])
+
+        # make the template based on the first file
+        FullParticles = dict()
+
+        # first pass: get everything into memory
+        for n in range(0,len(self.subfiles)):
+            FullParticles[n] = dict()
+
+            if self.verbose>1:
+                print('spl_io._pull_data: On file {} of {}.'.format(n,len(self.subfiles)))
+            
+            tbl = self._read_component_data(self.subfiles[n])
+
+            for k in tbl.keys():
+                FullParticles[n][k] = tbl[k]
+
+        AllParticles = dict()
+        for k in tbl.keys():
+            AllParticles[k] = np.concatenate([FullParticles[n][k] for n in range(0,len(self.subfiles))])
+            
+        # now decide on the return format...probably .attribute to
+        # match psp_io. but this could change!
+        try:
+            self.indx = AllParticles['i']
+        except:
+            pass
+        
+        self.mass = AllParticles['m']
+        self.xpos = AllParticles['x']
+        self.ypos = AllParticles['y']
+        self.zpos = AllParticles['z']
+        self.xvel = AllParticles['vx']
+        self.yvel = AllParticles['vy']
+        self.zvel = AllParticles['vz']
+        self.pote = AllParticles['potE']
+
+        del AllParticles
+            
+    def _read_component_data(self,subfile):
+        """read in all data for component from individual files
+
+        ,indir,subfile,comp_head
+        """
+        
+        g = open(self.indir+subfile,'rb')
         
         nbodies, = np.fromfile(g, dtype=np.uint32, count=1)
         _float_str = 'f'
         
         dtype_str = []
         colnames = []
-        if comp_header['parameters']['indexing']:
+        if self.comp_head[self.comp]['parameters']['indexing']:
             # if indexing is on, the 0th column is Long
             dtype_str = dtype_str + ['l']
             colnames = colnames + ['index']
@@ -166,19 +212,19 @@ def _read_component_data(indir,subfile,comp_header):
         dtype_str = dtype_str + [_float_str] * 8
         colnames = colnames + ['m', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'potE']
         
-        dtype_str = dtype_str + ['i'] * comp_header['nint_attr']
+        dtype_str = dtype_str + ['i'] * self.comp_head[self.comp]['nint_attr']
         colnames = colnames + ['i_attr{}'.format(i)
-                               for i in range(comp_header['nint_attr'])]
+                               for i in range(self.comp_head[self.comp]['nint_attr'])]
         
-        dtype_str = dtype_str + [_float_str] * comp_header['nfloat_attr']
+        dtype_str = dtype_str + [_float_str] * self.comp_head[self.comp]['nfloat_attr']
         colnames = colnames + ['f_attr{}'.format(i)
-                               for i in range(comp_header['nfloat_attr'])]
+                               for i in range(self.comp_head[self.comp]['nfloat_attr'])]
         
-        print(dtype_str)
+        #print(dtype_str)
         dtype = np.dtype(','.join(dtype_str))
-        print(dtype)
+        #print(dtype)
         
-        out = np.memmap(indir+subfile,
+        out = np.memmap(self.indir+subfile,
                         dtype=dtype,
                         shape=(1, nbodies),
                         offset=4,
@@ -218,131 +264,3 @@ def backup_yaml_parse(yamlin):
 
 
 
-
-
-"""
-indir = '/proj/weinberg/Nbody/Elena/'
-filename = '/proj/weinberg/Nbody/Elena/SPL.run3.00315'
-
-filename = '/nas/astro-th/weinberg/Nbody/Elena/Run3/SPL.run3.00062'
-
-
-
-
-
-def backup_yaml_parse(yamlin):
-    head_dict = dict()
-    try:
-        decoded = yamlin.decode()
-    except:
-        decoded = yamlin[0].decode()
-    split = decoded.split('\n')
-    #print(split)
-    for k in split:
-        #print(k)
-        split2 = k.split(':')
-        try:
-            head_dict[split2[0].lstrip()] = split2[1].lstrip()
-        except:
-            pass
-    return head_dict
-
-
-
-
-f = open(filename,'rb')
-
-
-
-master_header = dict()
-comp_map = dict()
-comp_head = dict()
-nbodies = 0
-
-f.seek(0)
-time, = np.fromfile(f, dtype='<f8', count=1)
-_nbodies_tot, _ncomp = np.fromfile(f, dtype=np.uint32,count=2)
-print(time,_nbodies_tot,_ncomp)
-
-
-data_start = 16# halo, guaranteed first component loation...
-for comp in range(0,_ncomp):
-    f.seek(data_start) 
-    # manually do headers
-    _1,_2,nprocs, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(f, dtype=np.uint32, count=7)
-    # need to figure out what to do with nprocs...
-    head = np.fromfile(f, dtype=np.dtype((np.bytes_, infostringlen)),count=1)
-    head_normal = head[0].decode()
-    try:
-        head_dict = yaml.safe_load(head_normal)
-    except:
-        head_dict = backup_yaml_parse(head)
-    #
-    head_dict['nint_attr'] = nint_attr
-    head_dict['nfloat_attr'] = nfloat_attr
-    # data starts at 
-    skip_ahead = 4*7 + infostringlen + data_start
-    comp_map[head_dict['name']] = skip_ahead
-    comp_head[head_dict['name']] = head_dict
-    try:
-        indexing = head_dict['parameters']['indexing']
-    except:
-        indexing = head_dict['indexing']=='true'
-    data_start = skip_ahead + nprocs*1024
-    
-
-    
-print(comp_map)
-# now comp_map has the starting place for each file
-
-
-
-#f.seek(197676) # bulge
-#f.seek(395336) # for stars
-
-def _make_file_list(f,comp_map,comp,nprocs):
-    #
-    f.seek(comp_map[comp])
-    PBUF_SZ = 1024
-    PBUF_SM = 32
-    #
-    for procnum in range(0,nprocs):
-        #PBUF = np.fromfile(f, dtype=np.dtype((np.bytes_, PBUF_SM)),count=PBUF_SZ/PBUF_SM)
-        PBUF = np.fromfile(f, dtype=np.dtype((np.bytes_, PBUF_SZ)),count=1)
-        #print(PBUF[0])
-        subfile = PBUF[0].split(b'\x00')[0].decode()
-        print(subfile)
-        # and then in here, also read the individual files
-        #tbl = _read_component_data(indir,subfile,head_dict)
-        #print(tbl.keys())
-    
-
-_make_file_list(f,comp_map,'bulge',nprocs)
-
-
-
-
-f.seek(1068) # for dark
-f.seek(198728) # for bulge
-f.seek(396388) # for stars
-PBUF_SZ = 1024
-PBUF_SM = 32
-
-for procnum in range(0,1):#nprocs):
-    #PBUF = np.fromfile(f, dtype=np.dtype((np.bytes_, PBUF_SM)),count=PBUF_SZ/PBUF_SM)
-    PBUF = np.fromfile(f, dtype=np.dtype((np.bytes_, PBUF_SZ)),count=1)
-    #print(PBUF[0])
-    subfile = PBUF[0].split('\x00')[0].decode()
-    print(subfile)
-    # and then in here, also read the individual files
-    tbl = _read_component_data(indir,subfile,head_dict)
-    print(tbl.keys())
-    
-
-    #g = open(indir+subfile,'rb')
-    #nbodfile, = np.fromfile(g, dtype=np.uint32, count=1)
-    #print(nbodfile)
-
-
-
-"""
