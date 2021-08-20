@@ -57,11 +57,14 @@ def calc_geevee(veldist,scalefac,vbins = np.linspace(0.0,4.5,45)):
 
 
 def multimax(v1,v2,v3,sigma1,sigma2,sigma3,cen1=0.,cen2=0.,cen3=0.):
+    """construct the standard halo model as a multivariate
+    gaussian with offset velocities (e.g. to add the solar reflex"""
     return 4.*np.pi*(v1**2.+v2**2.+v3**2.)*np.exp( -((v1-cen1)**2./(2.*sigma1**2.)) -((v2-cen2)**2./(2.*sigma2**2.)) -((v3-cen3)**2./(2.*sigma3**2.)))
 
 
 
 def norma_dist(x,y):
+    """normalise a distribution, badly"""
     # only for an evenly spaced distribution
     dx = x[1]-x[0]
     fac = np.sum(dx*y)
@@ -69,7 +72,10 @@ def norma_dist(x,y):
 
 
 def positize(inputv,inputd):
-    # positize a velocity distribution
+    """positize a velocity distribution (e.g. total velocity)
+
+    a better system is probably ^2 and ^{1/2}?
+    """
     sbins = np.linspace(0.,5.,100)
     sbinsb = np.zeros_like(sbins)
     for i in range(0,len(inputd)):

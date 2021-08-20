@@ -12,6 +12,9 @@ an isochrone model, which I am just starting to understand to utility of.
 primarily following Fouvry, Hamilton, Rozier, Pichon (2021), see
 equation numbers there.
 
+open questions:
+-what does the DF look like for an isochrone model?
+
 """
 
 
