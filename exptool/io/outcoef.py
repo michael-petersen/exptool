@@ -7,7 +7,11 @@ tools to read coefficient files and do rudimentary manipulation.
 30 Apr 2020  first written
 25 Aug 2021  revised for yaml headers
 
-Still a work in progress, but the readers will work!
+TODO:
+-warn/instruct users without yaml support
+-make a 'best guess' at number of outputs in yaml versions before allocating huge memory space
+-fix docs to be clearer between old and new versions
+-add interpretive support (started)
 
 '''
 
@@ -66,11 +70,6 @@ import matplotlib.pyplot as plt
 
         if (cmagic == 202004386):
 
-            # load the first yaml stanza
-            [string0] = np.fromfile(f, dtype=np.uint32,count=1)
-            [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
-            D = yaml.load(string1)
-
             f.close()
 
             self.basis = 'SphereSL'
@@ -79,6 +78,9 @@ import matplotlib.pyplot as plt
             self.read_binary_sl_coefficients()
 
         elif (cmagic == 202004387):
+
+            f.close()
+
             self.basis = 'Cylinder'
             
             print('OutCoef: reading Cylinder coefficients . . .')
@@ -87,7 +89,7 @@ import matplotlib.pyplot as plt
 
         else:
         
-            # check if spherical
+            # check if old format spherical
             f.seek(0)
             [string1] = np.fromfile(f, dtype='a64',count=1)
         
