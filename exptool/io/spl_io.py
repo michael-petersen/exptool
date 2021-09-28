@@ -1,6 +1,8 @@
 """
 reader for the split phase-space protocol (SPL) files from EXP
 
+MSP 28 Sep 2021 Verify initial commit is working
+
 module load python
 module load cuda
 python3 setup.py install --user

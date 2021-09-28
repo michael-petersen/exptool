@@ -60,7 +60,7 @@ import multiprocessing
 
 
 # exptool imports
-from exptool.io import psp_io
+from exptool.io import particle
 from exptool.utils import kmeans
 from exptool.utils import utils
 from exptool.analysis import pattern
@@ -148,7 +148,7 @@ class ApsFinding():
         desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(nout)+', threedee='+str(threedee)+', using '+filelist
         np.array([desc],dtype='S200').tofile(f)
 
-        Oa = psp_io.Input(self.SLIST[0],comp=comp,verbose=0,nout=nout)
+        Oa = particle.Input(self.SLIST[0],comp=comp,verbose=0,nout=nout)
         total_orbits = len(Oa.xpos)
         
         aps_dictionary = {} # make a dictionary for the aps
@@ -158,9 +158,9 @@ class ApsFinding():
         for i in range(1,len(self.SLIST)-1):
 
             # open three files to compare
-            Oa = psp_io.Input(self.SLIST[i-1],comp=comp,nout=nout,verbose=0)
-            Ob = psp_io.Input(self.SLIST[i],comp=comp,nout=nout,verbose=self.verbose)
-            Oc = psp_io.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
+            Oa = particle.Input(self.SLIST[i-1],comp=comp,nout=nout,verbose=0)
+            Ob = particle.Input(self.SLIST[i],comp=comp,nout=nout,verbose=self.verbose)
+            Oc = particle.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
 
             # compute radial positions
             if threedee:

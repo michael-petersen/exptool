@@ -1,23 +1,22 @@
 """
 Python PSP (Phase-Space Protocol) reader
 
--25 Oct 2014 in original form, Michael S. Petersen, michael.petersen@roe.ac.uk
--03 Dec 2015 committed to exptool
--07 Mar 2016 constructed to theoretically handle niatr/ndatr
--27 Aug 2016 added compatibility for dictionary support, the long-term goal of the reader once I commit to re-engineering everything.
--08 Dec 2016 cleaned up subdividing inputs. needs much more cleaning, particularly eliminating many 'self' items from the Input class. Should also set up dictionary dump by default, could just engineer in at the end?
--11 Mar 2019 set up to read yaml-derived input files. A method to diagnose problems would be amazing--currently written elsewhere.
--14 Aug 2019 handle indexing=True from exp component inputs
--17 Dec 2019 major revision to simplify
+MSP 25 Oct 2014 in original form
+MSP  3 Dec 2015 committed to exptool
+MSP  7 Mar 2016 constructed to theoretically handle niatr/ndatr
+MSP 27 Aug 2016 added compatibility for dictionary support, the long-term goal of the reader once I commit to re-engineering everything.
+MSP  8 Dec 2016 cleaned up subdividing inputs. needs much more cleaning, particularly eliminating many 'self' items from the Input class. Should also set up dictionary dump by default, could just engineer in at the end?
+MSP 11 Mar 2019 set up to read yaml-derived input files. A method to diagnose problems would be amazing--currently written elsewhere.
+MSP 14 Aug 2019 handle indexing=True from exp component inputs
+MSP 17 Dec 2019 major revision to simplify
+MSP 28 Sep 2021 deprecate parallelisms (move to particle.py)
 
 PSP is a file format used by the EXP basis function expansion N-body code
 written by Martin Weinberg.
 
 
 TODO
--check translator for old PSP files: add default values for components, as in yaml
 -add protection for missing yaml?
--add handling for split PSP files
 -add handling for multiple components simultaneously
 -add _make_dataframe
 
@@ -284,7 +283,7 @@ class Input:
         
         
         
-
+"""
 #
 # Below here are helper functions to subdivide and combine particles for parallel processes
 #
@@ -366,4 +365,4 @@ def mix_particles(ParticleInstanceArray):
     return final_holder
 
 
-
+"""
