@@ -35,9 +35,9 @@ import os
 
 
 # exptool imports
-from exptool.utils import utils
-from exptool.utils import halo_methods
-from exptool.io import psp_io
+from ..utils import utils
+from ..utils import halo_methods
+from ..io import particle
 
 
 
@@ -382,7 +382,7 @@ eval_particles
 
 def redistribute_particles(ParticleInstance,divisions):
     npart = np.zeros(divisions,dtype=object)
-    holders = [psp_io.particle_holder() for x in range(0,divisions)]
+    holders = [particle.holder() for x in range(0,divisions)]
     average_part = int(np.floor(len(ParticleInstance.xpos)/divisions))
     first_partition = len(ParticleInstance.xpos) - average_part*(divisions-1)
     low_particle = 0
@@ -1492,7 +1492,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
     # set up a dictionary to hold the details
     ComponentDetails = {}
 
-    PSP = psp_io.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
+    PSP = particle.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
 
     for comp_num in range(0,PSP.ncomp):
 
@@ -1565,7 +1565,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
         ygrid = np.array([0.])
     
     #
-    P = psp_io.particle_holder()
+    P = particle.holder()
     P.xpos = xgrid.reshape(-1,)
 
     # set the secondary coordinate

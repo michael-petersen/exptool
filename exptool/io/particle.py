@@ -6,13 +6,18 @@ MSP 28 Sep 2021 Original commit
 
 """
 
-import psp_io
-import spl_io
+from . import psp_io
+from . import spl_io
 
 
 class Input():
-  def __init__(self, filename,comp=None, legacy=True,nbodies=-1,verbose=0,nout=-1):
-    return psp_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+  """Input class that wraps psp_io and spl_io to have uniform behaviour.
+  """
+  def __init__(self, filename,comp=None, legacy=True,nbodies=-1,verbose=0,nout=-1,spl=False):
+    if spl:
+      return spl_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+    else:
+      return psp_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
 
 
 
@@ -21,7 +26,7 @@ class Input():
 # Below here are helper functions to subdivide and combine particles for parallel processes
 #
 
-class particle_holder(object):
+class holder(object):
     '''all the quantities you could ever want to fill in your own PSP-style output.
     '''
     infile = None

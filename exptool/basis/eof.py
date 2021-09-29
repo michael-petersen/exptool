@@ -70,10 +70,12 @@ import matplotlib as mpl
 
 
 # exptool definitions
-from exptool.utils import utils
-from exptool.io import psp_io
+#from exptool.utils import utils
+#from exptool.io import psp_io
 
+# relative exptool imports
 from ..utils import utils
+from ..io    import particle
 
 # should put in some block for if yaml doesn't exist.
 import yaml
@@ -925,12 +927,12 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                                rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,MMAX=6,NMAX=18,ASCALE=0.0,HSCALE=0.0,CMAP=0,m1=0,m2=1000,verbose=1,density=False,eof_file=''):
     '''
     accumulated_eval_particles
-        -takes a set of particles with standard PSP attributes (see psp_io documentation) and returns potential and forces.
+        -takes a set of particles with standard PSP attributes (see particle documentation) and returns potential and forces.
         -wrapped to be the single-processor version
 
     inputs
     -------------
-    Particles  :  psp_io-style input particles
+    Particles  :  particle-style input particles
     accum_cos  :  cosine component of the coefficients
     accum_sin  :  sine   component of the coefficients
 
@@ -1260,7 +1262,7 @@ a    fr
 #
 def redistribute_particles(ParticleInstance,divisions):
     npart = np.zeros(divisions)
-    holders = [psp_io.particle_holder() for x in range(0,divisions)]
+    holders = [particle.holder() for x in range(0,divisions)]
     average_part = int(np.floor(len(ParticleInstance.xpos)/divisions))
     first_partition = len(ParticleInstance.xpos) - average_part*(divisions-1)
     #print average_part, first_partition
@@ -1693,7 +1695,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
     # set up a dictionary to hold the details
     ComponentDetails = {}
 
-    PSP = psp_io.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
+    PSP = particle.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
 
     for comp_num in range(0,PSP.ncomp):
 
@@ -1759,7 +1761,7 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
         ygrid = np.array([0.])
     
     #
-    P = psp_io.particle_holder()
+    P = particle.holder()
     P.xpos = xgrid.reshape(-1,)
 
     # set the secondary coordinate
