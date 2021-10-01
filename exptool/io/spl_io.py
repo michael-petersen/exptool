@@ -38,7 +38,7 @@ class Input:
 
     """
 
-    def __init__(self, filename,comp=None, nbodies=-1,verbose=0):
+    def __init__(self, filename,comp=None, nbodies=-1,verbose=0,legacy=False):
         """
         inputs
         ------------
@@ -97,6 +97,10 @@ class Input:
 
         # given the comp, pull the data.
         self._pull_data()
+
+        # make the dictionary version
+        if legacy==False:
+            self._make_dictionary()
 
 
     def _read_primary_header(self):
@@ -179,7 +183,7 @@ class Input:
         # now decide on the return format...probably .attribute to
         # match psp_io. but this could change!
         try:
-            self.indx = AllParticles['i']
+            self.indx = AllParticles['index']
         except:
             pass
         
