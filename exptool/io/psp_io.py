@@ -261,6 +261,11 @@ class Input:
             self.yvel = self.data['vy'][0:self.nbodies]
             self.zvel = self.data['vz'][0:self.nbodies]
             self.pote = self.data['potE'][0:self.nbodies]
+	    
+            try:
+                self.indx = self.data['index'][0:self.nbodies]
+            except:
+                pass
         
         else:
             self.mass = self.data['m']
@@ -272,6 +277,10 @@ class Input:
             self.zvel = self.data['vz']
             self.pote = self.data['potE']
             
+            try:
+                self.indx = self.data['index']
+            except:
+                pass
                 
         # may also want to delete self.data in this case to save memory
         del self.data

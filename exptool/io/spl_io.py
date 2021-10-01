@@ -42,16 +42,14 @@ class Input:
         """
         inputs
         ------------
+        filename: str
+            filename to open
         comp    : str
             name of the component to return.
-        legacy  : boolean
-            if True, adds support for other exptool methods. unneeded if building from scratch.
         nbodies : integer
             reduce the number of bodies that are returned.
         verbose : integer
             levels of verbosity.
-        nout    : integer
-            deprecated compatibility parameter. use nbodies instead.
         
         """
         self.verbose = verbose
@@ -196,6 +194,26 @@ class Input:
 
         del AllParticles
             
+    def _make_dictionary(self):
+        """convert the output into a dictionary, in line with psp_io"""
+
+        self.data = dict()
+
+        try:
+            self.data['index'] = self.indx
+        except:
+            pass
+
+        self.data['xpos'] = self.xpos; del self.xpos
+        self.data['ypos'] = self.ypos; del self.ypos
+        self.data['zpos'] = self.zpos; del self.zpos
+        self.data['xvel'] = self.xvel; del self.xvel
+        self.data['yvel'] = self.yvel; del self.yvel
+        self.data['zvel'] = self.zvel; del self.zvel
+        self.data['pote'] = self.pote; del self.pote
+        self.data['mass'] = self.mass; del self.mass
+    
+
     def _read_component_data(self,subfile):
         """read in all data for component from individual files
 

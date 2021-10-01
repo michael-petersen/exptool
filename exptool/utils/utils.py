@@ -4,7 +4,9 @@
 #
 #    04.01.17: Commented for better understanding!
 #
-#
+# TODO:
+#    -check how many of these can be removed for external libraries
+#    -break out histograms into their own work (also plan for another project!)
 ####################################################################
 
 '''
@@ -575,6 +577,29 @@ def sky_hist_2d(x,y,xbins,ybins,weights=None):
 
     return X,Y,img.T/np.cos(Y*np.pi/180.)
     #return X,Y,np.cos(Y*np.pi/180.)
+
+
+
+
+def backup_yaml_parse(yamlin):
+    """for absolute compatibility, a very very simple yaml reader
+    built to purpose. strips all helpful yaml stuff out, so be careful!"""
+    head_dict = {}
+    try:
+        decoded = yamlin.decode()
+    except:
+        decoded = yamlin[0].decode()
+    split = decoded.split('\n')
+    #print(split)
+    for k in split:
+        #print(k)
+        split2 = k.split(':')
+        try:
+            head_dict[split2[0].lstrip()] = split2[1].lstrip()
+        except:
+            pass
+    return head_dict
+
 
 
 
