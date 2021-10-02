@@ -16,7 +16,7 @@ import time
 import os
 import numpy as np
 
-from exptool.io import psp_io
+from exptool.io import particle
 
 
 
@@ -74,7 +74,7 @@ class GQuantities():
             # this is the single file input case
             self.SLIST = np.array([simfile])
 
-            O = psp_io.Input(self.SLIST[0],validate=True)
+            O = particle.Input(self.SLIST[0],validate=True)
 
             try:
                 if O.ntot > 0:
@@ -185,7 +185,7 @@ class GQuantities():
         # step through different files    
         for i,file in enumerate(self.SLIST):
                 
-            O = psp_io.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,comp=comp,verbose=0)
 
             self.TLZ[i] = np.sum(O.xpos*O.yvel - O.ypos*O.xpos)
             self.T[i] = O.time
@@ -211,7 +211,7 @@ class GQuantities():
         for i,file in enumerate(self.SLIST):
 
                 
-            O = psp_io.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,comp=comp,verbose=0)
 
             R = (O.xpos*O.xpos + O.ypos*O.ypos + O.zpos*O.zpos)**0.5
 
@@ -256,7 +256,7 @@ class GQuantities():
             print('globalquantities.compute_fourier: No component specified...trying star.')
             comp = 'star'
             try:
-                O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
+                O = particle.Input(self.SLIST[0],comp='star',verbose=0)
             except:
                 print('globalquantities.compute_fourier: No star...trying dark.')
                 comp = 'dark'
@@ -269,7 +269,7 @@ class GQuantities():
         for i,file in enumerate(self.SLIST):
 
                 
-            O = psp_io.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,comp=comp,verbose=0)
         
             r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
 
@@ -309,7 +309,7 @@ class GQuantities():
             print('globalquantities.compute_fourier: No component specified...trying star.')
             comp = 'star'
             try:
-                O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
+                O = particle.Input(self.SLIST[0],comp='star',verbose=0)
             except:
                 print('globalquantities.compute_fourier: No star...trying dark.')
                 comp = 'dark'
@@ -323,7 +323,7 @@ class GQuantities():
 
             if self.verbose > 1: print('globalquantities.compute_fourier: working on ',file)
                 
-            O = psp_io.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,comp=comp,verbose=0)
         
             r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
 
@@ -412,7 +412,7 @@ class GQuantities():
             print('No component specified...trying star.')
             comp = 'star'
             try:
-                O = psp_io.Input(self.SLIST[0],comp='star',verbose=0)
+                O = particle.Input(self.SLIST[0],comp='star',verbose=0)
             except:
                 print('No star...trying dark.')
                 comp = 'dark'
@@ -426,7 +426,7 @@ class GQuantities():
 
             if self.verbose > 1: print('globalquantities.compute_z_fourier: working on ',file)
                 
-            O = psp_io.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,comp=comp,verbose=0)
         
             r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
 

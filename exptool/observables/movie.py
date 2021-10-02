@@ -22,7 +22,7 @@ from skimage.measure import find_contours
 
 
 # exptool imports
-from .io import psp_io
+from .io import particle
 from .utils import kde_3d
 from .observables import transform
 from .analysis import pattern
@@ -66,7 +66,7 @@ def build_colorbars(indir,runtag,comptime=0,\
 
     # ideally, adaptively pick the late time snapshot
 
-    PSPDump = psp_io.Input(indir+'OUT.'+runtag+'.{0:05d}'.format(comptime),'star')
+    PSPDump = particle.Input(indir+'OUT.'+runtag+'.{0:05d}'.format(comptime),'star')
 
     kdeX1,kdeY1,kdePOSXY = kde_3d.total_kde_two(PSPDump.xpos,PSPDump.ypos,\
                                        gridsize=gridsize,\

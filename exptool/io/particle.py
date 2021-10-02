@@ -4,6 +4,9 @@
 MSP 28 Sep 2021 Original commit
 
 
+TODO
+ - make file selection automatic
+
 """
 
 from . import psp_io
@@ -15,9 +18,9 @@ class Input():
   """
   def __init__(self, filename,comp=None, legacy=True,nbodies=-1,verbose=0,nout=-1,spl=False):
     if spl:
-      return spl_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+      return spl_io.Input(filename,comp=comp,verbose=verbose,nout=nout,legacy=legacy)
     else:
-      return psp_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+      return psp_io.Input(filename,comp=comp,verbose=verbose,nout=nout,legacy=legacy)
 
 
 

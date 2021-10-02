@@ -20,7 +20,7 @@ import numpy as np
 import time
 
 # exptool libraries
-from exptool.io import psp_io
+from exptool.io import particle
 
 
 def rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True,euler=False):
@@ -81,7 +81,7 @@ def rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True,euler=Fals
     
     #
     # instantiate new blank PSP item
-    PSPOut = psp_io.particle_holder()
+    PSPOut = particle.holder()
     
     #
     # do the transformation in position
@@ -147,7 +147,7 @@ def de_rotate_points(PSPDump,xrotation,yrotation,zrotation,velocity=True):
     
     #
     # instantiate new blank PSP item
-    PSPOut = psp_io.particle_holder()
+    PSPOut = particle.holder()
     
     #
     # do the transformation in position

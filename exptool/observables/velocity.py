@@ -1,9 +1,14 @@
+"""
+velocity.py
 
+Various velocity analysis methods
+
+"""
 
 import numpy as np
 
-from exptool.utils import kde_3d
-from exptool.io import psp_io
+from ..utils import kde_3d
+from ..io import particle
 
 
 
@@ -24,7 +29,7 @@ def measured_rotation(infile,comp,rmax=0.06,nsamp=256):
 
 
     '''
-    O = psp_io.Input(infile,comp=comp)
+    O = particle.Input(infile,comp=comp)
     extent = rmax
     nsamp = 256
     kde_weight = (O.xpos*O.yvel - O.ypos*O.xvel)/( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5)

@@ -14,7 +14,7 @@ simulation_name = 'run004'
 phase = np.zeros(2000)
 tt = np.zeros(2000)
 for i in range(000,2000):
-    O1 = psp_io.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %i,comp='star')
+    O1 = particle.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %i,comp='star')
     #P1 = pattern.BarTransform(O1)
     T1 = ellipsetools.genEllipse()
     T1.fitEllipse(O1,rmax=0.05,loggy=True,generalize=False,resolution=61,ncbins=121,weights='mass',SN=100)
@@ -905,7 +905,7 @@ SS = np.zeros([len(r_to_check),len(t_to_check)])
 for t,tval in enumerate(t_to_check):
     print('The time is ',tval)
     infile = '/scratch/mpetersen/Disk064a/OUT.run064a.%05i' %tval
-    O = psp_io.Input(infile,comp='dark',nout=1000000)
+    O = particle.Input(infile,comp='dark',nout=1000000)
     for i,val in enumerate(r_to_check):
         R = (O.xpos**2.+O.ypos**2.+O.zpos**2.)**0.5
         print 'At radius r=%s now, %s of %s' % (np.round(val,4),i+1,len(r_to_check))

@@ -40,9 +40,9 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 # exptool routines
-from exptool.io import psp_io
-from exptool.utils import kde_3d
-from exptool.analysis import pattern
+from ..io import particle
+from ..utils import kde_3d
+from ..analysis import pattern
 
 # bring in the exptool native plotting style
 from exptool.utils import style
@@ -296,15 +296,15 @@ def show_dump(infile,comp,nout=-1,type='pos',transform=True,\
     if np.array(comp).size == 1:
 
         if nout < 0:
-            PSPDump = psp_io.Input(infile,comp=comp)
+            PSPDump = particle.Input(infile,comp=comp)
         else:
-            PSPDump = psp_io.Input(infile,comp=comp,nout=nout)
+            PSPDump = particle.Input(infile,comp=comp,nout=nout)
 
     else:
         # allow for multiple components to be mixed together
-        PartArray = [psp_io.Input(infile,comp=cc) for cc in comp]
+        PartArray = [particle.Input(infile,comp=cc) for cc in comp]
 
-        PSPDump = psp_io.mix_particles(PartArray)
+        PSPDump = particle.mix_particles(PartArray)
 
     # do we want a transformation?
     if transform:
@@ -478,8 +478,8 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
 
     # read in files
 
-    PSPDump1 = psp_io.Input(infile1,comp=comp)
-    PSPDump2 = psp_io.Input(infile2,comp=comp)
+    PSPDump1 = particle.Input(infile1,comp=comp)
+    PSPDump2 = particle.Input(infile2,comp=comp)
 
     if transform:
         PSPDump1 = pattern.BarTransform(PSPDump1)

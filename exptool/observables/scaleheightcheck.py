@@ -1,4 +1,6 @@
+"""
 
+THIS CODE IS A PLACEHOLDER; SHOULD BE UPDATED
 
 import numpy as np
 
@@ -6,7 +8,7 @@ from scipy.optimize import curve_fit
 
 
 from exptool.utils import kde_3d
-from exptool.io import psp_io
+from exptool.io import particle
 
 
 def scaleheight(x,hscale,A):
@@ -17,7 +19,7 @@ def scaleheight(x,hscale,A):
 
 
 
-PSP = psp_io.Input('/work/mpetersen/Disk001thick/OUT.run001t.01000','star')
+PSP = particle.Input('/work/mpetersen/Disk001thick/OUT.run001t.01000','star')
 PSPT = trapping.BarTransform(PSP)
 
 xbins = np.linspace(-0.04,0.04,35)
@@ -114,3 +116,4 @@ plt.plot(zbins,scaleheight(zbins,0.001)/np.max(scaleheight(zbins,0.001)))
         
 
         
+"""

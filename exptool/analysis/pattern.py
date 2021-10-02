@@ -51,7 +51,7 @@ from scipy.interpolate import UnivariateSpline
 
 
 # exptool imports
-from exptool.io import psp_io
+from exptool.io import particle
 from exptool.utils import kmeans
 from exptool.utils import utils
 
@@ -227,7 +227,7 @@ class BarDetermine():
         self.pos = np.zeros(len(self.SLIST))
 
         for i in range(0,len(self.SLIST)):
-                O = psp_io.Input(self.SLIST[i],comp='star',verbose=self.verbose)
+                O = particle.Input(self.SLIST[i],comp='star',verbose=self.verbose)
                 self.time[i] = O.time
                 self.pos[i] = BarDetermine.bar_fourier_compute(self,O.xpos,O.ypos,maxr=self.maxr)
 
@@ -261,9 +261,9 @@ class BarDetermine():
         for i in range(1,len(self.SLIST)-1):
 
             # open three files to compare
-            Oa = psp_io.Input(self.SLIST[i-1],comp=comp,nout=nout,verbose=0)
-            Ob = psp_io.Input(self.SLIST[i],comp=comp,nout=nout,verbose=self.verbose)
-            Oc = psp_io.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
+            Oa = particle.Input(self.SLIST[i-1],comp=comp,nout=nout,verbose=0)
+            Ob = particle.Input(self.SLIST[i],comp=comp,nout=nout,verbose=self.verbose)
+            Oc = particle.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
 
             # compute 2d radial positions
             if threedee:
