@@ -128,7 +128,7 @@ def eof_params(file,verbose=0):
     if tmagic[0] == hmagic:
       ssize = np.fromfile(f, dtype='<i4', count=1)
       cbufs = np.fromfile(f, dtype='<c', count=ssize[0])
-      data = yaml.load(cbufs.tostring())
+      data = yaml.load(cbufs.tostring(), Loader=yaml.FullLoader)
 
       mmax    = data['mmax']
       numx    = data['numx']
