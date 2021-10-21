@@ -46,7 +46,7 @@ def within_annulus(xpos,ypos,zpos,rcentral,rwidth,zheight):
 
 
 
-
+"""
 # make the 3d density
 
 binz = 50
@@ -156,7 +156,7 @@ ZVEL = np.concatenate(zvel)
 MASS = np.concatenate(mass) 
 #TIMES = np.concatenate(times)
 
-print 'It took %3.2f seconds to build the particle list.' % (time.time()-t1)
+#print 'It took %3.2f seconds to build the particle list.' % (time.time()-t1)
 
 
 
@@ -200,3 +200,4 @@ aval,bval = compute_fourier(xpos,ypos,mass,rbins,20)
 mvals = np.linspace(0,20,1)
 imval = (aval**2.+bval**2.)**0.5
 
+"""

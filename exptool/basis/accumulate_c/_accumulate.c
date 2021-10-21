@@ -31,18 +31,37 @@ static PyMethodDef module_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-/* Initialize the module */
+/*
 PyMODINIT_FUNC init_accumulate_c(void)
-{
+{ // Initialize the module: Python 2 version
+
 
   (void)Py_InitModule3("_accumulate_c", module_methods, module_docstring);
   //PyObject *m = Py_InitModule3("_accumulate_c", module_methods, module_docstring);
   //if (m == NULL)
   //    return;
 
-    /* Load `numpy` functionality. */
+    // Load `numpy` functionality.
     //import_array();
 }
+*/
+
+// https://stackoverflow.com/questions/28305731/compiler-cant-find-py-initmodule-is-it-deprecated-and-if-so-what-should-i
+static struct PyModuleDef _accumulate_c =
+{
+    PyModuleDef_HEAD_INIT,
+    "_accumulate_c", /* name of module */
+    module_docstring,          /* module documentation, may be NULL */
+    -1,          /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
+    module_methods
+};
+
+PyMODINIT_FUNC PyInit_cModPyDem(void)
+{
+    return PyModule_Create(&_accumulate_c);
+}
+
+
 
 static PyObject *accumulate_r_to_xi(PyObject *self, PyObject *args)
 {
