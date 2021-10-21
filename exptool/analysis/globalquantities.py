@@ -185,7 +185,7 @@ class GQuantities():
         # step through different files    
         for i,file in enumerate(self.SLIST):
                 
-            O = particle.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,legacy=True,comp=comp,verbose=0)
 
             self.TLZ[i] = np.sum(O.xpos*O.yvel - O.ypos*O.xpos)
             self.T[i] = O.time
@@ -211,7 +211,7 @@ class GQuantities():
         for i,file in enumerate(self.SLIST):
 
                 
-            O = particle.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,legacy=True,comp=comp,verbose=0)
 
             R = (O.xpos*O.xpos + O.ypos*O.ypos + O.zpos*O.zpos)**0.5
 
@@ -269,7 +269,7 @@ class GQuantities():
         for i,file in enumerate(self.SLIST):
 
                 
-            O = particle.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,legacy=True,comp=comp,verbose=0)
         
             r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
 
@@ -323,7 +323,7 @@ class GQuantities():
 
             if self.verbose > 1: print('globalquantities.compute_fourier: working on ',file)
                 
-            O = particle.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,legacy=True,comp=comp,verbose=0)
         
             r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
 
@@ -426,7 +426,7 @@ class GQuantities():
 
             if self.verbose > 1: print('globalquantities.compute_z_fourier: working on ',file)
                 
-            O = particle.Input(file,comp=comp,verbose=0)
+            O = particle.Input(file,legacy=True,comp=comp,verbose=0)
         
             r_dig = np.digitize( (O.xpos*O.xpos + O.ypos*O.ypos)**0.5,rbins,right=True)
 

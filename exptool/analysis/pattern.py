@@ -261,9 +261,9 @@ class BarDetermine():
         for i in range(1,len(self.SLIST)-1):
 
             # open three files to compare
-            Oa = particle.Input(self.SLIST[i-1],comp=comp,nout=nout,verbose=0)
-            Ob = particle.Input(self.SLIST[i],comp=comp,nout=nout,verbose=self.verbose)
-            Oc = particle.Input(self.SLIST[i+1],comp=comp,nout=nout,verbose=0)
+            Oa = particle.Input(self.SLIST[i-1],legacy=True,comp=comp,nout=nout,verbose=0)
+            Ob = particle.Input(self.SLIST[i],legacy=True,comp=comp,nout=nout,verbose=self.verbose)
+            Oc = particle.Input(self.SLIST[i+1],legacy=True,comp=comp,nout=nout,verbose=0)
 
             # compute 2d radial positions
             if threedee:

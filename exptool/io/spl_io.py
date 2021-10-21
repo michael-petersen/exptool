@@ -55,7 +55,10 @@ class Input:
         self.verbose = verbose
 
         if comp == None:
-            print('spl_io.py: no component specified. Aborting.')
+            """if no component specified, print a simple summary of the file contents"""
+            self.primary_header = dict()
+            self._read_primary_header()
+            self._summarise_primary_header()
             return
 
         self.comp = comp
@@ -82,7 +85,7 @@ class Input:
         # test for split PSP files
         # TODO
 
-        self.master_header = dict()
+        self.primary_header = dict()
         self.comp_map = dict()
         self.comp_head = dict()
         self.nbodies = 0
@@ -102,16 +105,26 @@ class Input:
         if legacy==False:
             self._make_dictionary()
 
+    def _summarise_primary_header(self):
+        """a short summary of what is in the file"""
+
+        ncomponents = len(self.comp_head.keys())
+        comp_list   = list(self.comp_head.keys())
+        print("Found {} components.".format(ncomponents))
+
+        for n in range(0,ncomponents):
+            print("Component {}: {}".format(n,comp_list[n]))
+            
 
     def _read_primary_header(self):
+        """read the primary header of an SPL file"""
 
         self.f.seek(0)
         self.time, = np.fromfile(self.f, dtype='<f8', count=1)
         self._nbodies_tot, self._ncomp = np.fromfile(self.f, dtype=np.uint32,count=2)
-        #print(time,_nbodies_tot,_ncomp)
 
         # process the subheaders to
-        data_start = 16# halo, guaranteed first component loation...
+        data_start = 16# halo, guaranteed first component location...
 
         for comp in range(0,self._ncomp):
             self.f.seek(data_start) 
@@ -216,7 +229,11 @@ class Input:
         self.data['zvel'] = self.zvel; del self.zvel
         self.data['pote'] = self.pote; del self.pote
         self.data['mass'] = self.mass; del self.mass
-    
+
+
+    def _handle_subfile(self,subfile):
+
+        _read_component_data(self,subfile)
 
     def _read_component_data(self,subfile):
         """read in all data for component from individual files
@@ -265,8 +282,12 @@ class Input:
                 tbl[name] = np.array(out['f{}'.format(i)][0], copy=True)
         
         del out  # close the memmap instance
+
+        g.close() # close the opened file
         
         return tbl
+
+
 
 
 

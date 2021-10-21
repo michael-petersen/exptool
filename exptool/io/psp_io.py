@@ -38,7 +38,7 @@ class Input:
 
     """
 
-    def __init__(self, filename,comp=None, legacy=True,nbodies=-1,verbose=0,nout=-1):
+    def __init__(self, filename,comp=None, legacy=False,nbodies=-1,verbose=0,nout=-1):
         """
         inputs
         ------------
@@ -77,7 +77,7 @@ class Input:
         # TODO
 
         # do an initial read of the header
-        self.header = self._read_master_header()
+        self.header = self._read_primary_header()
         
         _comps = list(self.header.keys())
  
@@ -90,7 +90,7 @@ class Input:
             else:
                 self.data = self._read_component_data(self.header[comp])
             
-        # if no header is defined, you will get just the master header
+        # if no header is defined, you will get just the primary header
         
         if (legacy) & (comp!=None):
             self.header = self.header[comp]
@@ -174,10 +174,10 @@ class Input:
 
         return head_dict
 
-    def _read_master_header(self):
-        """read the master header of the PSP file"""
+    def _read_primary_header(self):
+        """read the primary header of the PSP file"""
 
-        master_header = dict()
+        primary_header = dict()
         nbodies = 0
 
         with open(self.filename, 'rb') as f:
@@ -201,12 +201,12 @@ class Input:
 
             for i in range(self._ncomp):
                 data = self._read_component_header(f, i)
-                master_header[data.pop('name')] = data
+                primary_header[data.pop('name')] = data
                 nbodies += data['nbodies']
 
-        master_header['nbodies'] = nbodies
+        primary_header['nbodies'] = nbodies
 
-        return master_header
+        return primary_header
 
     def _read_component_data(self, comp_header):
         """read in all data for component"""
@@ -237,7 +237,7 @@ class Input:
                         offset=int(comp_header['data_start']),
                         order='F', mode='r')
 
-        tbl = {}
+        tbl = dict()
         for i, name in enumerate(colnames):
             if self.nbodies > 0:
                 tbl[name] = np.array(out['f{}'.format(i)][0], copy=True)[0:self.nbodies]
