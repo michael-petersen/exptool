@@ -32,7 +32,7 @@ class Input():
 class holder(object):
     '''all the quantities you could ever want to fill in your own PSP-style output.
     '''
-    infile = None
+    filename = None
     comp = None
     nbodies = None
     time = None
@@ -60,7 +60,7 @@ def subdivide_particles_list(ParticleInstance,particle_roi):
     holder.yvel = ParticleInstance.yvel[particle_roi]
     holder.zvel = ParticleInstance.zvel[particle_roi]
     holder.mass = ParticleInstance.mass[particle_roi]
-    holder.infile = ParticleInstance.infile
+    holder.filename = ParticleInstance.filename
     holder.comp = ParticleInstance.comp
     holder.nbodies = ParticleInstance.nbodies
     holder.time = ParticleInstance.time
@@ -85,7 +85,7 @@ def mix_particles(ParticleInstanceArray):
     final_holder.zvel = np.zeros(n_part)
     final_holder.mass = np.zeros(n_part)
     final_holder.pote = np.zeros(n_part)
-    #holder.infile = ParticleInstance.infile
+    #holder.filename = ParticleInstance.filename
     #holder.comp = ParticleInstance.comp
     #holder.nbodies = ParticleInstance.nbodies
     final_holder.time = ParticleInstanceArray[0].time # only uses first time, should be fine?

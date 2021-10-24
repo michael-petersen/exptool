@@ -1090,7 +1090,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
 def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,VAR=False,nanblock=False):
     '''
     compute_coefficients:
-         take a PSP input file and eof_file and compute the cofficients
+         take a Particle Instance and eof_file and compute the cofficients.
 
 
     inputs
@@ -1122,7 +1122,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
     nanvals = np.where( np.isnan(PSPInput.xpos) | np.isnan(PSPInput.ypos) | np.isnan(PSPInput.zpos))[0]
 
     if nanvals > 0:
-        print('eof.compute_coefficients: NaN values found in output file {}.'.format(PSPInput.infile))
+        print('eof.compute_coefficients: NaN values found in output file {}.'.format(PSPInput.filename))
 
         if nanblock:
             # exit
@@ -1134,11 +1134,11 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
             PSPInput.zpos[nanvals] = 0.
     
 
-    EOF_Out = EOF_Object()
-    EOF_Out.time = PSPInput.time
-    EOF_Out.dump = PSPInput.infile
-    EOF_Out.comp = PSPInput.comp
-    EOF_Out.nbodies = PSPInput.mass.size
+    EOF_Out          = EOF_Object()
+    EOF_Out.time     = PSPInput.time
+    EOF_Out.dump     = PSPInput.filename
+    EOF_Out.comp     = PSPInput.comp
+    EOF_Out.nbodies  = PSPInput.mass.size
     EOF_Out.eof_file = eof_file
 
     # it would be nice to set up an override for laptop running here

@@ -126,6 +126,7 @@ class Input:
         # process the subheaders to
         data_start = 16# halo, guaranteed first component location...
 
+        # now read the component headers
         for comp in range(0,self._ncomp):
             self.f.seek(data_start) 
             # manually do headers
