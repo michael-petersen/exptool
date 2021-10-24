@@ -54,6 +54,13 @@ class Input:
         """
         self.verbose = verbose
 
+        # initial check for file validity
+        try:
+            self.f = open(self.filename, 'rb')
+            #self.f.close()
+        except Exception:
+            raise IOError('Failed to open "{}"'.format(filename))
+
         if comp == None:
             """if no component specified, print a simple summary of the file contents"""
             self.primary_header = dict()
@@ -75,13 +82,6 @@ class Input:
         # over this limit?
         self.nbodies = int(np.nanmin([nbodies,1000000000]))
         
-        # initial check for file validity
-        try:
-            self.f = open(self.filename, 'rb')
-            #self.f.close()
-        except Exception:
-            raise IOError('Failed to open "{}"'.format(filename))
-
         # test for split PSP files
         # TODO
 

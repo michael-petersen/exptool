@@ -1095,25 +1095,27 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
 
     inputs
     ---------------------------
-    PSPInput       :
-    eof_file       :
-    verbose        :
+    PSPInput       : (io.particle instance) 
+    eof_file       : (string)
+    verbose        : (bool, default 1)
     no_odd         : (bool, default False) if True, skip the odd m functions
     nprocs_max     : (int, default -1) the maximum number of processes to use for computation. will default to using all processors
+    VAR            : (bool, default False) if True, compute the variance calculations
+    nanblock       : (bool, default False) if True, reset NaN values to be something that can be handled
  
 
     returns
     --------------------------
     EOF_Out        :
-       .time       :
-       .dump       :
-       .comp       :
-       .nbodies    :
-       .eof_file   :
-       .cos        :
-       .sin        :
-       .mmax       :
-       .nmax       :
+       .time       : (float)  the time of the snapshot, read fro the file
+       .dump       : (string) the filename of the component used, copied from input
+       .comp       : (string) the name of the component used
+       .nbodies    : (int)    the number of particles used
+       .eof_file   : (string) the eof file used in computation, copied from input
+       .cos        : (array)  the array of cosine coefficients
+       .sin        : (array)  the array of sine coefficients
+       .mmax       : (int)    the maximum harmonic order computed
+       .nmax       : (int)    the maximum radial order computed
 
 
     '''
