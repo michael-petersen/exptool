@@ -14,13 +14,58 @@ from . import spl_io
 
 
 class Input():
-  """Input class that wraps psp_io and spl_io to have uniform behaviour.
-  """
-  def __init__(self, filename,comp=None, legacy=True,nbodies=-1,verbose=0,nout=-1,spl=False):
-    if spl:
-      return spl_io.Input(filename,comp=comp,verbose=verbose,nout=nout,legacy=legacy)
-    else:
-      return psp_io.Input(filename,comp=comp,verbose=verbose,nout=nout,legacy=legacy)
+    """Input class that wraps psp_io and spl_io to have uniform behaviour."""
+    def __init__(self, filename,comp=None, legacy=True,nbodies=-1,verbose=0,nout=-1,spl=False):
+        if spl:
+            I = spl_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+        else:
+            I = psp_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+
+        if legacy:
+            O = revert_to_legacy(I)
+            return O
+        else
+            return I
+        
+
+        
+def revert_to_legacy(I):
+        """routine to make the dictionary style from above a drop-in replacement for old psp_io"""
+
+        O = holder()
+        
+        if I.nbodies > 0:
+            O.mass = I.data['m'][0:I.nbodies]
+            O.xpos = I.data['x'][0:I.nbodies]
+            O.ypos = I.data['y'][0:I.nbodies]
+            O.zpos = I.data['z'][0:I.nbodies]
+            O.xvel = I.data['vx'][0:I.nbodies]
+            O.yvel = I.data['vy'][0:I.nbodies]
+            O.zvel = I.data['vz'][0:I.nbodies]
+            O.pote = I.data['potE'][0:I.nbodies]
+	    
+            try:
+                O.indx = I.data['index'][0:I.nbodies]
+            except:
+                pass
+        
+        else:
+            O.mass = I.data['m']
+            O.xpos = I.data['x']
+            O.ypos = I.data['y']
+            O.zpos = I.data['z']
+            O.xvel = I.data['vx']
+            O.yvel = I.data['vy']
+            O.zvel = I.data['vz']
+            O.pote = I.data['potE']
+            
+            try:
+                O.indx = I.data['index']
+            except:
+                pass
+
+        return O
+                
 
 
 

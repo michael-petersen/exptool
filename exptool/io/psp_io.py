@@ -10,6 +10,7 @@ MSP 11 Mar 2019 set up to read yaml-derived input files. A method to diagnose pr
 MSP 14 Aug 2019 handle indexing=True from exp component inputs
 MSP 17 Dec 2019 major revision to simplify
 MSP 28 Sep 2021 deprecate parallelisms (move to particle.py)
+MSP 24 Oct 2021 streamline, align with spl_io for merge
 
 PSP is a file format used by the EXP basis function expansion N-body code
 written by Martin Weinberg.
@@ -38,93 +39,89 @@ class Input:
 
     """
 
-    def __init__(self, filename,comp=None, legacy=False,nbodies=-1,verbose=0,nout=-1):
+    def __init__(self, filename,comp=None,verbose=0):
         """
         inputs
         ------------
+        filename : str
+            filename to open
         comp    : str
             name of the component to return.
-        legacy  : boolean
-            if True, adds support for other exptool methods. unneeded if building from scratch.
-        nbodies : integer
-            reduce the number of bodies that are returned.
         verbose : integer
             levels of verbosity.
-        nout    : integer
-            deprecated compatibility parameter. use nbodies instead.
-        
-        """
 
         
+        """
+        self.verbose  = verbose       
         self.filename = filename
-        self.nbodies = nbodies
-        
-        # attach the filename to the instance for tracking
-        self.filename = filename
-        
-        # deprecated.
-        self.nbodies = int(np.nanmax([nbodies,nout]))
         
         # initial check for file validity
         try:
-            f = open(self.filename, 'rb')
-            f.close()
+            self.f = open(self.filename, 'rb')
         except Exception:
-            raise IOError('Failed to load header from file "{}" - are you sure '
-                          'this is a PSP file?'.format(filename))
-
-        # test for split PSP files
-        # TODO
+            raise IOError('Failed to open "{}"'.format(filename))
 
         # do an initial read of the header
-        self.header = self._read_primary_header()
-        
-        _comps = list(self.header.keys())
- 
+        self.primary_header = dict()
 
+        # initialise dictionaries
+        self.comp_map       = dict()
+        self.comp_head      = dict()
+        
+        self._read_primary_header()
+        
+        _comps = list(self.comp_head.keys())
+ 
         # if a component is defined, retrieve data
         if comp != None:
             if comp not in _comps:
                 raise IOError('The specified component does not exist.')
                 
             else:
-                self.data = self._read_component_data(self.header[comp])
+                self.comp = comp
+                self.data = self._read_component_data(self.filename,
+                                                      self.comp_head[self.comp]['nbodies'],
+                                                      int(self.comp_head[self.comp]['data_start']))
             
         # if no header is defined, you will get just the primary header
         
-        if (legacy) & (comp!=None):
-            self.header = self.header[comp]
-            self.comp = comp
-            self._make_backward_compatible()
-        elif legacy:
-            raise IOError('A component must be specified for legacy usage.')
-            
+    def _read_primary_header(self):
+        """read the primary header"""
 
-    def _read_component_header(self, f, comp_idx):
-        """read in the header for a single component"""
+
+        self._check_magic_number()
+
+        # reset to beginning and read current time
+        self.f.seek(0)
+        self.time, = np.fromfile(self.f, dtype='<f8', count=1)
+        self._nbodies_tot, self._ncomp = np.fromfile(self.f, dtype=np.uint32,count=2)
+
+        data_start = 16
+        for comp in range(0,self._ncomp):
+            self.f.seek(data_start)
+            next_comp = self._read_out_component_header(f)
+            data_start = next_comp
+
+
+
+    def _read_out_component_header(self):
+        """read in the header for a single component, from an OUT. file"""
         
-        _ = f.tell()  # byte position of this component
+        #_ = f.tell()  # byte position of this component
 
-        # TODO: if PSP changes, this will have to be altered
         if self._float_len == 4:
-            _1,_2, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(f, dtype=np.uint32, count=6)
-            
+            _1,_2, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(self.f, dtype=np.uint32, count=6)            
         else:
-            nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(f, dtype=np.uint32, count=4)
+            nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(self.f, dtype=np.uint32, count=4)
 
         # information string from the header
-        head = np.fromfile(f, dtype=np.dtype((np.bytes_, infostringlen)),
-                           count=1)
+        head = np.fromfile(self.f, dtype=np.dtype((np.bytes_, infostringlen)),count=1)
+        head_normal = head[0].decode()
+        head_dict = yaml.safe_load(head_normal)
         
-        # need the backward compatibility here.
-        try:
-            head_normal = head[0].decode()
-            head_dict = yaml.safe_load(head_normal)
-        except:
-            # backward_compatibility
-            head_dict = self._read_compatible_header(head)
-            
-        comp_data_pos = f.tell()  # byte position where component data begins
+        # deprecated backward compatibility here: see frozen versions if this is an old file
+
+        comp_data_pos = self.f.tell()  # byte position where component data begins
 
         # the default fields are (m, x, y, z, vx, vy, vz, p)
         nfields = 8
@@ -134,161 +131,74 @@ class Input:
                                  self._float_len * nfloat_attr)
         comp_data_end = f.tell() + comp_length  # byte pos. of comp. data end
 
-        data = dict()
-        data['index'] = comp_idx
-        for k in head_dict:
-            data[k] = head_dict[k]
-        data['nint_attr'] = nint_attr
-        data['nfloat_attr'] = nfloat_attr
-        data['nbodies'] = nbodies
-        data['data_start'] = comp_data_pos
-        data['data_end'] = comp_data_end
-        f.seek(comp_data_end)
+        head_dict['nint_attr']   = nint_attr
+        head_dict['nfloat_attr'] = nfloat_attr
+        head_dict['nbodies']     = nbodies
+        head_dict['data_start']  = comp_data_pos
+        head_dict['data_end']    = comp_data_end
 
-        return data
+        self.comp_head[head_dict['name']] = head_dict
+
+        # specifically look for indexing
+        try:
+            self.indexing = head_dict['parameters']['indexing']
+        except:
+            self.indexing = head_dict['indexing']=='true'
+
+        return comp_data_end
+                
     
-    def _read_compatible_header(self,head):
-        """read the old style of PSP header
+    def _check_magic_number(self):
+
+        self.f.seek(16)  # find magic number
+        cmagic, = np.fromfile(self.f, dtype=np.uint32, count=1)
+
+        # check if it is float vs. double
+        if cmagic == 2915019716:
+            self._float_len = 4
+            self._float_str = 'f'
+        else:
+            self._float_len = 8
+            self._float_str = 'd'
         
-        handling could be more general: this may have failure cases that I have not foreseen.
-        
-        """
-        
-        head_sep = head[0].decode().split(':')
-        head_dict = dict()
-        head_dict['parameters'] = dict()
-        head_dict['parameters']['indexing'] = 0
-        
-        for istanza,stanza in enumerate(head_sep):
-            
-            if istanza==0:
-                head_dict['name'] = stanza.strip()
-                
-            if istanza==1:
-                head_dict['id'] = stanza.strip()
-                
-            if istanza > 1:
-                stanza_sep = stanza.split(',')
-                for param in stanza_sep:
-                    head_dict['parameters'][param.split('=')[0].strip()] = param.split('=')[1].strip()
 
-        return head_dict
 
-    def _read_primary_header(self):
-        """read the primary header of the PSP file"""
-
-        primary_header = dict()
-        nbodies = 0
-
-        with open(self.filename, 'rb') as f:
-
-            f.seek(16)  # find magic number
-            cmagic, = np.fromfile(f, dtype=np.uint32, count=1)
-
-            # check if it is float vs. double
-            if cmagic == 2915019716:
-                self._float_len = 4
-                self._float_str = 'f'
-            else:
-                self._float_len = 8
-                self._float_str = 'd'
-
-            # reset to beginning and read current time
-            f.seek(0)
-            self.time, = np.fromfile(f, dtype='<f8', count=1)
-            self._nbodies_tot, self._ncomp = np.fromfile(f, dtype=np.uint32,
-                                                         count=2)
-
-            for i in range(self._ncomp):
-                data = self._read_component_header(f, i)
-                primary_header[data.pop('name')] = data
-                nbodies += data['nbodies']
-
-        primary_header['nbodies'] = nbodies
-
-        return primary_header
-
-    def _read_component_data(self, comp_header):
+    def _read_component_data(self,filename,nbodies,offset):
         """read in all data for component"""
 
         dtype_str = []
         colnames = []
-        if comp_header['parameters']['indexing']:
+        if self.comp_head[self.comp]['parameters']['indexing']:
             # if indexing is on, the 0th column is Long
             dtype_str = dtype_str + ['l']
-            colnames = colnames + ['index']
+            colnames  = colnames + ['index']
 
         dtype_str = dtype_str + [self._float_str] * 8
         colnames = colnames + ['m', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'potE']
 
-        dtype_str = dtype_str + ['i'] * comp_header['nint_attr']
+        dtype_str = dtype_str + ['i'] * self.comp_head[self.comp]['nint_attr']
         colnames = colnames + ['i_attr{}'.format(i)
-                               for i in range(comp_header['nint_attr'])]
+                               for i in range(self.comp_head[self.comp]['nint_attr'])]
 
-        dtype_str = dtype_str + [self._float_str] * comp_header['nfloat_attr']
+        dtype_str = dtype_str + [self._float_str] * self.comp_head[self.comp]['nfloat_attr']
         colnames = colnames + ['f_attr{}'.format(i)
-                               for i in range(comp_header['nfloat_attr'])]
+                               for i in range(self.comp_head[self.comp]['nfloat_attr'])]
 
         dtype = np.dtype(','.join(dtype_str))
 
-        out = np.memmap(self.filename,
+        out = np.memmap(filename,
                         dtype=dtype,
-                        shape=(1, comp_header['nbodies']),
-                        offset=int(comp_header['data_start']),
+                        shape=(1, nbodies),
+                        offset=offset),
                         order='F', mode='r')
 
         tbl = dict()
         for i, name in enumerate(colnames):
-            if self.nbodies > 0:
-                tbl[name] = np.array(out['f{}'.format(i)][0], copy=True)[0:self.nbodies]
-            else:
-                tbl[name] = np.array(out['f{}'.format(i)][0], copy=True)
+            tbl[name] = np.array(out['f{}'.format(i)][0], copy=True)
 
         del out  # close the memmap instance
 
         return tbl
 
 
-    def _make_backward_compatible(self):
-        """routine to make the dictionary style from above a drop-in replacement for old psp_io"""
-        
-        if self.nbodies > 0:
-            self.mass = self.data['m'][0:self.nbodies]
-            self.xpos = self.data['x'][0:self.nbodies]
-            self.ypos = self.data['y'][0:self.nbodies]
-            self.zpos = self.data['z'][0:self.nbodies]
-            self.xvel = self.data['vx'][0:self.nbodies]
-            self.yvel = self.data['vy'][0:self.nbodies]
-            self.zvel = self.data['vz'][0:self.nbodies]
-            self.pote = self.data['potE'][0:self.nbodies]
-	    
-            try:
-                self.indx = self.data['index'][0:self.nbodies]
-            except:
-                pass
-        
-        else:
-            self.mass = self.data['m']
-            self.xpos = self.data['x']
-            self.ypos = self.data['y']
-            self.zpos = self.data['z']
-            self.xvel = self.data['vx']
-            self.yvel = self.data['vy']
-            self.zvel = self.data['vz']
-            self.pote = self.data['potE']
-            
-            try:
-                self.indx = self.data['index']
-            except:
-                pass
-                
-        # may also want to delete self.data in this case to save memory
-        del self.data
-        
-    def _make_dataframe(self):
-        """routine to make the dictionary style from above pandas dataframe"""
 
-        # this doesn't exist, but someone could write it!
-        pass
-        
-        

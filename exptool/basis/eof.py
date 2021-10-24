@@ -1,22 +1,15 @@
 """
-#
-# this is eof.py
-
-# 08-17-16: bug found in accumulate() where call to get_pot() didn't pass MMAX,NMAX
-# 08-19-16: cmap consistency added
-# 08-26-16: print_progress and verbosity structure added
-# TODO (08-26-16): break out c modules
-
-# 08-29-16: added density consistency, still to be fixed in some places
-
-# 06-02-17: did you know that __doc__ is a thing? also added variance computation ability
-
-# 12-28-17: MASSIVE speed up (x10) from making array-based computation.
-
-##################################################3
 eof (part of exptool.basis)
-    Implementation of Martin Weinberg's EmpOrth9thd routines for EXP simulation analysis
+    Implementation of Martin Weinberg's EmpCylSL.cc routines for EXP simulation analysis
 
+
+MSP 17 Aug 2016 bug found in accumulate() where call to get_pot() didn't pass MMAX,NMAX
+MSP 19 Aug 2016 cmap consistency added
+MSP 26 Aug 2016 print_progress and verbosity structure added
+MSP 29 Aug 2016 added density consistency, still to be fixed in some places
+MSP  2 Jun 2017 did you know that __doc__ is a thing? also added variance computation ability
+MSP 28 Jun 2017 MASSIVE speed up (x10) from making array-based computation.
+MSP 24 Oct 2021 homogenise for SPL/PSP inputs, add comments
 
 
 quickstart
@@ -24,7 +17,6 @@ quickstart
 
 1. calculate coefficients for a PSP distribution using a given eof_file:
       cosine_coeff,sine_coeff = compute_coefficients(PSPInput,eof_file)
-
 
 
 member definitions
@@ -38,9 +30,6 @@ usage examples
 
 
 
-
-
-
 #
 # in order to get force fields from an output dump and eof cache file:
 #   1) read in cachefile, setting potC and potS in particular
@@ -49,9 +38,10 @@ usage examples
 #
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+# deprecate support for Python2
+#from __future__ import absolute_import, division, print_function, unicode_literals
 
-# set up a master debug...
+# set up a main global debug...
 debug = False
 
 # general definitions
@@ -68,11 +58,6 @@ import matplotlib.cm as cm
 from collections import OrderedDict
 import matplotlib as mpl
 
-
-# exptool definitions
-#from exptool.utils import utils
-#from exptool.io import psp_io
-
 # relative exptool imports
 from ..utils import utils
 from ..io    import particle
@@ -85,7 +70,7 @@ import yaml
 #    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 #except:
     
-from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
+from .compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 
 #############################################################################################
 #
@@ -136,7 +121,6 @@ def eof_params(file,verbose=0):
       nmax    = data['nmax']
       norder  = data['norder']
       dens    = data['dens']
-      #cmap    = data['cmap']
       rmin    = data['rmin']
       rmax    = data['rmax']
       ascale  = data['ascl']
@@ -162,23 +146,23 @@ def eof_params(file,verbose=0):
       #
       f.seek(0, 0)
       a = np.fromfile(f, dtype=np.uint32,count=7)
-      mmax = a[0]
-      numx = a[1]
-      numy = a[2]
-      nmax = a[3]
+      mmax   = a[0]
+      numx   = a[1]
+      numy   = a[2]
+      nmax   = a[3]
       norder = a[4]
-      dens = a[5]
-      cmap = a[6]
+      dens   = a[5]
+      cmap   = a[6]
       #
       # second header piece
       #
       a = np.fromfile(f, dtype='<f8',count=6)
-      rmin = a[0]
-      rmax = a[1]
-      ascale = a[2]
-      hscale = a[3]
+      rmin    = a[0]
+      rmax    = a[1]
+      ascale  = a[2]
+      hscale  = a[3]
       cylmass = a[4]
-      tnow = a[5]
+      tnow    = a[5]
 
     if (verbose):
 
@@ -208,15 +192,15 @@ def read_eof_file(file):
 
     potc,rforcec,zforcec,densc,potS,rforces,zforces,denss = parse_eof(file)
 
-    D['potC'] = potc
+    D['potC']    = potc
     D['rforceC'] = rforcec
     D['zforceC'] = zforcec
-    D['densC'] = densc
+    D['densC']   = densc
 
-    D['potS'] = pots
+    D['potS']    = pots
     D['rforceS'] = rforces
     D['zforceS'] = zforces
-    D['densS'] = denss
+    D['densS']   = denss
 
     return D
     
@@ -1342,7 +1326,7 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     '''
     make_coefficients_multi
 
-    master process to distribute particles for accumulation
+    main process to distribute particles for accumulation
 
 
     '''

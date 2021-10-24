@@ -9,3 +9,4 @@ dist/*
 .cache/*
 .cache
 *latest*
+exptool/io/psp_io_frozen.py
