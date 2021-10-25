@@ -2,7 +2,7 @@
 reader for the split phase-space protocol (SPL) files from EXP
 
 MSP 28 Sep 2021 Verify initial commit is working
-MSP 24 Oct 2021 Cleanup to match psp_io
+MSP 25 Oct 2021 Cleanup to match psp_io
 
 
 
@@ -24,27 +24,41 @@ except ImportError:
     
 
 class Input:
-    """Python reader for Split Phase-Space Protocol (SPL) files used by EXP.
+    """Input class to adaptively handle SPL. format specifically
 
     inputs
-    ----------
+    ---------------
     filename : str
-        The SPL filename to load.
+        the input filename to be read
+    comp     : str, optional
+        the name of the component for which to extract data. If None, will read primary header and exit.
+    verbose  : int, default 0
+        verbosity flag.
+    
+    returns
+    ---------------
+    self        : Input instance
+      .header   : dict, all header values pulled from the file
+        the .keys() are the names of each component
+        each component has a dictionary of values, including 'parameters'
+        the details of the force calculation are in 'force'
+      .filename : str, the filename that was read
+      .comp     : str, name of the component
+      .time     : float, the time in the output file
+      .data     : dictionary, with keys:
+        x       : float, the x position
+        y       : float, the y position
+        z       : float, the z position
+        vx      : float, the x velocity
+        vy      : float, the y velocity
+        vz      : float, the z velocity
+        mass    : float, the mass of the particle
+        index   : int, the integer index of the particle
+        potE    : float, the potential energy value
 
     """
-
     def __init__(self, filename,comp=None,verbose=0):
-        """
-        inputs
-        ------------
-        filename: str
-            filename to open
-        comp    : str
-            name of the component to return.
-        verbose : integer
-            levels of verbosity.
-        
-        """
+        """the main driver, see above for parameters"""
         self.verbose  = verbose
         self.filename = filename
 
@@ -58,32 +72,41 @@ class Input:
         self.primary_header = dict()
 
         # initialise dictionaries
-        self.comp_map       = dict()
-        self.comp_head      = dict()
+        self.component_map = dict()
+        self.header        = dict()
         
         self._read_primary_header()
+
+        self.comp = comp
+        _comps = list(self.header.keys())
 
         if comp == None:
             self._summarise_primary_header()
             return
 
-        self.comp = comp
+        # if a component is defined, retrieve data
+        if comp != None:
+            if comp not in _comps:
+                raise IOError('The specified component does not exist.')
+                
+            else:
+                
+                # set up assuming the directory of the main file is the same
+                # as the subfiles. could add verbose flag to warn?
+                self.indir = filename.split('SPL')[0]
 
-        # set up assuming the directory of the main file is the same
-        # as the subfiles. could add verbose flag to warn?
-        self.indir = filename.split('SPL')[0]
+                # now we can query out a specific component
+                self._make_spl_file_list(self.comp)
 
-        # now we can query out a specific component
-        self._make_spl_file_list(self.comp)
+                # given the comp, pull the data.
+                self._read_spl_component_data()
 
+        # wrapup
         self.f.close()
-
-        # given the comp, pull the data.
-        self._read_spl_component_data()
 
 
     def _read_primary_header(self):
-        """read the primary header"""
+        """read the primary header from an SPL. file"""
 
         self._check_magic_number()
         
@@ -118,8 +141,8 @@ class Input:
         # data starts at ...
         next_comp = 4*7 + infostringlen + data_start
             
-        self.comp_map[head_dict['name']]  = next_comp
-        self.comp_head[head_dict['name']] = head_dict
+        self.component_map[head_dict['name']]  = next_comp
+        self.header[head_dict['name']]         = head_dict
 
         next_comp +=  self.nprocs*1024
 
@@ -134,7 +157,7 @@ class Input:
                 
     def _make_spl_file_list(self,comp):
         
-        self.f.seek(self.comp_map[comp])
+        self.f.seek(self.component_map[comp])
         
         PBUF_SZ = 1024
         PBUF_SM = 32
@@ -149,8 +172,8 @@ class Input:
     def _summarise_primary_header(self):
         """a short summary of what is in the file"""
 
-        ncomponents = len(self.comp_head.keys())
-        comp_list   = list(self.comp_head.keys())
+        ncomponents = len(self.header.keys())
+        comp_list   = list(self.header.keys())
         print("Found {} components.".format(ncomponents))
 
         for n in range(0,ncomponents):
@@ -159,10 +182,6 @@ class Input:
 
     def _read_spl_component_data(self):
         
-        # read in the first one
-        #tbl = self._read_component_data(self.subfiles[0])
-
-        # make the template based on the first file
         FullParticles = dict()
 
         # first pass: get everything into memory
@@ -218,7 +237,7 @@ class Input:
         
         dtype_str = []
         colnames  = []
-        if self.comp_head[self.comp]['parameters']['indexing']:
+        if self.header[self.comp]['parameters']['indexing']:
             # if indexing is on, the 0th column is Long
             dtype_str = dtype_str + ['l']
             colnames  = colnames + ['index']
@@ -226,13 +245,13 @@ class Input:
         dtype_str = dtype_str + [self._float_str] * 8
         colnames = colnames + ['m', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'potE']
         
-        dtype_str = dtype_str + ['i'] * self.comp_head[self.comp]['nint_attr']
+        dtype_str = dtype_str + ['i'] * self.header[self.comp]['nint_attr']
         colnames = colnames + ['i_attr{}'.format(i)
-                               for i in range(self.comp_head[self.comp]['nint_attr'])]
+                               for i in range(self.header[self.comp]['nint_attr'])]
         
-        dtype_str = dtype_str + [self._float_str] * self.comp_head[self.comp]['nfloat_attr']
+        dtype_str = dtype_str + [self._float_str] * self.header[self.comp]['nfloat_attr']
         colnames = colnames + ['f_attr{}'.format(i)
-                               for i in range(self.comp_head[self.comp]['nfloat_attr'])]
+                               for i in range(self.header[self.comp]['nfloat_attr'])]
         
         dtype = np.dtype(','.join(dtype_str))
         

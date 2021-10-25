@@ -10,48 +10,63 @@ MSP 11 Mar 2019 set up to read yaml-derived input files. A method to diagnose pr
 MSP 14 Aug 2019 handle indexing=True from exp component inputs
 MSP 17 Dec 2019 major revision to simplify
 MSP 28 Sep 2021 deprecate parallelisms (move to particle.py)
-MSP 24 Oct 2021 streamline, align with spl_io for merge
+MSP 25 Oct 2021 streamline, align with spl_io for merge
 
 PSP is a file format used by the EXP basis function expansion N-body code
 written by Martin Weinberg.
 
 
 TODO
--add protection for missing yaml?
--add handling for multiple components simultaneously
--add _make_dataframe
+-add handling for multiple components simultaneously (maybe)
+-add handling for reading in parts of files
 
 """
 
 import numpy as np
 
-# requires yaml support: likely needs to be installed.
-import yaml
-
+try:
+    # requires yaml support: likely needs to be installed.
+    import yaml
+except ImportError:
+    raise ImportError("You will need to 'pip install pyyaml' to use this reader.")
+    
 
 class Input:
-    """Python reader for Phase-Space Protocol (PSP) files used by EXP.
+    """Input class to adaptively handle OUT. format specifically
 
     inputs
-    ----------
+    ---------------
     filename : str
-        The PSP filename to load.
+        the input filename to be read
+    comp     : str, optional
+        the name of the component for which to extract data. If None, will read primary header and exit.
+    verbose  : int, default 0
+        verbosity flag.
+    
+    returns
+    ---------------
+    self        : Input instance
+      .header   : dict, all header values pulled from the file
+        the .keys() are the names of each component
+        each component has a dictionary of values, including 'parameters'
+        the details of the force calculation are in 'force'
+      .filename : str, the filename that was read
+      .comp     : str, name of the component
+      .time     : float, the time in the output file
+      .data     : dictionary, with keys:
+        x       : float, the x position
+        y       : float, the y position
+        z       : float, the z position
+        vx      : float, the x velocity
+        vy      : float, the y velocity
+        vz      : float, the z velocity
+        mass    : float, the mass of the particle
+        index   : int, the integer index of the particle
+        potE    : float, the potential energy value
 
     """
-
     def __init__(self, filename,comp=None,verbose=0):
-        """
-        inputs
-        ------------
-        filename : str
-            filename to open
-        comp    : str
-            name of the component to return.
-        verbose : integer
-            levels of verbosity.
-
-        
-        """
+        """the main driver"""
         self.verbose  = verbose       
         self.filename = filename
         
@@ -66,28 +81,27 @@ class Input:
 
         # initialise dictionaries
         self.comp_map       = dict()
-        self.comp_head      = dict()
-        
+        self.header      = dict()
+       
         self._read_primary_header()
-        
-        _comps = list(self.comp_head.keys())
+
+        self.comp = comp
+        _comps = list(self.header.keys())
  
         # if a component is defined, retrieve data
         if comp != None:
             if comp not in _comps:
                 raise IOError('The specified component does not exist.')
                 
-            else:
-                self.comp = comp
+            else:                
                 self.data = self._read_component_data(self.filename,
-                                                      self.comp_head[self.comp]['nbodies'],
-                                                      int(self.comp_head[self.comp]['data_start']))
-            
-        # if no header is defined, you will get just the primary header
+                                                      self.header[self.comp]['nbodies'],
+                                                      int(self.header[self.comp]['data_start']))
+        # wrapup
+        self.f.close()
         
     def _read_primary_header(self):
-        """read the primary header"""
-
+        """read the primary header from an OUT. file"""
 
         self._check_magic_number()
 
@@ -97,12 +111,22 @@ class Input:
         self._nbodies_tot, self._ncomp = np.fromfile(self.f, dtype=np.uint32,count=2)
 
         data_start = 16
+        
         for comp in range(0,self._ncomp):
             self.f.seek(data_start)
             next_comp = self._read_out_component_header()
             data_start = next_comp
 
+    def _summarise_primary_header(self):
+        """a short summary of what is in the file"""
 
+        ncomponents = len(self.header.keys())
+        comp_list   = list(self.header.keys())
+        print("Found {} components.".format(ncomponents))
+
+        for n in range(0,ncomponents):
+            print("Component {}: {}".format(n,comp_list[n]))
+            
 
     def _read_out_component_header(self):
         """read in the header for a single component, from an OUT. file"""
@@ -137,7 +161,7 @@ class Input:
         head_dict['data_start']  = comp_data_pos
         head_dict['data_end']    = comp_data_end
 
-        self.comp_head[head_dict['name']] = head_dict
+        self.header[head_dict['name']] = head_dict
 
         # specifically look for indexing
         try:
@@ -149,6 +173,7 @@ class Input:
                 
     
     def _check_magic_number(self):
+        """check the magic number to see if a file is float or double"""
 
         self.f.seek(16)  # find magic number
         cmagic, = np.fromfile(self.f, dtype=np.uint32, count=1)
@@ -168,7 +193,7 @@ class Input:
 
         dtype_str = []
         colnames = []
-        if self.comp_head[self.comp]['parameters']['indexing']:
+        if self.header[self.comp]['parameters']['indexing']:
             # if indexing is on, the 0th column is Long
             dtype_str = dtype_str + ['l']
             colnames  = colnames + ['index']
@@ -176,13 +201,13 @@ class Input:
         dtype_str = dtype_str + [self._float_str] * 8
         colnames = colnames + ['m', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'potE']
 
-        dtype_str = dtype_str + ['i'] * self.comp_head[self.comp]['nint_attr']
+        dtype_str = dtype_str + ['i'] * self.header[self.comp]['nint_attr']
         colnames = colnames + ['i_attr{}'.format(i)
-                               for i in range(self.comp_head[self.comp]['nint_attr'])]
+                               for i in range(self.header[self.comp]['nint_attr'])]
 
-        dtype_str = dtype_str + [self._float_str] * self.comp_head[self.comp]['nfloat_attr']
+        dtype_str = dtype_str + [self._float_str] * self.header[self.comp]['nfloat_attr']
         colnames = colnames + ['f_attr{}'.format(i)
-                               for i in range(self.comp_head[self.comp]['nfloat_attr'])]
+                               for i in range(self.header[self.comp]['nfloat_attr'])]
 
         dtype = np.dtype(','.join(dtype_str))
 

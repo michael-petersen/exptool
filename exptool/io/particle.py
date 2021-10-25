@@ -1,11 +1,12 @@
 """
-# new scaffolding for reading: this will be a driver.
+particle.py
+   driver for input classes and handling particle data
 
 MSP 28 Sep 2021 Original commit
+MSP 25 Oct 2021 Tested for compatibility
 
 
 TODO
- - make file selection automatic
 
 """
 
@@ -14,19 +15,80 @@ from . import spl_io
 
 
 class Input():
-    """Input class that wraps psp_io and spl_io to have uniform behaviour."""
+    """Input class to adaptively handle various EXP output formats.
+
+    inputs
+    ---------------
+    filename : str
+        the input filename to be read
+    comp     : str, optional
+        the name of the component for which to extract data. If None, will read primary header and exit.
+    legacy   : bool, default=True
+        if True, return attributes rather than a dictionary of particle data
+    verbose  : int, default 0
+        verbosity flag.
+    
+    returns
+    ---------------
+    self        : Input instance
+      .header   : dict, all header values pulled from the file
+        the .keys() are the names of each component
+        each component has a dictionary of values, including 'parameters'
+        the details of the force calculation are in 'force'
+      .filename : str, the filename that was read
+      .comp     : str, name of the component
+      .time     : float, the time in the output file
+      .data     : dictionary, with keys:
+        x       : float, the x position
+        y       : float, the y position
+        z       : float, the z position
+        vx      : float, the x velocity
+        vy      : float, the y velocity
+        vz      : float, the z velocity
+        mass    : float, the mass of the particle
+        index   : int, the integer index of the particle
+        potE    : float, the potential energy value
+
+      ---or, if legacy=True---
+      
+      .xpos     : float, the x position
+      .ypos     : float, the y position
+      .zpos     : float, the z position
+      .xvel     : float, the x velocity
+      .yvel     : float, the y velocity
+      .zvel     : float, the z velocity
+      .mass     : float, the mass of the particle
+      .indx     : int, the integer index of the particle
+      .pote     : float, the potential energy value
+
+
+    """
     def __init__(self, filename,comp=None, legacy=True,verbose=0):
+        """the main driver for the class"""
 
-        if 'SPL' in filename:
-            spl = True
+        # auto-determine the file type
+        if 'SPL.' in filename:
+            self.style = 'SPL'
+        elif 'OUT.':
+            self.style = 'OUT'
         else:
-            spl = False
+            self.style = 'unknown'
         
-        if spl:
+        if self.style=='SPL':
             I = spl_io.Input(filename,comp=comp,verbose=verbose)
-        else:
+        elif self.style=='OUT.':
             I = psp_io.Input(filename,comp=comp,verbose=verbose)
+        else:
+            raise ValueError('File type not supported for file "{}"'.format(filename))
 
+        # expose the header
+        self.header = I.header
+        
+        
+        # what is the ideal legacy error handling?
+        if I.comp==None:
+            return
+            
         if legacy:
             self.mass = I.data['m']
             self.xpos = I.data['x']
@@ -36,10 +98,10 @@ class Input():
             self.yvel = I.data['vy']
             self.zvel = I.data['vz']
             self.pote = I.data['potE']
-            try: # I think this can be done with the header flags instead of try?
+            
+            if (I.header['dark']['parameters']['indexing']):
                 self.indx = I.data['index']
-            except:
-                pass
+
         else:
             self.data = I.data
 
@@ -49,31 +111,6 @@ class Input():
         
 
         
-def revert_to_legacy(I):
-        """routine to make the dictionary style from above a drop-in replacement for old psp_io"""
-
-        O = holder()
-        
-        O.mass = I.data['m']
-        O.xpos = I.data['x']
-        O.ypos = I.data['y']
-        O.zpos = I.data['z']
-        O.xvel = I.data['vx']
-        O.yvel = I.data['vy']
-        O.zvel = I.data['vz']
-        O.pote = I.data['potE']
-        O.filename = I.filename
-        O.comp = I.comp
-        O.time = I.time
-            
-        try:
-            O.indx = I.data['index']
-        except:
-            pass
-
-
-        return O
-                
 
 
 

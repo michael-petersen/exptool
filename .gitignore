@@ -10,3 +10,5 @@ dist/*
 .cache
 *latest*
 exptool/io/psp_io_frozen.py
+exptool/io/combined.py
+
