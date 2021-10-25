@@ -99,7 +99,7 @@ class Input:
         data_start = 16
         for comp in range(0,self._ncomp):
             self.f.seek(data_start)
-            next_comp = self._read_out_component_header(f)
+            next_comp = self._read_out_component_header()
             data_start = next_comp
 
 
@@ -129,7 +129,7 @@ class Input:
                                  self._float_len * nfields +
                                  4 * nint_attr +
                                  self._float_len * nfloat_attr)
-        comp_data_end = f.tell() + comp_length  # byte pos. of comp. data end
+        comp_data_end = self.f.tell() + comp_length  # byte pos. of comp. data end
 
         head_dict['nint_attr']   = nint_attr
         head_dict['nfloat_attr'] = nfloat_attr
@@ -189,7 +189,7 @@ class Input:
         out = np.memmap(filename,
                         dtype=dtype,
                         shape=(1, nbodies),
-                        offset=offset),
+                        offset=offset,
                         order='F', mode='r')
 
         tbl = dict()

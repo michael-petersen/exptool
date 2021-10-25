@@ -15,17 +15,37 @@ from . import spl_io
 
 class Input():
     """Input class that wraps psp_io and spl_io to have uniform behaviour."""
-    def __init__(self, filename,comp=None, legacy=True,nbodies=-1,verbose=0,nout=-1,spl=False):
-        if spl:
-            I = spl_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+    def __init__(self, filename,comp=None, legacy=True,verbose=0):
+
+        if 'SPL' in filename:
+            spl = True
         else:
-            I = psp_io.Input(filename,comp=comp,verbose=verbose,nout=nout)
+            spl = False
+        
+        if spl:
+            I = spl_io.Input(filename,comp=comp,verbose=verbose)
+        else:
+            I = psp_io.Input(filename,comp=comp,verbose=verbose)
 
         if legacy:
-            O = revert_to_legacy(I)
-            return O
-        else
-            return I
+            self.mass = I.data['m']
+            self.xpos = I.data['x']
+            self.ypos = I.data['y']
+            self.zpos = I.data['z']
+            self.xvel = I.data['vx']
+            self.yvel = I.data['vy']
+            self.zvel = I.data['vz']
+            self.pote = I.data['potE']
+            try: # I think this can be done with the header flags instead of try?
+                self.indx = I.data['index']
+            except:
+                pass
+        else:
+            self.data = I.data
+
+        self.filename = I.filename
+        self.comp     = I.comp
+        self.time     = I.time
         
 
         
@@ -34,35 +54,23 @@ def revert_to_legacy(I):
 
         O = holder()
         
-        if I.nbodies > 0:
-            O.mass = I.data['m'][0:I.nbodies]
-            O.xpos = I.data['x'][0:I.nbodies]
-            O.ypos = I.data['y'][0:I.nbodies]
-            O.zpos = I.data['z'][0:I.nbodies]
-            O.xvel = I.data['vx'][0:I.nbodies]
-            O.yvel = I.data['vy'][0:I.nbodies]
-            O.zvel = I.data['vz'][0:I.nbodies]
-            O.pote = I.data['potE'][0:I.nbodies]
-	    
-            try:
-                O.indx = I.data['index'][0:I.nbodies]
-            except:
-                pass
-        
-        else:
-            O.mass = I.data['m']
-            O.xpos = I.data['x']
-            O.ypos = I.data['y']
-            O.zpos = I.data['z']
-            O.xvel = I.data['vx']
-            O.yvel = I.data['vy']
-            O.zvel = I.data['vz']
-            O.pote = I.data['potE']
+        O.mass = I.data['m']
+        O.xpos = I.data['x']
+        O.ypos = I.data['y']
+        O.zpos = I.data['z']
+        O.xvel = I.data['vx']
+        O.yvel = I.data['vy']
+        O.zvel = I.data['vz']
+        O.pote = I.data['potE']
+        O.filename = I.filename
+        O.comp = I.comp
+        O.time = I.time
             
-            try:
-                O.indx = I.data['index']
-            except:
-                pass
+        try:
+            O.indx = I.data['index']
+        except:
+            pass
+
 
         return O
                 
