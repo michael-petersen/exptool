@@ -1676,196 +1676,6 @@ def extract_eof_coefficients(f):
 #
 
 
-def parse_components(simulation_directory,simulation_name,output_number):
-
-    # set up a dictionary to hold the details
-    ComponentDetails = {}
-
-    PSP = particle.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
-
-    for comp_num in range(0,PSP.ncomp):
-
-        # find components that have cylindrical matches
-        if PSP.comp_expansions[comp_num] == 'cylinder':
-
-            # set up a dictionary based on the component name
-            ComponentDetails[PSP.comp_titles[comp_num]] = {}
-
-            # set up flag for expansion type
-            ComponentDetails[PSP.comp_titles[comp_num]]['expansion'] = 'cylinder'
-
-            # population dictionary with desirables
-            ComponentDetails[PSP.comp_titles[comp_num]]['nbodies'] = PSP.comp_nbodies[comp_num]
-
-            # break basis string for eof_file
-            broken_basis = PSP.comp_basis[comp_num].split(',')
-            broken_basis = [v.strip() for v in broken_basis] # rip out spaces
-            basis_dict = {}
-            for value in broken_basis:  basis_dict[value.split('=')[0]] = value.split('=')[1]
-
-            # ^^^
-            # ideally this will be populated with defaults as well so that all values used are known
-
-            try:
-                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = simulation_directory+basis_dict['eof_file']
-                
-            except:
-                print('eof.parse_components: Component {0:s} has no EOF file specified (setting None).'.format(PSP.comp_titles[comp_num]))
-                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = None
-
-    return ComponentDetails
-
-
-#
-# visualizing routines
-#
-
-def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False,density=False):
-    '''
-    make_eof_wake: evaluate a simple grid of points along an axis
-
-    inputs
-    ---------
-    EOFObj: 
-
-
-
-
-
-    '''
-    #     now a simple grid
-    #
-    # this will always be square in resolution--could think how to change this?
-    zline = xline*zaspect
-    xgrid,ygrid = np.meshgrid(xline,zline)
-
-
-    if axis:
-        zline = np.array([0.])
-        xgrid = xline[np.where(xline>=0.)[0]]
-        xline = xgrid
-        ygrid = np.array([0.])
-    
-    #
-    P = particle.holder()
-    P.xpos = xgrid.reshape(-1,)
-
-    # set the secondary coordinate
-    if coord=='Y':
-        P.ypos = ygrid.reshape(-1,)
-        P.zpos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
-
-    if coord=='Z':
-        P.ypos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
-        P.zpos = ygrid.reshape(-1,)
-        
-    P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
-    #
-    #
-    cos_coefs_in = np.copy(EOFObj.cos)
-    sin_coefs_in = np.copy(EOFObj.sin)
-    #
-    if exclude:
-        for i in orders:
-            cos_coefs_in[i] = np.zeros(EOFObj.nmax)
-            sin_coefs_in[i] = np.zeros(EOFObj.nmax)
-    #
-   # p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P,
-   # cos_coefs_in,
-   # sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
-    if density:
-        p0,p,d0,d,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=True)
-    else:
-        p0,p,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=False)
-
-    #
-    #
-    wake = {}
-    wake['X'] = xgrid
-    wake['Y'] = ygrid
-
-    if zline.shape[0] > 1:
-
-        if m1 < 1:
-            wake['P'] = (p+p0).reshape([xline.shape[0],zline.shape[0]])
-            if density:
-                wake['D'] = (d+d0).reshape([xline.shape[0],zline.shape[0]])
-        else:
-            wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
-            if density:
-                wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
-            
-        wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
-        wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
-        wake['fP'] = fp.reshape([xline.shape[0],zline.shape[0]])
-        wake['fZ'] = fz.reshape([xline.shape[0],zline.shape[0]])
-
-    else:
-
-        if m1 < 1:
-            wake['P'] = p + p0
-            if density:
-                wake['D'] = d + d0
-        else:
-            wake['P'] = p
-            if density:
-                wake['D'] = d
-            
-        wake['fR'] = fr
-        wake['R'] = R
-        wake['fP'] = fp
-        wake['fZ'] = fz
-
-        
-    return wake
-
-
-
-#
-# add eof visualizers
-#
-
-
-def reorganize_eof_dict(EOFDict):
-    #
-    # extract size of basis
-    mmax = EOFDict[0].mmax
-    nmax = EOFDict[0].nmax
-    #
-    # reorganize
-    coef_sums = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
-    coefs_cos = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
-    coefs_sin = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
-    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])
-    #
-    keynum = 0
-    for keyval in EOFDict.keys():
-        for mm in range(0,mmax+1):
-            for nn in range(0,nmax):
-                coef_sums[mm,keynum,nn] = EOFDict[keyval].cos[mm,nn]**2. + EOFDict[keyval].sin[mm,nn]**2.
-                coefs_cos[mm,nn,keynum] = EOFDict[keyval].cos[mm,nn]
-                coefs_sin[mm,nn,keynum] = EOFDict[keyval].sin[mm,nn]
-        #
-        time_order[keynum] = EOFDict[keyval].time
-        keynum += 1
-    #
-    #   
-    # assemble into dictionary
-    CDict = {}
-    CDict['time']   = time_order[time_order.argsort()]
-    CDict['total'] = {}
-    CDict['sum'] = {}
-    CDict['cos'] = {}
-    CDict['sin'] = {}
-    for mm in range(0,mmax+1):
-        CDict['total'][mm] = coef_sums[mm,time_order.argsort(),:]
-        CDict['sum'][mm] = np.sum(coef_sums[mm],axis=1)[time_order.argsort()]
-        CDict['cos'][mm] = coefs_cos[mm,:,time_order.argsort()].T
-        CDict['sin'][mm] = coefs_sin[mm,:,time_order.argsort()].T
-    #
-    return CDict
-
-
 
 def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1.5*np.pi,nonan=False,signal_threshold=0.005):
     '''
@@ -2027,98 +1837,50 @@ def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0
 
 
 
+"""
 
 
-def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
-    '''
-    compute_variance : do variance computation on coefficients
-    using the MISE implementation
-    
-    deprecated 01.30.2019
+def parse_components(simulation_directory,simulation_name,output_number):
 
-    inputs
-    -------------
-    ParticleInstance    :   particles to accumulate
-    accum_cos           :   accumulated cosine coefficients
-    accum_sin           :   accumulated   sine coefficients
-    accum_cos2          :   squared accumulated cosine coefficients
-    accum_sin2          :   squared accumulated   sine coefficients
+    # set up a dictionary to hold the details
+    ComponentDetails = {}
 
-    outputs
-    -------------
-    varC                :   variance on the cosine coefficients
-    varS                :   variance on the   sine coefficients
-    facC                :   b_Hall for cosine coefficients
-    facS                :   b_Hall for   sine coefficients
-    
-    notes
-    -------------
-    there is some question about the methodology employed here; following Weinberg 1996, we use the MISE
+    PSP = particle.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
 
+    for comp_num in range(0,PSP.ncomp):
 
-    '''    
-    
-    wgt = 1./(np.sum(ParticleInstance.mass))
-    nrm = wgt*wgt;
-    srm = 1./float(ParticleInstance.mass.size)
+        # find components that have cylindrical matches
+        if PSP.comp_expansions[comp_num] == 'cylinder':
 
-    
-    totC = accum_cos*wgt
-    totS = accum_sin*wgt
+            # set up a dictionary based on the component name
+            ComponentDetails[PSP.comp_titles[comp_num]] = {}
 
-    
-    sqrC = totC*totC
-    sqrS = totS*totS
+            # set up flag for expansion type
+            ComponentDetails[PSP.comp_titles[comp_num]]['expansion'] = 'cylinder'
 
-    
-    varC = accum_cos2*nrm - srm*sqrC
-    varS = accum_sin2*nrm - srm*sqrS
+            # population dictionary with desirables
+            ComponentDetails[PSP.comp_titles[comp_num]]['nbodies'] = PSP.comp_nbodies[comp_num]
 
-    # this is b_Hall (see Weinberg 1996)
-    facC = sqrC/(varC/(float(ParticleInstance.mass.size)+1.) + sqrC + 1.0e-10)
-    facS = sqrS/(varS/(float(ParticleInstance.mass.size)+1.) + sqrS + 1.0e-10)
+            # break basis string for eof_file
+            broken_basis = PSP.comp_basis[comp_num].split(',')
+            broken_basis = [v.strip() for v in broken_basis] # rip out spaces
+            basis_dict = {}
+            for value in broken_basis:  basis_dict[value.split('=')[0]] = value.split('=')[1]
 
-    # signal to noise is (coeff^2 / var )^1/2
-    
-    return varC,varS,facC,facS
-    
+            # ^^^
+            # ideally this will be populated with defaults as well so that all values used are known
+
+            try:
+                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = simulation_directory+basis_dict['eof_file']
+                
+            except:
+                print('eof.parse_components: Component {0:s} has no EOF file specified (setting None).'.format(PSP.comp_titles[comp_num]))
+                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = None
+
+    return ComponentDetails
 
 
 
-
-
-
-
-def compute_sn(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
-    '''
-    compute_sn : compute signal-to-noise metric on the coefficients
-
-    inputs
-    -------------
-    ParticleInstance    :   particles to accumulate
-    accum_cos           :   accumulated cosine coefficients
-    accum_sin           :   accumulated   sine coefficients
-    accum_cos2          :   squared accumulated cosine coefficients
-    accum_sin2          :   squared accumulated   sine coefficients
-
-    outputs
-    -------------
-    snC                 :   signal-to-noise of cosine coefficients
-    snS                 :   signal-to-noise of   sine coefficients
-    
-
-    '''    
-
-    varC,varS,facC,facS = compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
-
-  
-    # signal to noise is (coeff^2 / var )^1/2
-
-    snC = ((accum_cos*accum_cos)/varC)**0.5
-    snS = ((accum_sin*accum_sin)/varS)**0.5
-
-    return snC,snS
-    
 
 
 def read_binary_eof_coefficients(coeffile):
@@ -2255,85 +2017,45 @@ def read_binary_eof_coefficients_dict(coeffile):
 
 
 
+def reorganize_eof_dict(EOFDict):
+    #
+    # extract size of basis
+    mmax = EOFDict[0].mmax
+    nmax = EOFDict[0].nmax
+    #
+    # reorganize
+    coef_sums = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
+    coefs_cos = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
+    coefs_sin = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
+    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])
+    #
+    keynum = 0
+    for keyval in EOFDict.keys():
+        for mm in range(0,mmax+1):
+            for nn in range(0,nmax):
+                coef_sums[mm,keynum,nn] = EOFDict[keyval].cos[mm,nn]**2. + EOFDict[keyval].sin[mm,nn]**2.
+                coefs_cos[mm,nn,keynum] = EOFDict[keyval].cos[mm,nn]
+                coefs_sin[mm,nn,keynum] = EOFDict[keyval].sin[mm,nn]
+        #
+        time_order[keynum] = EOFDict[keyval].time
+        keynum += 1
+    #
+    #   
+    # assemble into dictionary
+    CDict = {}
+    CDict['time']   = time_order[time_order.argsort()]
+    CDict['total'] = {}
+    CDict['sum'] = {}
+    CDict['cos'] = {}
+    CDict['sin'] = {}
+    for mm in range(0,mmax+1):
+        CDict['total'][mm] = coef_sums[mm,time_order.argsort(),:]
+        CDict['sum'][mm] = np.sum(coef_sums[mm],axis=1)[time_order.argsort()]
+        CDict['cos'][mm] = coefs_cos[mm,:,time_order.argsort()].T
+        CDict['sin'][mm] = coefs_sin[mm,:,time_order.argsort()].T
+    #
+    return CDict
 
 
-def quick_plot_coefs(coeffile,label=''):
 
-    EOF2Dict = read_binary_eof_coefficients_dict(coeffile)
-
-    DC = reorganize_eof_dict(EOF2Dict)
-
-    DCp = calculate_eof_phase(EOF2Dict)
-
-
-    
-    fig = plt.figure(figsize=(12.0875,   5.8875))
-
-    ax = fig.add_axes([0.18,0.55,0.6,0.3])
-    ax2 = fig.add_axes([0.18,0.22,0.6,0.3])
-
-    ax3 = fig.add_axes([0.81,0.22,0.02,0.63])
-
-
-
-    for mm in range(EOF2Dict[0].mmax,0,-1):
-        ax.plot(DC['time'],np.log10((DC['sum'][mm]**0.5)/(DC['sum'][0]**0.5)),color=cm.gnuplot(float(mm-1)/float(EOF2Dict[0].mmax-1),1.))
-        ax2.plot(DCp['time'],DCp['speed'][mm][:,0]/float(mm),color=cm.gnuplot(float(mm-1)/float(EOF2Dict[0].mmax-1),1.))
-
-
-
-    maxt = np.max(DC['time'])
-    ax2.axis([0.0,maxt,0.0,120.])
-    ax.axis([0.0,maxt,-2.8,-.4])
-
-    ax.set_xticklabels(())
-    ax.set_ylabel('log m$_\mu$/m$_0$\nAmplitude',size=18)
-    ax2.set_xlabel('Time',size=18)
-    ax2.set_ylabel('m$_\mu$\nPattern Speed',size=18)
-
-    ax.set_title(label)
-
-    #for label in ax.get_xticklabels(): label.set_rotation(30); label.set_horizontalalignment("right")
-
-    try:
-        cmap = mpl.cm.magma
-    except:
-        cmap = mpl.cm.gnuplot
-        
-    norm = mpl.colors.BoundaryNorm(boundaries=np.arange(1,len(DC['sum'].keys())+1,1), ncolors=256)
-    cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
-    cb1.set_label('Azimuthal Order, $\mu$',size=24)
-    cb1.set_ticks(np.arange(1,len(DC['sum'].keys()),1)+0.5)
-    cb1.set_ticklabels([str(x) for x in np.arange(1,len(DC['sum'].keys()),1)])
-
-
-    
-def rotate_coefficients(cos,sin,rotangle=0.):
-    """
-    helper definition to rotate coefficients (or really anything)
-    
-    inputs
-    -----------
-    cos : input cosine coefficients
-    sin : input sine coefficients
-    rotangle : float value for uniform rotation, or array of length cos.size
-    
-    returns
-    -----------
-    cos_rot : rotated cosine coefficients
-    sin_rot : rotated sine coefficients
-    
-    todo
-    -----------
-    add some sort of clockwise/counterclockwise check?
-    
-    """
-    cosT = np.cos(rotangle)
-    sinT = np.sin(rotangle)
-    
-    cos_rot =  cosT*cos + sinT*sin
-    sin_rot = -sinT*cos + cosT*sin
-    
-    return cos_rot,sin_rot
-
-
+"""

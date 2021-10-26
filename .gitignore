@@ -11,4 +11,5 @@ dist/*
 *latest*
 exptool/io/psp_io_frozen.py
 exptool/io/combined.py
-
+exptool/basis/noise_theory.py
+exptool/basis/visualise.py
