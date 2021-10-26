@@ -76,7 +76,7 @@ class Input():
         
         if self.style=='SPL':
             I = spl_io.Input(filename,comp=comp,verbose=verbose)
-        elif self.style=='OUT.':
+        elif self.style=='OUT':
             I = psp_io.Input(filename,comp=comp,verbose=verbose)
         else:
             raise ValueError('File type not supported for file "{}"'.format(filename))

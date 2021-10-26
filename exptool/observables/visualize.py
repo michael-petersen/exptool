@@ -1,24 +1,19 @@
-#
-# exptool.visualize
-#
-#    a collection of routines to visualize first-check items
-#
-#    08-27-2016
-#    01-02-2017 first fixes
-#    03-29-2017 compare_dump and label improvements
-#    03-15-2019 improve documentation and write TO-DOs
+"""
+visualize.py
+   a collection of routines to visualize first-check items
 
-# "I've stolen all the algorithms!"
+MSP 27 Aug 2016 Original commit
+MSP  2 Jan 2017 Tested for compatibility
+MSP 29 Mar 2017 compare_dump and label improvements
+MSP 15 Mar 2019 improve documentation and write TO-DOs
 
-'''
+ "I've stolen all the algorithms!"
 
-visualize.py : part of exptool
-                      
 
-# WISHLIST:
+TODO
 -add position overlays to velocity or dispersion plots (see velocity.py)
 
-# GENERAL USAGE
+GENERAL USAGE
 from exptool.observables import visualize
 
 fig = visualize.show_dump('/path/to/OUTFILE','comp')
@@ -32,8 +27,8 @@ ffmpeg -framerate 20 -i out%05d.png -c:v libx264 -r 30 -pix_fmt yuv420p -vf "sca
 #To make a movie, set specifications make sense:
 visualize.show_dump('/scratch/mpetersen/Disk004/OUT.run004.01000','star',type='pos',transform=True,gridsize=129,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=5.,cwheel='magma',barfile='/scratch/mpetersen/Disk004/run004_m2n1_barpos.dat')
 
-'''
 
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -45,15 +40,7 @@ from ..utils import kde_3d
 from ..analysis import pattern
 
 # bring in the exptool native plotting style
-from exptool.utils import style
-
-# register new colormaps if necessary
-import colormaps as cmaps
-plt.register_cmap(name='viridis', cmap=cmaps.viridis)
-plt.register_cmap(name='magma', cmap=cmaps.magma)
-
-# ^ deprecated for Python3
-
+from ..utils import style
 
 
 def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slice_width=0.1,ktype='gaussian',npower=6.,**kwargs):
@@ -63,18 +50,37 @@ def kde_pos(PSPDump,gridsize=64,cres=24,face_extents=0.06,edge_extents=0.02,slic
 
     inputs
     ------------------------
-    PSPDump
-    gridsize=64
-    cres=24
-    face_extents=0.06
-    edge_extents=0.02
-    slice_width=0.1
+    PSPDump       : exptool.io.particle.Input instance
+      the Input instance to visualize
+    gridsize      : int, default=64
+      number of cells per side of 2d grid
+    cres          : int, default=24
+      number of colour resolution elements
+    face_extents  : float, default=0.06
+      extent of the 2d grid (min/max)
+    edge_extents  : float, default=0.02
+      extent of the 2d grid for edge-on projections
+    slice_width   : float, default=0.1
+      maximum edge-on height to consider
 
 
+    returns
+    ------------------------
+    kdeX
+    kdeY
+    XY
+    kdeZYz
+    kdeZYy
+    ZY
+    kdeXZx
+    kdeXZz
+    XZ
+    levels
+    levels_edge
 
     TODO:
     ------------------------
-    # add kwargs to handle opt_third
+    # add kwargs to handle opt_third (?)
 
     '''
     
