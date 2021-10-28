@@ -1,10 +1,11 @@
 """
 trapping.py (part of exptool)
 
-EDITS:
-  12-08-16: cleanup. needs to be merged with neutrapping.
-  12-23-17: break out bar finding algorithms to the more general pattern.py
-  03-01-19: work on homogenizing docstrings and general commenting
+MSP  8 Dec 2016 Original commit. To be merged with neutrapping.
+MSP 23 Dec 2017 Break out bar finding algorithms to the more general pattern.py
+MSP  1 Mar 2019 Work on homogenizing docstrings and general commenting
+MSP 27 Oct 2021 Enable flexible particle number handling
+
 
 CLASSES:
 ApsFinding
@@ -15,7 +16,6 @@ TODO:
 
 -Upload example
 -Current work is on the kmeans implementations for generalize for all simulations
-
 
 
 MAIN REFERENCES:
@@ -59,11 +59,11 @@ import multiprocessing
 
 
 
-# exptool imports
-from exptool.io import particle
-from exptool.utils import kmeans
-from exptool.utils import utils
-from exptool.analysis import pattern
+# exptool imports: relative
+from ..io import particle
+from ..utils import kmeans
+from ..utils import utils
+from ..analysis import pattern
 
 
 
@@ -120,7 +120,7 @@ class ApsFinding():
             print('ApsFinding.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
 
     
-    def determine_r_aps(self,filelist,comp,nout=10,out_directory='',threedee=False,return_aps=False):
+    def determine_r_aps(self,filelist,comp,particle_indx=-1,out_directory='',threedee=False,return_aps=False):
 
         #
         # need to think of the best way to return this data
@@ -128,6 +128,20 @@ class ApsFinding():
 
         #
         #
+        
+        
+
+        # first, check type of particle_index
+        if isinstance(particle_indx,int):
+            if particle_indx < 0:
+                # if particle_indx < 0, make the comparison index all particles
+                particle_indx = np.arange(0,nparticles,1)
+            else:
+                # limit to the maximum number desired
+                particle_indx = np.arange(0,particle_indx,1)
+        else:
+            # assume an array has been passed and accept: could check
+            pass
 
         self.slist = filelist
 
@@ -148,8 +162,8 @@ class ApsFinding():
         desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(nout)+', threedee='+str(threedee)+', using '+filelist
         np.array([desc],dtype='S200').tofile(f)
 
-        Oa = particle.Input(self.SLIST[0],legacy=True,comp=comp,verbose=0,nout=nout)
-        total_orbits = len(Oa.xpos)
+        #Oa = particle.Input(self.SLIST[0],legacy=True,comp=comp,verbose=0,nout=nout)
+        total_orbits = len(particle_indx)
         
         aps_dictionary = {} # make a dictionary for the aps
         for i in range(0,total_orbits): aps_dictionary[i] = []
@@ -157,47 +171,88 @@ class ApsFinding():
 
         for i in range(1,len(self.SLIST)-1):
 
-            # open three files to compare
-            Oa = particle.Input(self.SLIST[i-1],legacy=True,comp=comp,nout=nout,verbose=0)
-            Ob = particle.Input(self.SLIST[i],legacy=True,comp=comp,nout=nout,verbose=self.verbose)
-            Oc = particle.Input(self.SLIST[i+1],legacy=True,comp=comp,nout=nout,verbose=0)
+            if i==1:
+                # open three files to compare
+                Oa = particle.Input(self.SLIST[i-1],legacy=False,comp=comp,verbose=0)
+                Ob = particle.Input(self.SLIST[i],legacy=False,comp=comp,verbose=self.verbose)
+                Oc = particle.Input(self.SLIST[i+1],legacy=False,comp=comp,verbose=0)
 
-            # compute radial positions
-            if threedee:
-                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos + Oa.zpos*Oa.zpos)**0.5
-                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos + Ob.zpos*Ob.zpos)**0.5
-                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos + Oc.zpos*Oc.zpos)**0.5
+                tval = Ob.time
+                dt   = Oc.time - Ob.time # dumps must be evenly spaced! (though this is not a requirement later)
+            
 
-            else:
-                # do these need the squares? otherwise we might cut
-                # out some computation
-                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
-                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
-                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
+                # get the indices correct here
+                # create the map from each saved file, based on index
+                # should only do this step if index is passed, otherwise it might be expensive?
+                _1, p1indx, _2 = np.intersect1d(Oa.data['index'], particle_indx, return_indices=True)
+                _1, p2indx, _2 = np.intersect1d(Ob.data['index'], particle_indx, return_indices=True)
+                _1, p3indx, _2 = np.intersect1d(Oc.data['index'], particle_indx, return_indices=True)
+            
+                X1 = Oa.data['x'][p1indx];Y1 = Oa.data['y'][p1indx];Z1 = Oa.data['z'][p1indx]
+                X2 = Ob.data['x'][p2indx];Y2 = Ob.data['y'][p2indx];Z2 = Ob.data['z'][p2indx]
+                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx]
+            
+                # compute radial positions
+                if threedee:
+                    R1 = np.sqrt(X1*X1 + Y1*Y1 + Z1*Z1)
+                    R2 = np.sqrt(X2*X2 + Y2*Y2 + Z2*Z2)
+                    R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
+
+                else:
+                    R1 = np.sqrt(X1*X1 + Y1*Y1)
+                    R2 = np.sqrt(X2*X2 + Y2*Y2)
+                    R3 = np.sqrt(X3*X3 + Y3*Y3)
+
+            else: # i!=1
+
+                # roll arrays forward
+                R1 = R2
+                R2 = R3
+
+                # save the X,Y,Z from the middle file
+                X2 = X3
+                Y2 = Y3
+                Z2 = Z3
+
+                # bring in the new file
+                Oc = particle.Input(self.SLIST[i+1],legacy=False,comp=comp,verbose=self.verbose)
+
+                tval = Oc.time - dt
+                
+                _1, p3indx, _2 = np.intersect1d(Oc.data['index'], particle_indx, return_indices=True)
+                
+                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx]
+
+                if threedee:
+                    R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
+                else:
+                    R3 = np.sqrt(X3*X3 + Y3*Y3)
+
                 
             # use logic to find aps: protect on indices
-            sortedindicies = Oa.index.argsort()
-            aps = np.logical_and( Ob.R[sortedindicies] > Oa.R[sortedindicies], Ob.R[sortedindicies] > Oc.R[sortedindicies] )
+            #sortedindicies = Oa.index.argsort()
+            #aps = np.logical_and( Ob.R[sortedindicies] > Oa.R[sortedindicies], Ob.R[sortedindicies] > Oc.R[sortedindicies] )
 
             #aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
+            aps = np.logical_and( R2 > R1, R2 > R3 ) # apocentre condition: there could be more careful checking here.
 
             # is there a reason for this?
             #indx = np.array([i for i in range(0,len(Ob.xpos))])
 
-            x = Ob.xpos[aps]
-            y = Ob.ypos[aps]
-            z = Ob.zpos[aps]
+            x = X2[aps]
+            y = Y2[aps]
+            z = Z2[aps]
             #numi = indx[aps]
 
             norb = len(z)#len(numi)
 
             if self.verbose > 0:
-                    print('Current time: {4.3f}'.format(Ob.time),end='\r', flush=True)
+                    print('Current time: {4.3f}'.format(tval),end='\r', flush=True)
                 
 
 
             for j in range(0,norb):
-                aps_dictionary[numi[j]].append([Ob.time,x[j],y[j],z[j]])
+                aps_dictionary[numi[j]].append([tval,x[j],y[j],z[j]])
 
 
 
