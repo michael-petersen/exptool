@@ -155,15 +155,16 @@ class ApsFinding():
         ApsFinding.parse_list(self)
         # returns
 
-
+        # how many orbits are we doing?
+        total_orbits = len(particle_indx)
+        
         #
         # print descriptor string
         #
-        desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(nout)+', threedee='+str(threedee)+', using '+filelist
+        desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(total_orbits)+', threedee='+str(threedee)+', using '+filelist
         np.array([desc],dtype='S200').tofile(f)
 
-        #Oa = particle.Input(self.SLIST[0],legacy=True,comp=comp,verbose=0,nout=nout)
-        total_orbits = len(particle_indx)
+        
         
         aps_dictionary = {} # make a dictionary for the aps
         for i in range(0,total_orbits): aps_dictionary[i] = []
