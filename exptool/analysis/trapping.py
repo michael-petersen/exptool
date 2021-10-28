@@ -251,9 +251,9 @@ class ApsFinding():
                     print('Current time: {4.3f}'.format(tval),end='\r', flush=True)
                 
 
-
-            for j in range(0,norb):
-                aps_dictionary[numi[j]].append([tval,x[j],y[j],z[j]])
+            # under this convention, the user needs to keep track of the particle index that was input
+            for j in range(0,total_orbits):
+                aps_dictionary[j].append([tval,x[j],y[j],z[j]])
 
 
 
@@ -311,7 +311,7 @@ class ApsFinding():
 
         [self.norb] = np.fromfile(f,dtype='i',count=1)
 
-        self.aps = {}
+        self.aps = dict()
 
         for i in range(self.norb):
             
