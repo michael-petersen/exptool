@@ -19,11 +19,11 @@ TODO:
 
 
 MAIN REFERENCES:
-Petersen, Weinberg, & Katz (2020a)
-[https://ui.adsabs.harvard.edu/#abs/2019arXiv190205081P/abstract]
+Petersen, Weinberg, & Katz (2021)
+[https://ui.adsabs.harvard.edu/abs/2021MNRAS.500..838P]
 
 Petersen, Weinberg, & Katz (2016)
-[http://adsabs.harvard.edu/abs/2016MNRAS.463.1952P]
+[https://ui.adsabs.harvard.edu/abs/2016MNRAS.463.1952P]
 
 Calculate quantities for each orbit. Given a set of aps, find:
 
@@ -42,8 +42,6 @@ Some combination of these quantities will define the bar.
 
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 
 # general imports
 import time
@@ -64,8 +62,13 @@ from ..io import particle
 from ..utils import kmeans
 from ..utils import utils
 from ..analysis import pattern
-
-
+'''
+# absolute imports
+from exptool.io import particle
+from exptool.utils import kmeans
+from exptool.utils import utils
+from exptool.analysis import pattern
+'''
 
 
 class ApsFinding():
@@ -80,14 +83,14 @@ class ApsFinding():
     >>> for x in range(000,1000): print(simulation_directory+'OUT.run001.{0:05d}'.format(x))
     >>> f.close()
     >>> trapping_comp = 'star'
-    >>> TrappingInstance = A.determine_r_aps(simulation_directory+'simfiles.dat',trapping_comp,nout=1000,out_directory=simulation_directory,return_aps=True)
+    >>> TrappingInstance = A.determine_r_aps(simulation_directory+'simfiles.dat',trapping_comp,particle_indx=np.arange(0,1000,1),out_directory=simulation_directory,return_aps=True)
 
     To read back in a saved aps file:
     
     >>> TrappingInstance = A.read_aps_file(aps_file)
     >>> print TrappingInstance['desc']
 
-    Which will make a dictionary of the orbits.
+    Which will make a dictionary of the orbits. The dictionary is _not_ indexed by particle index, but rather from 0 to the number of orbits. The particle index is recorded as TrappingInstance['index'], and may be matched to the dictionary indices.
 
     '''
 
@@ -122,14 +125,6 @@ class ApsFinding():
     
     def determine_r_aps(self,filelist,comp,particle_indx=-1,out_directory='',threedee=False,return_aps=False):
 
-        #
-        # need to think of the best way to return this data
-        #
-
-        #
-        #
-        
-        
 
         # first, check type of particle_index
         if isinstance(particle_indx,int):
@@ -142,6 +137,9 @@ class ApsFinding():
         else:
             # assume an array has been passed and accept: could check
             pass
+
+        # particle index needs to be sorted, confirm here
+        particle_indx = particle_indx[particle_indx.argsort()]
 
         self.slist = filelist
 
@@ -166,7 +164,7 @@ class ApsFinding():
 
         
         
-        aps_dictionary = {} # make a dictionary for the aps
+        aps_dictionary = dict() # make blank dictionary for the aps
         for i in range(0,total_orbits): aps_dictionary[i] = []
             
 
@@ -185,13 +183,13 @@ class ApsFinding():
                 # get the indices correct here
                 # create the map from each saved file, based on index
                 # should only do this step if index is passed, otherwise it might be expensive?
-                _1, p1indx, _2 = np.intersect1d(Oa.data['index'], particle_indx, return_indices=True)
-                _1, p2indx, _2 = np.intersect1d(Ob.data['index'], particle_indx, return_indices=True)
-                _1, p3indx, _2 = np.intersect1d(Oc.data['index'], particle_indx, return_indices=True)
-            
-                X1 = Oa.data['x'][p1indx];Y1 = Oa.data['y'][p1indx];Z1 = Oa.data['z'][p1indx]
-                X2 = Ob.data['x'][p2indx];Y2 = Ob.data['y'][p2indx];Z2 = Ob.data['z'][p2indx]
-                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx]
+                _1, p1indx, _2  = np.intersect1d(Oa.data['index'], particle_indx, return_indices=True)
+                _1, p2indx, _2  = np.intersect1d(Ob.data['index'], particle_indx, return_indices=True)
+                _1, p3indx, _2  = np.intersect1d(Oc.data['index'], particle_indx, return_indices=True)
+
+                X1 = Oa.data['x'][p1indx];Y1 = Oa.data['y'][p1indx];Z1 = Oa.data['z'][p1indx];I1 = Oa.data['index'][p1indx]
+                X2 = Ob.data['x'][p2indx];Y2 = Ob.data['y'][p2indx];Z2 = Ob.data['z'][p2indx];I2 = Ob.data['index'][p2indx]
+                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['index'][p3indx]
             
                 # compute radial positions
                 if threedee:
@@ -210,6 +208,9 @@ class ApsFinding():
                 R1 = R2
                 R2 = R3
 
+                I1 = I2
+                I2 = I3
+
                 # save the X,Y,Z from the middle file
                 X2 = X3
                 Y2 = Y3
@@ -222,7 +223,7 @@ class ApsFinding():
                 
                 _1, p3indx, _2 = np.intersect1d(Oc.data['index'], particle_indx, return_indices=True)
                 
-                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx]
+                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['index'][p3indx]
 
                 if threedee:
                     R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
@@ -230,30 +231,32 @@ class ApsFinding():
                     R3 = np.sqrt(X3*X3 + Y3*Y3)
 
                 
-            # use logic to find aps: protect on indices
-            #sortedindicies = Oa.index.argsort()
-            #aps = np.logical_and( Ob.R[sortedindicies] > Oa.R[sortedindicies], Ob.R[sortedindicies] > Oc.R[sortedindicies] )
 
-            #aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
-            aps = np.logical_and( R2 > R1, R2 > R3 ) # apocentre condition: there could be more careful checking here.
+            # R1 might be the shortest, if particles are added, so only compare up to the length of r1
+            # indices are always sorted owing to intersect1d, so we can simply truncate
+            r1length = len(R1)
 
-            # is there a reason for this?
-            #indx = np.array([i for i in range(0,len(Ob.xpos))])
+            # apocentre condition: there could be more careful checking here
+            #      for 'false apocentres'
+            #      or for z apocentres, or 3d, etc.
+            aps      = np.logical_and( R2[:r1length] > R1, R2[:r1length] > R3[:r1length] ) 
 
-            x = X2[aps]
-            y = Y2[aps]
-            z = Z2[aps]
-            #numi = indx[aps]
+            # keep track of idices
+            IN = np.array([i for i in range(0,len(R2))])
 
-            norb = len(z)#len(numi)
+            x          = X2[:r1length][aps]
+            y          = Y2[:r1length][aps]
+            z          = Z2[:r1length][aps]
+            ival       = I2[:r1length][aps]
+            index_tags = IN[:r1length][aps]
 
             if self.verbose > 0:
                     print('Current time: {4.3f}'.format(tval),end='\r', flush=True)
                 
 
             # under this convention, the user needs to keep track of the particle index that was input
-            for j in range(0,total_orbits):
-                aps_dictionary[j].append([tval,x[j],y[j],z[j]])
+            for j in range(0,len(index_tags)):
+                aps_dictionary[index_tags[j]].append([tval,x[j],y[j],z[j]])
 
 
 
@@ -262,14 +265,21 @@ class ApsFinding():
 
         np.array([total_orbits],dtype='i').tofile(f)
 
+        orbits_with_apocentre = 0
+        
         for j in range(0,total_orbits):
 
             orbit_aps_array = np.array(aps_dictionary[j])
 
+            # print the index to the file
+            np.array([particle_indx[j]],dtype='i').tofile(f)
             if (len(orbit_aps_array) > 0):
+
+                orbits_with_apocentre += 1
                 naps = len(orbit_aps_array[:,0])  # this might be better as shape
 
                 np.array([naps],dtype='i').tofile(f)
+                
 
                 self.napsides[j,0] = naps
                 self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
@@ -283,11 +293,13 @@ class ApsFinding():
 
                 np.array([1],dtype='i').tofile(f)
 
+                # indices start at 1
                 np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
                     
                         
         f.close()
 
+        print('trapping.ApsFinding.determine_r_aps: found {} orbits (out of {}) with valid apocentres.'.format(orbits_with_apocentre,total_orbits))
 
         print('trapping.ApsFinding.determine_r_aps: savefile is '+out_directory+'apshold'+tstamp+'.dat')
 
@@ -313,9 +325,15 @@ class ApsFinding():
 
         self.aps = dict()
 
+        indx_array = []
+
         for i in range(self.norb):
+
+            [indx] = np.fromfile(f,dtype='i',count=1)
+            indx_array.append(indx)
             
             [naps] = np.fromfile(f,dtype='i',count=1)
+
             
             if naps > 0:
     
@@ -327,8 +345,9 @@ class ApsFinding():
         f.close()
 
         ApsDict = ApsFinding.convert_to_dict(self)
-        ApsDict['desc'] = self.desc
-        ApsDict['norb'] = self.norb
+        ApsDict['desc']  = self.desc
+        ApsDict['norb']  = self.norb
+        ApsDict['index'] = np.array(indx_array)
 
         return ApsDict
 
@@ -336,7 +355,7 @@ class ApsFinding():
     def convert_to_dict(self):
             
         # remake Aps File as a dictionary
-        ApsDict = {}
+        ApsDict = dict()
         
         for indx in range(0,self.norb):
             ApsDict[indx] = self.aps[indx]
