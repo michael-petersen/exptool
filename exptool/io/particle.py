@@ -196,3 +196,27 @@ def mix_particles(ParticleInstanceArray):
     return final_holder
 
 
+def _create_particle_blocks(nmax,nsplit):
+    """randomly partition indices into a set number of groups"""
+
+    # set the random seed for reproducibility
+    np.random.seed(1)
+
+    # dummy array of indices
+    all_indices = np.arange(0,nmax,1)
+
+    # shuffle the dummy array (in place)
+    np.random.shuffle(all_indices)
+
+    # now split up however many times, giving the last array the remainder
+    npersplit = int(np.floor(nmax/nsplit))
+
+    IndexList = dict()
+    for i in range(0,nsplit-1):
+        IndexList[i] = all_indices[i*npersplit:(i+1)*npersplit]
+
+    # give remainder to last array
+    IndexList[nsplit-1] = all_indices[(nsplit-1)*npersplit:]
+
+    return IndexList
+
