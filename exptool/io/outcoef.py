@@ -281,7 +281,7 @@ import matplotlib.pyplot as plt
         #[cmagic] = np.fromfile(f, dtype=np.uint32,count=1)    
         [string0] = np.fromfile(f, dtype=np.uint32,count=1)
         [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
-        D = yaml.load(string1)
+        D = yaml.load(string1, Loader=yaml.FullLoader)
         #print(D['lmax'],D['nmax'])
 
         # would like to try a guess here...
@@ -301,7 +301,7 @@ import matplotlib.pyplot as plt
             [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)    
             [string0] = np.fromfile(f, dtype=np.uint32,count=1)
             [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
-            D = yaml.load(string1)
+            D = yaml.load(string1, Loader=yaml.FullLoader)
         
             times[tt] = D['time']
 
@@ -353,7 +353,7 @@ import matplotlib.pyplot as plt
         [string0] = np.fromfile(f, dtype=np.uint32,count=1)
         [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
     
-        D = yaml.load(string1)
+        D = yaml.load(string1, Loader=yaml.FullLoader)
         #print(D['lmax'],D['nmax'])
 
         # would like to try a guess here...
@@ -373,7 +373,7 @@ import matplotlib.pyplot as plt
             [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)    
             [string0] = np.fromfile(f, dtype=np.uint32,count=1)
             [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
-            D = yaml.load(string1)
+            D = yaml.load(string1, Loader=yaml.FullLoader)
         
             times[tt] = D['time']
         
