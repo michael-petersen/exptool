@@ -15,3 +15,4 @@ exptool/basis/noise_theory.py
 exptool/basis/visualise.py
 docs/figures/*
 docs/tutorials/.ipynb_checkpoints
+exptool/basis/spheresl_deprecated.py

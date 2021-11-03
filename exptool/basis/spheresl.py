@@ -698,7 +698,7 @@ def legendre_R(lmax, x):
 
 def dlegendre_R(lmax, x):
     '''
-    Compute Associated Legendre Polynomials and derivitives
+    Compute Associated Legendre Polynomials and derivatives
 
     return an (lmax+1,lmax+1) element array of the legendre polynomials for the l and m spherical harmonic orders.
 
