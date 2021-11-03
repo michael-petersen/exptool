@@ -13,7 +13,7 @@ import matplotlib as mpl
 # want a secondary style that allows for adjusting line thicknesses
 # (e.g. a macro parameter)
 
-stylepar = 'bold'
+stylepar = 'medium'
 
 mpl.rcParams['font.family'] = 'sans-serif'
 mpl.rcParams['font.serif'] = 'Helvetica'
@@ -25,7 +25,24 @@ mpl.rcParams['axes.labelsize'] = 24
 
 cmap = mpl.cm.inferno
 
+# change some plotting parameters
+mpl.rcParams['font.family'] = 'sans-serif'
+mpl.rcParams['font.serif'] = 'Helvetica'
+mpl.rcParams['font.weight'] = 'medium'
 
+mpl.rcParams['axes.linewidth'] = 1.0
+mpl.rcParams['xtick.major.width'] = 1.0
+mpl.rcParams['xtick.minor.width'] = 0.5
+mpl.rcParams['xtick.minor.visible'] = True
+
+mpl.rcParams['ytick.major.width'] = 1.0
+mpl.rcParams['ytick.minor.width'] = 0.5
+mpl.rcParams['ytick.minor.visible'] = True
+
+mpl.rcParams['figure.figsize'] = (5,3.5)
+mpl.rcParams['xtick.labelsize'] = 12
+mpl.rcParams['ytick.labelsize'] = 12
+mpl.rcParams['axes.labelsize'] = 12
 
 if stylepar == 'bold':
 

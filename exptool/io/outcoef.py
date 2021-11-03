@@ -8,16 +8,19 @@ tools to read coefficient files and do rudimentary manipulation.
 25 Aug 2021  revised for yaml headers
 
 TODO:
--warn/instruct users without yaml support
 -make a 'best guess' at number of outputs in yaml versions before allocating huge memory space
--fix docs to be clearer between old and new versions
 -add interpretive support (started)
 
 '''
 
 import numpy as np
 import os
-import yaml # this could be a problem point, should have a backup option?
+try:
+    # requires yaml support: likely needs to be installed.
+    import yaml
+except ImportError:
+    raise ImportError("You will need to 'pip install pyyaml' to use this reader.")
+    
 
 class OutCoef(object):
     """python reader for outcoef files from exp
@@ -33,7 +36,7 @@ class OutCoef(object):
 
     example usage
     ------------
-import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
     import outcoef
     
     # for a spherical component 'dark':
@@ -259,8 +262,8 @@ import matplotlib.pyplot as plt
         times      : vector, time values for which coefficients are sampled
         coef_array : (rank 3 matrix)
                       0: times
-                 2: azimuthal (L) order
-                 3: radial order
+                      1: azimuthal (L) order (unrolled, so l, then m (first cos, then sin)
+                      2: radial order
 
         '''
 
@@ -389,6 +392,84 @@ import matplotlib.pyplot as plt
         f.close()
         self.T     = times[0:tt]
         self.coefs = coef_array[0:tt]
+
+    
+    def _repackage_cylindrical_coefficients(self):
+        """
+        redefine the dictionary of cylindrical coefficients to be more interpretable, by sorting on
+
+        -m order
+        -cos/sin
+        -n order
+        -time
+
+        this formulation has the advantage of being more straightforward to read:
+
+        e.g. to plot the lowest-order cosine function, one could:
+        plt.plot(self.T,self.C[0]['cos'][0])
+
+        """
+
+        numt,_1,numm,numn = self.coefs.shape
+        
+        self.C = dict()
+
+        for m in range(0,numm):
+            self.C[m] = dict()
+
+            for ic,c in enumerate(['cos','sin']):
+                self.C[m][c] = dict()
+
+                for n in range(0,numn):
+                    self.C[m][c][n] = self.coefs[:,ic,m,n]
+    
+    def _repackage_spherical_coefficients(self):
+        """
+        redefine the dictionary of spherical coefficients to be more interpretable, by sorting on
+
+        -l order
+        -morder
+        -cos/sin
+        -n order
+        -time
+
+        this formulation has the advantage of being more straightforward to read and following spherical harmonic conventions
+
+        e.g. to plot the lowest-order cosine function, one could:
+        l = 1
+        m = 1
+        p = 'cos'
+        n = 0
+        
+        plt.plot(self.T,self.C[l][m][p][n])
+
+        """
+
+        numt,numl2,numn = self.coefs.shape
+        numl = int(np.sqrt(numl2))
+        
+        self.C = dict()
+
+        for l in range(0,numl):
+            self.C[l] = dict()
+
+            for m in range(0,l+1):
+                self.C[l][m] = dict()
+
+                if m>0:
+                    for ic,c in enumerate(['cos','sin']):
+                        self.C[l][m][c] = dict()
+
+                    for n in range(0,numn):
+                        self.C[l][m]['cos'][n] = self.coefs[:,(l*l)+2*m-1,n]
+                        self.C[l][m]['sin'][n] = self.coefs[:,(l*l)+2*m  ,n]
+                            
+                else:
+                    self.C[l][m]['cos'] = dict()
+
+                    for n in range(0,numn):
+                        self.C[l][m]['cos'][n] = self.coefs[:,l*l,n]
+       
 
 
 
