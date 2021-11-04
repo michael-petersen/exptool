@@ -98,7 +98,7 @@ class OutCoef(object):
         
             f.close()
         
-            if string1==b'Sphere SL':
+            if b'Sphere SL' in string1:
             
                 self.basis = 'SphereSL'
             
