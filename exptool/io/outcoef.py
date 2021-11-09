@@ -103,6 +103,7 @@ class OutCoef(object):
                 self.basis = 'SphereSL'
             
                 print('OutCoef: reading OLD SphereSL coefficients . . .')
+                print('CAUION. These coefficients have a different normalisation scheme.')
                 self.read_binary_sl_coefficients_old()
             
             else:

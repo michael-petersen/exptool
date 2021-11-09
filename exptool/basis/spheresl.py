@@ -1739,7 +1739,7 @@ def correct_SL_coefs(SLin):
     lmaxhalo = int(np.sqrt(expcoef_copy.shape[0])) - 1
     nmaxhalo = expcoef_copy.shape[1]
     print(expcoef_copy.shape)
-    factorial = spheresl.factorial_return(6)
+    factorial = factorial_return(6)
     print(lmaxhalo,nmaxhalo)
     indx = 0
     for l in range(0,lmaxhalo+1):

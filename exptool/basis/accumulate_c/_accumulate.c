@@ -1,3 +1,5 @@
+# nm /Users/mpetersen/CodeHold/exptool/exptool/basis/_accumulate_c.so
+
 #include <Python.h>
 //#include <numpy/arrayobject.h>
 #include "accumulate.h"
