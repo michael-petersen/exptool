@@ -119,6 +119,26 @@ class Input():
 # Below here are helper functions to subdivide and combine particles for parallel processes
 #
 
+
+def convert_psp_to_legacy(PSPInput):
+    """helper class to convert to legacy psp_io if needed"""
+
+    PSPOutput = holder()
+    PSPOutput.mass = PSPInput.data['m']
+    PSPOutput.xpos = PSPInput.data['x']
+    PSPOutput.ypos = PSPInput.data['y']
+    PSPOutput.zpos = PSPInput.data['z']
+    PSPOutput.xvel = PSPInput.data['vx']
+    PSPOutput.yvel = PSPInput.data['vy']
+    PSPOutput.zvel = PSPInput.data['vz']
+    PSPOutput.pote = PSPInput.data['potE']
+            
+    #if (I.header[I.comp]['parameters']['indexing']):
+    #    PSPOutput.indx = I.data['index']
+    return PSPOutput
+
+
+        
 class holder(object):
     '''all the quantities you could ever want to fill in your own PSP-style output.
     '''

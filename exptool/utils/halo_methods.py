@@ -163,28 +163,7 @@ def read_cached_table(file,verbose=0,retall=True):
 
 
 
-
-def read_sph_model_table(file):
     
-    f = open(file)
-    
-    radius = []
-    density = []
-    mass = []
-    potential = []
-    
-    for line in f:
-        q = [d for d in line.split()]
-        if len(q)==4:
-            radius.append(float(q[0]))
-            density.append(float(q[1]))
-            mass.append(float(q[2]))
-            potential.append(float(q[3]))
-
-    f.close()
-    
-    return np.array(radius),np.array(density),np.array(mass),np.array(potential)
-
 
 
 
