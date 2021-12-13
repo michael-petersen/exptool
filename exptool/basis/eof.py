@@ -1305,23 +1305,14 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
     sixteenth_arg = no_odd
     seventeenth_arg = VAR
 
-    # this is a bad way to do python2/3 compatibility
-    try:
-        a_coeffs = pool.map(accumulate_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+    a_coeffs = pool.map(accumulate_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                 itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                                                                 itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
                                                                 itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
                                                                 itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),fifteenth_arg,\
                                                                 itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg) \
                                                                ))
-    except:
-        a_coeffs = pool.map(accumulate_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
-                                                                itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
-                                                                itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
-                                                                itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
-                                                                itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),fifteenth_arg,\
-                                                                itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg) \
-                                                                ))
+
     pool.close()
     pool.join()                                                        
     return a_coeffs
@@ -1406,8 +1397,7 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
     twentythird_arg[0] = verbose
     twentyfourth_arg = density
 
-    try:
-        a_vals = pool.map(accumulated_eval_particles_star,\
+    a_vals = pool.map(accumulated_eval_particles_star,\
                          zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                          itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                          itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
@@ -1417,24 +1407,18 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
                          itertools.repeat(nineteenth_arg),itertools.repeat(twentieth_arg),\
                          itertools.repeat(twentyfirst_arg),itertools.repeat(twentysecond_arg),\
                          twentythird_arg,itertools.repeat(twentyfourth_arg)))
-    except:
-        a_vals = pool.map(accumulated_eval_particles_star,\
-                         itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
-                         itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
-                         itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
-                         itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
-                         itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),itertools.repeat(fifteenth_arg),\
-                         itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg),itertools.repeat(eighteenth_arg),\
-                         itertools.repeat(nineteenth_arg),itertools.repeat(twentieth_arg),\
-                         itertools.repeat(twentyfirst_arg),itertools.repeat(twentysecond_arg),\
-                         twentythird_arg,itertools.repeat(twentyfourth_arg)))
+
     pool.close()
     pool.join()
     return a_vals 
 
 
 
-def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0,density=False):
+def find_forces_multi(ParticleInstance,
+                      nprocs,a_cos,a_sin,
+                      potC,rforceC,zforceC,
+                      potS,rforceS,zforceS,
+                      XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0,density=False):
     
     holding = redistribute_particles(ParticleInstance,nprocs)
     
