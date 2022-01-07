@@ -1,4 +1,4 @@
-# nm /Users/mpetersen/CodeHold/exptool/exptool/basis/_accumulate_c.so
+//# nm /Users/mpetersen/CodeHold/exptool/exptool/basis/_accumulate_c.so
 
 #include <Python.h>
 //#include <numpy/arrayobject.h>
@@ -141,4 +141,3 @@ static PyObject *accumulate_y_to_z(PyObject *self, PyObject *args)
     ret = PyFloat_FromDouble(result);
     return ret;
 }
-
