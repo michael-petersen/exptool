@@ -29,7 +29,7 @@ try:
     import yaml
 except ImportError:
     raise ImportError("You will need to 'pip install pyyaml' to use this reader.")
-    
+
 
 class Input:
     """Input class to adaptively handle OUT. format specifically
@@ -42,7 +42,7 @@ class Input:
         the name of the component for which to extract data. If None, will read primary header and exit.
     verbose  : int, default 0
         verbosity flag.
-    
+
     returns
     ---------------
     self        : Input instance
@@ -67,9 +67,9 @@ class Input:
     """
     def __init__(self, filename,comp=None,verbose=0):
         """the main driver"""
-        self.verbose  = verbose       
+        self.verbose  = verbose
         self.filename = filename
-        
+
         # initial check for file validity
         try:
             self.f = open(self.filename, 'rb')
@@ -82,24 +82,24 @@ class Input:
         # initialise dictionaries
         self.comp_map       = dict()
         self.header      = dict()
-       
+
         self._read_primary_header()
 
         self.comp = comp
         _comps = list(self.header.keys())
- 
+
         # if a component is defined, retrieve data
         if comp != None:
             if comp not in _comps:
                 raise IOError('The specified component does not exist.')
-                
-            else:                
+
+            else:
                 self.data = self._read_component_data(self.filename,
                                                       self.header[self.comp]['nbodies'],
                                                       int(self.header[self.comp]['data_start']))
         # wrapup
         self.f.close()
-        
+
     def _read_primary_header(self):
         """read the primary header from an OUT. file"""
 
@@ -111,7 +111,7 @@ class Input:
         self._nbodies_tot, self._ncomp = np.fromfile(self.f, dtype=np.uint32,count=2)
 
         data_start = 16
-        
+
         for comp in range(0,self._ncomp):
             self.f.seek(data_start)
             next_comp = self._read_out_component_header()
@@ -126,15 +126,15 @@ class Input:
 
         for n in range(0,ncomponents):
             print("Component {}: {}".format(n,comp_list[n]))
-            
+
 
     def _read_out_component_header(self):
         """read in the header for a single component, from an OUT. file"""
-        
+
         #_ = f.tell()  # byte position of this component
 
         if self._float_len == 4:
-            _1,_2, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(self.f, dtype=np.uint32, count=6)            
+            _1,_2, nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(self.f, dtype=np.uint32, count=6)
         else:
             nbodies, nint_attr, nfloat_attr, infostringlen = np.fromfile(self.f, dtype=np.uint32, count=4)
 
@@ -142,8 +142,9 @@ class Input:
         head = np.fromfile(self.f, dtype=np.dtype((np.bytes_, infostringlen)),count=1)
         head_normal = head[0].decode()
         head_dict = yaml.safe_load(head_normal)
-        
+
         # deprecated backward compatibility here: see frozen versions if this is an old file
+        # https://raw.githubusercontent.com/michael-petersen/exptool/f5de2b380dd73e31ab8015d366ac44b0b41a2e18/exptool/io/psp_io.py
 
         comp_data_pos = self.f.tell()  # byte position where component data begins
 
@@ -170,8 +171,8 @@ class Input:
             self.indexing = head_dict['indexing']=='true'
 
         return comp_data_end
-                
-    
+
+
     def _check_magic_number(self):
         """check the magic number to see if a file is float or double"""
 
@@ -185,7 +186,7 @@ class Input:
         else:
             self._float_len = 8
             self._float_str = 'd'
-        
+
 
 
     def _read_component_data(self,filename,nbodies,offset):
@@ -224,6 +225,3 @@ class Input:
         del out  # close the memmap instance
 
         return tbl
-
-
-
