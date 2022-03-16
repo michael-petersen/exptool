@@ -70,7 +70,7 @@ def calculate_area(Orbit,ratio=10.,usex='TX',usey='TY'):
     todo
     ------------------
     1. turn into 3d
-    
+
     """
     points = np.array([[Orbit[usex][x],Orbit[usey][x]] for  x in range(0,len(Orbit[usex]))])
 
@@ -84,7 +84,7 @@ def calculate_area(Orbit,ratio=10.,usex='TX',usey='TY'):
 
 
     for t in range(0,tri.simplices.shape[0]):
-        
+
         xvals = tri.simplices[t]
         x1 = Orbit[usex][xvals[0]]
         x2 = Orbit[usex][xvals[1]]
@@ -94,20 +94,20 @@ def calculate_area(Orbit,ratio=10.,usex='TX',usey='TY'):
         y3 = Orbit[usey][xvals[2]]
 
         A[t] = 0.5*((x2-x1)*(y3-y1) - (x3-x1)*(y2-y1))
-    
+
         tmplegs = np.array([np.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)),\
                        np.sqrt((x1-x3)*(x1-x3) + (y1-y3)*(y1-y3)),\
                        np.sqrt((x2-x3)*(x2-x3) + (y2-y3)*(y2-y3))])
-    
+
         legs[t] = tmplegs[tmplegs.argsort()]
 
     med = np.median(legs[:,0])
     include = legs[:,1]/med
-    
+
     # this has the normalization in it now
     return np.sum(A[include < ratio])/(np.pi*np.nanmax(Orbit['X'])*np.nanmax(Orbit['X']))
-    
-    
+
+
 
 
 
@@ -163,43 +163,6 @@ def make_orbit_plot(D,num,outdir='',T=''):
 
 
 
-'''
-    
-D = np.genfromtxt('/scratch/mpetersen/processed.txt')
-
-Rarr = D[:,0].reshape(rads.size,vels.size)
-Varr = D[:,1].reshape(rads.size,vels.size)
-Aarr = D[:,2].reshape(rads.size,vels.size)
-
-
-
-
-
-# pull a contour from the area array
-c = cntr.Cntr(Rarr.T,Varr.T,Aarr.T/(np.pi*Rarr.T*Rarr.T))
-
-res = c.trace(0.03,nchunk=2)
-
-for j in range(0,len(res)):
-    xcon = []
-    ycon = []
-    try:
-        if len(res[j])>10:
-            for i in range(0,len(res[j])):
-    	        xcon.append(res[j][i][0])
-    	        ycon.append(res[j][i][1])
-            #print xcon,ycon
-            XCON = np.array(xcon)
-            YCON = np.array(ycon)
-            ax2.plot(XCON,YCON,color='red')
-        else:
-	    pass
-    except:
-	pass
-
-
-'''
-
 
 
 def map_skeleton(Rarr,Varr,Aarr,\
@@ -207,20 +170,20 @@ def map_skeleton(Rarr,Varr,Aarr,\
                  scaling = 256.,scalefac = 6.,skelcut=0.002):
     '''
     map_skeleton:
-         take a grid of integrated orbits
+         take a grid of integrated orbits, return traced areas
 
 
 
 
     '''
-    
+
     area_map = scaling*Aarr
-    
-    
-    
+
+
+
     # add a pre-process
     area_map[area_map > scaling/scalefac] = scaling/scalefac
-    
+
     area_map = np.log10(area_map)
 
     #
@@ -232,7 +195,7 @@ def map_skeleton(Rarr,Varr,Aarr,\
     rp_11 = filters.gaussian_filter(area_map,sigma,order=(1,1))  # rxy
     rp_20 = filters.gaussian_filter(area_map,sigma,order=(2,0))  # rxx
     rp_02 = filters.gaussian_filter(area_map,sigma,order=(0,2))  # ryy
-    
+
     #
     # set up the hessian
     #
@@ -242,12 +205,12 @@ def map_skeleton(Rarr,Varr,Aarr,\
     # solve the eigenvalue problem
     #
     w, v = np.linalg.eig(hess)
-    
+
     #
     # find maximum eigenvalue
-    # 
+    #
     ridge_map = np.max(w,axis=2)
-    
+
     #
     # now threshold the map, which includes an adaptive cutoff
     #
@@ -268,18 +231,22 @@ def map_skeleton(Rarr,Varr,Aarr,\
         ridge_trace = np.zeros_like(ridge_map)
         good_values = np.where(skeleton < skelcut)
         ridge_trace[good_values] = np.nan
-        
+
     else:
         print('exptool.commensurability: skimage is not available. falling back to non-pruned area plots.')
 
         ridge_trace = threshold_map
-        
-    
+
+
     return ridge_trace
 
 
-    
+
 def print_skeleton(infile,pskel,Rarr,Varr):
+    """print_skeleton
+
+    print a skeleton file after calculation
+    """
 
     f = open(infile,'w')
 
@@ -288,20 +255,24 @@ def print_skeleton(infile,pskel,Rarr,Varr):
     ddd = (Varr.T).reshape(-1,)
 
     for indx in range(0,len(pp)):
-        print >>f,ccc[indx],ddd[indx],pp[indx]
-    
+        print(ccc[indx],ddd[indx],pp[indx],file=f)
+
     f.close()
 
 
 
 
 def make_fishbone(infile):
-    E = np.genfromtxt(infile) 
+    """make_fishbone
+
+    bring in the orbit integration area calculations and reshape for plotting
+    """
+    E = np.genfromtxt(infile)
     #
     rads = np.unique(E[:,0])
     vels = np.unique(E[:,1])
     #
-    Rarr,Varr = np.meshgrid(rads,vels)  
+    Rarr,Varr = np.meshgrid(rads,vels)
     Rarr = Rarr.T; Varr = Varr.T
     Aarr = E[:,2].reshape(rads.size,vels.size)
     #
@@ -340,26 +311,26 @@ def construct_live_fishbones(infile,percentile=25.,particle_limit=0,rads = np.li
        med
        std
        perc
-       
+
 
 
     '''
     E = np.genfromtxt(infile)
-    
+
     # transform to relative area
     AA = E[:,2]/(np.pi*E[:,0]*E[:,0])
 
     #
     # brute force the binning
-    #  
+    #
     dr = rads[1]-rads[0]
     dv = vels[1]-vels[0]
     rr,vv = np.meshgrid(rads,vels)
-    
+
     LF = {}
     LF['rr'] = rr
     LF['vv'] = vv
-    
+
     LF['min']  = np.ones([rads.size,vels.size])
     LF['mean'] = np.ones([rads.size,vels.size])
     LF['med']  = np.ones([rads.size,vels.size])
@@ -378,12 +349,9 @@ def construct_live_fishbones(infile,percentile=25.,particle_limit=0,rads = np.li
                 LF['mean'][rindx,vindx] = np.mean(AA[w])
                 LF['med'][rindx,vindx]  = np.median(AA[w])
                 LF['std'][rindx,vindx] = np.std(AA[w])
-                
+
                 arr_aa = AA[w][AA[w].argsort()]
                 quartile = int(np.floor(len(w[0])*float(percentile/100.)))
                 LF['perc'][rindx,vindx] = arr_aa[quartile]
 
     return LF
-
-
-
