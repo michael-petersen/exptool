@@ -1,12 +1,3 @@
-###########################################################################################
-#
-#  twopower.py
-#     Compute twopower halo models
-#
-# 20 Oct 2017: First construction
-# 04 Feb 2021: revamp
-#
-#
 '''
 
 
@@ -14,23 +5,40 @@ twopower (part of exptool.models)
     Implementation of Martin Weinberg's twopower.cc
 
 
+20 Oct 2017  First construction
+04 Feb 2021  revamp
+
+Generalization is (BT 2.64)
+
+                           rho0
+   rho(r) = -------------------------------
+            (r/a)^alpha (1+r/a)^(beta-alpha)
+
+where alpha=1, beta=4 for the Hernquist model
+
+(beta=4 is the dehnen family of models. dehnen models with alpha in [0.6,2] reasonably describe elliptical galaxy centers)
+(alpha=2, beta=4 is Jaffe model)
+(alpha=1, beta=3 is NFW model)
+
+Enclosed mass is then
+
+                                               s^{2-\alpha}
+    M(r) = 4\pi \rho_0 a^3 \int_0^{r/a} ds --------------------
+                                            (1+s)^{\beta-alpha}
+
+
+
 
 if you'd like a MW-like model, try this:
 
 
-old usage technique:
-R,D,M,P,DP = twopower.gen_model(15.,1.,0.01,rtarget=1.,alpha=1.,beta=2.,rtrunc=30,wtrunc=5,rmax=2.)
-twopower.write_model(outputfile,R,D,M,P)
 
 
 '''
 
 # general python imports
 import numpy as np
-import math
-import time
-import sys
-import os
+
 
 
 def Hernquist(r,a,rc=0,rho0=1.,beta=0):

@@ -1,7 +1,7 @@
 """
 isothermal
 
-02-Mar-2021: introduction
+02 Mar 2021  introduction
 
 an isothermal model, useful for some basic perturbation theory calculations
 
@@ -39,10 +39,10 @@ def real_rad(redrad,a1,E,sigma):
 
 def jmax(E,a1,sigma):
     """the maximum angular momentum for a circular orbit in the isothermal potential
-    
+
     to generalise the find_aps equation below, will need to compute this relationship.
-    
-    
+
+
     """
     return np.sqrt(2*sigma)*a1*np.log(0.5*((E/(sigma*sigma))-1))
 
@@ -50,9 +50,9 @@ def jmax(E,a1,sigma):
 
 def find_aps(r,kappain):
     """find the roots of the transcendental equation
-    
+
     -2*ln(r) = kappa^2/(e*r^2)
-    
+
     """
     return -2.*np.log(r) - kappain**2./(np.exp(1.)*r**2.)
 
@@ -60,15 +60,12 @@ def find_aps(r,kappain):
 def find_turning(kappain):
     """
     compute the roots of the transcendental equation (find_aps)
-    
+
     the obvious root is exp(-0.5),so set as the limit
-    
+
     this will determine the pericenter
     """
-    
+
     rperi = brentq(find_aps,0.000001,np.exp(-0.5),args=(kappain))
     rapo = brentq(find_aps,np.exp(-0.5),1.0,args=(kappain))
     return [rperi,rapo]
-
-
-
