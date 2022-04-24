@@ -7,6 +7,8 @@ resonancemodel.py: part of exptool
 
 '''
 
+import numpy as np
+
 from scipy.interpolate import UnivariateSpline
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
@@ -15,54 +17,57 @@ from scipy.optimize import brentq
 
 
 class spherical_model(object):
+    """class structure for defining spherical models"""
     rcurve = 0
     potcurve = 0
     dpotcurve = 0
 
+class orbit(object):
+    """class structure for defining orbits"""
+    r_circ = 0.
+    r_apo = 0.
+    r_peri = 0.
+    ee = 0.
+    jj = 0.
+    kappa = 0.
+
 
 
 def find_j(r,kappa,model):
+    """
+    find angular momentum given kappa and a model
+    """
     dudr = model.dpotcurve(r)#model.dpotcurve[ (abs(r-model.rcurve)).argmin()]
     jmax = np.sqrt(r*r*r*dudr);
     J = jmax*kappa;
     return J
 
-#plt.plot(model.rcurve,find_jmax(model.rcurve,1.,model))
-
-
-
-#// Function to iteratively locate radius of circular orbit with energy EE 
 def Ecirc(r,E,model):
+    """
+    #// Function to iteratively locate radius of circular orbit with energy EE
+    """
     ur = model.potcurve(r)#model.potcurve[ (abs(r-model.rcurve)).argmin()]
     dudr = model.dpotcurve(r)#model.dpotcurve[ (abs(r-model.rcurve)).argmin()]
     return  E - 0.5*r*dudr - ur
 
-  
+
 def denom(r,E,J,model):
+    """solve the denominator"""
     ur = model.potcurve(r)#model.potcurve[ (abs(r-model.rcurve)).argmin()]
     return 2.0*(E-ur)*r*r - J*J;
 
 
-class orbit(object):
-  r_circ = 0.
-  r_apo = 0.
-  r_peri = 0.
-  ee = 0.
-  jj = 0.
-  kappa = 0.
-  
-
-
 def make_orbit(orbit,E,K,model):
-  orbit.ee = E
-  #
-  # this should work, the boundaries are in radius...
-  orbit.r_circ = brentq(Ecirc,np.min(model.rcurve),np.max(model.rcurve),args=(orbit.ee,model))
-  orbit.kappa = K
-  orbit.jj = find_j(orbit.r_circ,orbit.kappa,model)
-  orbit.r_apo = brentq(denom,orbit.r_circ,np.max(model.rcurve),args=(orbit.ee,orbit.jj,model))
-  orbit.r_peri = brentq(denom,np.min(model.rcurve),orbit.r_circ,args=(orbit.ee,orbit.jj,model))
-  return orbit
+    """make an orbit"""
+      orbit.ee = E
+      #
+      # this should work, the boundaries are in radius...
+      orbit.r_circ = brentq(Ecirc,np.min(model.rcurve),np.max(model.rcurve),args=(orbit.ee,model))
+      orbit.kappa = K
+      orbit.jj = find_j(orbit.r_circ,orbit.kappa,model)
+      orbit.r_apo = brentq(denom,orbit.r_circ,np.max(model.rcurve),args=(orbit.ee,orbit.jj,model))
+      orbit.r_peri = brentq(denom,np.min(model.rcurve),orbit.r_circ,args=(orbit.ee,orbit.jj,model))
+      return orbit
 
 
 
@@ -103,7 +108,7 @@ def compute_frequencies(orbit,model):
   #
   orbit.freq = np.zeros(3)
   orbit.action = np.zeros(3)
-  #    
+  #
   orbit.freq[0] = np.pi/(am*accum1*dt);
   orbit.freq[1] = orbit.freq[0]*orbit.jj * sm*accum2*dt/np.pi;
   orbit.freq[2] = 0.0;
@@ -156,14 +161,14 @@ def find_resonance(Rres,Tres,Pres,OMEGA,model):
     krange = np.linspace(0.01,0.995,50)
     erange = np.zeros_like(krange)
     for index,value in enumerate(krange):
-        # check the boundary values        
+        # check the boundary values
         try:
             #print(brentq(locate,0.99*model.potcurve(np.min(model.rcurve)),model.potcurve(0.99*np.max(model.rcurve)),args=(kappa,0,2,2,patt,model)))
             erange[index] = brentq(locate,0.99*model.potcurve(np.min(model.rcurve)),model.potcurve(0.99*np.max(model.rcurve)),args=(value,Rres,Tres,Pres,OMEGA,model))
         except:
             pass
     #print(erange)
-    gvals = np.where( (erange > model.potcurve(np.min(model.rcurve))) & (erange < model.potcurve(np.max(model.rcurve))) & (erange != 0.) )[0]  
+    gvals = np.where( (erange > model.potcurve(np.min(model.rcurve))) & (erange < model.potcurve(np.max(model.rcurve))) & (erange != 0.) )[0]
     return krange[gvals],erange[gvals]
 
 
@@ -202,8 +207,3 @@ def make_resonance_model(PotInstance,\
     model.rfunc = interpolate.interp2d(ee,kk,rr,kind='cubic')
     model.vfunc = interpolate.interp2d(ee,kk,vv,kind='cubic')
     return model
-
-
-
-
-
