@@ -559,8 +559,8 @@ def run_time_mod(simulation_directory,simulation_name,\
                  intime,\
                  rads,vels,\
                  nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
-                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=True,
-                 save_field=True, field_file_name='',field_file=None):
+                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=False,
+                 save_field=True, field_file_name='',field_file=None, bar_file=''):
     '''
     run_time
           execute all necessary steps to run an integration grid
@@ -600,18 +600,21 @@ def run_time_mod(simulation_directory,simulation_name,\
     if field_file == None:
         F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform)
         if save_field == True:
-            if str(filename) != '':
-                potential.save_field(str(filename))
+            if str(field_file_name) != '':
+                F.save_field(str(field_file_name))
             else:
                 print('saving field file with default name (field_file) to local directory')
-                potential.save_field('field_file')
+                F.save_field('field_file')
 
     if field_file != None:
         print('field file supplied! File name:')
         print(field_file)
         F = potential.restore_field(str(field_file))
 
-
+    if transform == True:
+        if bar_file == '':
+            print('error - no bar file supplied for transform')
+            return
     # use a supplied pattern speed if given
     if omegap >= 0.:
         patt = omegap
