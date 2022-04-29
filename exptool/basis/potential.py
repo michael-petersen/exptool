@@ -35,6 +35,7 @@ from ..utils import utils
 from ..io import psp_io
 from ..analysis import pattern
 from . import eof
+from ..io import particle
 from . import spheresl
 #from exptool.basis import spheresl_new as spheresl
 
@@ -137,17 +138,18 @@ class Fields():
         # read in both partial and full halo to figure out the halofactor
         PSPDumpHaloT = psp_io.Input(self.infile,comp='dark')
 
-        PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
+        PSPDumpHalo = psp_io.Input(self.infile,comp='dark')#,nbodies=self.nhalo) #I, carrie Filion Edited This line
 
 
-        self.halofac = float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
+        self.halofac = float(PSPDumpHaloT.header['dark']['nbodies'])/float(PSPDumpHalo.header['dark']['nbodies']) #I, carrie filion, edited this line
+        #float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
 
         
         if self.transform:
             PSPDumpHaloTransformed = pattern.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
             
         else:
-            PSPDumpHaloTransformed = PSPDumpHalo = psp_io.Input(self.infile,comp='dark',nout=self.nhalo)
+            PSPDumpHaloTransformed = PSPDumpHalo = psp_io.Input(self.infile,comp='dark')#,nbodies=self.nhalo) #I, carrie filion, edited this line
 
         #
         # do centering
@@ -159,16 +161,23 @@ class Fields():
             ncenter = 10000
 
             # rank order particles
-            rrank = (PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
+            rrank = (PSPDumpDiskTransformed.data['x']*PSPDumpDiskTransformed.data['x'] + \
+                     PSPDumpDiskTransformed.data['y']*PSPDumpDiskTransformed.data['y'] + \
+                     PSPDumpDiskTransformed.data['z']*PSPDumpDiskTransformed.data['z'])**0.5 #edited to match new psp format
+            '''(PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
                      PSPDumpDiskTransformed.ypos*PSPDumpDiskTransformed.ypos + \
-                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5
+                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5''' 
 
             cparticles = rrank.argsort()[0:ncenter]
 
             # use the specified particles to calculate the center of mass in each dimension
-            self.xcen_disk = np.sum(PSPDumpDiskTransformed.xpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
-            self.ycen_disk = np.sum(PSPDumpDiskTransformed.ypos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
-            self.zcen_disk = np.sum(PSPDumpDiskTransformed.zpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+            self.xcen_disk = np.sum(PSPDumpDiskTransformed.data['x'][cparticles]*PSPDumpDiskTransformed.data['m'][cparticles])/np.sum(PSPDumpDiskTransformed.data['m'][cparticles])
+            #edited to match new psp format
+            #np.sum(PSPDumpDiskTransformed.xpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+            self.ycen_disk = np.sum(PSPDumpDiskTransformed.data['y'][cparticles]*PSPDumpDiskTransformed.data['m'][cparticles])/np.sum(PSPDumpDiskTransformed.data['m'][cparticles])
+            #self.ycen_disk = np.sum(PSPDumpDiskTransformed.ypos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+            #self.zcen_disk = np.sum(PSPDumpDiskTransformed.zpos[cparticles]*PSPDumpDiskTransformed.mass[cparticles])/np.sum(PSPDumpDiskTransformed.mass[cparticles])
+            self.zcen_disk = np.sum(PSPDumpDiskTransformed.data['z'][cparticles]*PSPDumpDiskTransformed.data['m'][cparticles])/np.sum(PSPDumpDiskTransformed.data['m'][cparticles])
 
             # pinned both components to same position?
             if self.mutual_center:
@@ -185,20 +194,36 @@ class Fields():
                 
 
                 # rank order particles
-                rrank = (PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
+                rrank = (PSPDumpDiskTransformed.data['x']*PSPDumpDiskTransformed.data['x'] + \
+                     PSPDumpDiskTransformed.data['y']*PSPDumpDiskTransformed.data['y'] + \
+                     PSPDumpDiskTransformed.data['z']*PSPDumpDiskTransformed.data['z'])**0.5
+                
+                '''(PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
                      PSPDumpDiskTransformed.ypos*PSPDumpDiskTransformed.ypos + \
-                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5
+                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5'''
 
                 cparticles = rrank.argsort()[0:ncenter]
 
+                self.xcen_halo = np.sum(PSPDumpHaloTransformed.data['x'][cparticles]*PSPDumpHaloTransformed.data['m'][cparticles])/np.sum(PSPDumpHaloTransformed.data['m'][cparticles])
+                self.ycen_halo = np.sum(PSPDumpHaloTransformed.data['y'][cparticles]*PSPDumpHaloTransformed.data['m'][cparticles])/np.sum(PSPDumpHaloTransformed.data['m'][cparticles])
+                self.zcen_halo = np.sum(PSPDumpHaloTransformed.data['z'][cparticles]*PSPDumpHaloTransformed.data['m'][cparticles])/np.sum(PSPDumpHaloTransformed.data['m'][cparticles])
+                '''
                 self.xcen_halo = np.sum(PSPDumpHaloTransformed.xpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
                 self.ycen_halo = np.sum(PSPDumpHaloTransformed.ypos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
                 self.zcen_halo = np.sum(PSPDumpHaloTransformed.zpos[cparticles]*PSPDumpHaloTransformed.mass[cparticles])/np.sum(PSPDumpHaloTransformed.mass[cparticles])
-
+                '''
 
             print('potential.Fields.total_coefficients: (x,y,z) = {0:6.5f},{1:6.5f},{2:6.5f}'\
                   .format(float(self.xcen_disk),float(self.ycen_disk),float(self.zcen_disk)))
 
+            PSPDumpDiskTransformed.data['x'] = PSPDumpDiskTransformed.data['x'] - self.xcen_disk
+            PSPDumpDiskTransformed.data['y'] = PSPDumpDiskTransformed.data['y'] - self.ycen_disk
+            PSPDumpDiskTransformed.data['z'] = PSPDumpDiskTransformed.data['z'] - self.zcen_disk
+            
+            PSPDumpHaloTransformed.data['x'] = PSPDumpHaloTransformed.data['x'] - self.xcen_halo
+            PSPDumpHaloTransformed.data['y'] = PSPDumpHaloTransformed.data['y'] - self.ycen_halo
+            PSPDumpHaloTransformed.data['z'] = PSPDumpHaloTransformed.data['z'] - self.zcen_halo
+            '''
             PSPDumpDiskTransformed.xpos = PSPDumpDiskTransformed.xpos - self.xcen_disk
             PSPDumpDiskTransformed.ypos = PSPDumpDiskTransformed.ypos - self.ycen_disk
             PSPDumpDiskTransformed.zpos = PSPDumpDiskTransformed.zpos - self.zcen_disk
@@ -206,7 +231,7 @@ class Fields():
             PSPDumpHaloTransformed.xpos = PSPDumpHaloTransformed.xpos - self.xcen_halo
             PSPDumpHaloTransformed.ypos = PSPDumpHaloTransformed.ypos - self.ycen_halo
             PSPDumpHaloTransformed.zpos = PSPDumpHaloTransformed.zpos - self.zcen_halo
-
+            '''
 
         else:
             self.xcen_disk = 0.
@@ -649,7 +674,7 @@ class Fields():
         rgrid,thgrid = np.meshgrid(rline,thline)
         
         
-        P = psp_io.particle_holder()
+        P = particle.holder() #psp_io.particle_holder()
         P.xpos = (rgrid*np.cos(thgrid)).reshape(-1,)
         P.ypos = (rgrid*np.sin(thgrid)).reshape(-1,)
         P.zpos = np.zeros(rgrid.size)
