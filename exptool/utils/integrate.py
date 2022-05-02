@@ -27,7 +27,8 @@ sys.path.append('/home/filion/martinsims/exptools/exptool/exptool/potential')
 # exptool imports
 from ..orbits import orbit
 from ..basis import potential
-
+from ..analysis import pattern
+from ..io import psp_io
 # standard imports
 import numpy as np
 import time
@@ -597,8 +598,14 @@ def run_time_mod(simulation_directory,simulation_name,\
 
     if verbose:
         print('exptool.integrate.run_time: in directory {}, run {} at output {}, with transform={}'.format(simulation_directory,simulation_name,intime,transform))
+    
+    if transform == True:
+        if bar_file == '':
+            print('error - no bar file supplied for transform')
+            return
+
     if field_file == None:
-        F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform)
+        F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform, bar_file=bar_file)
         if save_field == True:
             if str(field_file_name) != '':
                 F.save_field(str(field_file_name))
@@ -608,13 +615,28 @@ def run_time_mod(simulation_directory,simulation_name,\
 
     if field_file != None:
         print('field file supplied! File name:')
-        print(field_file)
-        F = potential.restore_field(str(field_file))
+        print(field_file_name)
+        F = potential.restore_field(str(field_file_name))
+        
 
-    if transform == True:
-        if bar_file == '':
-            print('error - no bar file supplied for transform')
-            return
+        if transform:
+            BarInstance = pattern.BarDetermine()
+            BarInstance.read_bar(bar_file)
+            
+            # reset the derivative
+            BarInstance.frequency_and_derivative(spline_derivative=2)
+
+            # put in modern psp reader format
+            infile = simulation_directory+'OUT.'+simulation_name+'.%05.i' %intime
+            PSPDump = psp_io.Input(infile)
+    
+            patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
+    
+            rotfreq = patt/(2.*np.pi)
+
+        else:
+            patt = 0.
+            rotfreq = 0.
     # use a supplied pattern speed if given
     if omegap >= 0.:
         patt = omegap

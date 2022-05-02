@@ -1269,7 +1269,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
         BarInstance.frequency_and_derivative(spline_derivative=2)
 
         # put in modern psp reader format
-        PSPDump = psp_io.Input(infile,legacy=False)
+        PSPDump = psp_io.Input(infile)#,legacy=False)
     
         patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
     

@@ -1,15 +1,22 @@
 """
+#
+# this is eof.py
+
+# 08-17-16: bug found in accumulate() where call to get_pot() didn't pass MMAX,NMAX
+# 08-19-16: cmap consistency added
+# 08-26-16: print_progress and verbosity structure added
+# TODO (08-26-16): break out c modules
+
+# 08-29-16: added density consistency, still to be fixed in some places
+
+# 06-02-17: did you know that __doc__ is a thing? also added variance computation ability
+
+# 12-28-17: MASSIVE speed up (x10) from making array-based computation.
+
+##################################################3
 eof (part of exptool.basis)
-    Implementation of Martin Weinberg's EmpCylSL.cc routines for EXP simulation analysis
+    Implementation of Martin Weinberg's EmpOrth9thd routines for EXP simulation analysis
 
-
-MSP 17 Aug 2016 bug found in accumulate() where call to get_pot() didn't pass MMAX,NMAX
-MSP 19 Aug 2016 cmap consistency added
-MSP 26 Aug 2016 print_progress and verbosity structure added
-MSP 29 Aug 2016 added density consistency, still to be fixed in some places
-MSP  2 Jun 2017 did you know that __doc__ is a thing? also added variance computation ability
-MSP 28 Jun 2017 MASSIVE speed up (x10) from making array-based computation.
-MSP 24 Oct 2021 homogenise for SPL/PSP inputs, add comments
 
 
 quickstart
@@ -17,6 +24,7 @@ quickstart
 
 1. calculate coefficients for a PSP distribution using a given eof_file:
       cosine_coeff,sine_coeff = compute_coefficients(PSPInput,eof_file)
+
 
 
 member definitions
@@ -30,6 +38,9 @@ usage examples
 
 
 
+
+
+
 #
 # in order to get force fields from an output dump and eof cache file:
 #   1) read in cachefile, setting potC and potS in particular
@@ -38,10 +49,9 @@ usage examples
 #
 
 """
-# deprecate support for Python2
-#from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-# set up a main global debug...
+# set up a master debug...
 debug = False
 
 # general definitions
@@ -57,6 +67,11 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from collections import OrderedDict
 import matplotlib as mpl
+from ..io import particle
+
+# exptool definitions
+#from exptool.utils import utils
+#from exptool.io import psp_io
 
 # relative exptool imports
 from ..utils import utils
@@ -70,7 +85,7 @@ import yaml
 #    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 #except:
     
-from .compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
+from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 
 #############################################################################################
 #
@@ -121,6 +136,7 @@ def eof_params(file,verbose=0):
       nmax    = data['nmax']
       norder  = data['norder']
       dens    = data['dens']
+      #cmap    = data['cmap']
       rmin    = data['rmin']
       rmax    = data['rmax']
       ascale  = data['ascl']
@@ -146,23 +162,23 @@ def eof_params(file,verbose=0):
       #
       f.seek(0, 0)
       a = np.fromfile(f, dtype=np.uint32,count=7)
-      mmax   = a[0]
-      numx   = a[1]
-      numy   = a[2]
-      nmax   = a[3]
+      mmax = a[0]
+      numx = a[1]
+      numy = a[2]
+      nmax = a[3]
       norder = a[4]
-      dens   = a[5]
-      cmap   = a[6]
+      dens = a[5]
+      cmap = a[6]
       #
       # second header piece
       #
       a = np.fromfile(f, dtype='<f8',count=6)
-      rmin    = a[0]
-      rmax    = a[1]
-      ascale  = a[2]
-      hscale  = a[3]
+      rmin = a[0]
+      rmax = a[1]
+      ascale = a[2]
+      hscale = a[3]
       cylmass = a[4]
-      tnow    = a[5]
+      tnow = a[5]
 
     if (verbose):
 
@@ -192,15 +208,15 @@ def read_eof_file(file):
 
     potc,rforcec,zforcec,densc,potS,rforces,zforces,denss = parse_eof(file)
 
-    D['potC']    = potc
+    D['potC'] = potc
     D['rforceC'] = rforcec
     D['zforceC'] = zforcec
-    D['densC']   = densc
+    D['densC'] = densc
 
-    D['potS']    = pots
+    D['potS'] = pots
     D['rforceS'] = rforces
     D['zforceS'] = zforces
-    D['densS']   = denss
+    D['densS'] = denss
 
     return D
     
@@ -506,58 +522,122 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
 
 
     '''
-    norm = -4.*np.pi
-    norb = ParticleInstance.mass.size
-    #
-    # set up particles
-    #
-    r = (ParticleInstance.xpos**2. + ParticleInstance.ypos**2. + 1.e-10)**0.5
-    phitmp = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
-    #
-    phi = np.tile(phitmp,(MMAX+1,NMAX,1))
-    #
-    vc,vs = get_pot(r, ParticleInstance.zpos, potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
-    #
-    vc *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
-    vs *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
-    #  
-    morder = np.tile(np.arange(0.,MMAX+1.,1.),(norb,NMAX,1)).T
-    mcos = np.cos(phi*morder)
-    msin = np.sin(phi*morder)
-    #
-    if (no_odd):
-        mask = np.abs(np.cos((np.pi/2.)*morder))
-    else:
-        mask = np.zeros_like(morder) + 1.
+    if type(particle.holder()) == type(ParticleInstance):
+        norm = -4.*np.pi
+        norb = ParticleInstance.mass.size
         #
-    accum_cos = np.sum(norm * mcos * vc, axis=2)
-    accum_sin = np.sum(norm * msin * vs, axis=2)
-    #print(vc.shape,mcos.shape)
-    #
-    if VAR:
+        # set up particles
         #
-        # this is the old MISE method: PCAEOF
-        #accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
-        #accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
+        r = (ParticleInstance.xpos**2. + ParticleInstance.ypos**2. + 1.e-10)**0.5
+        phitmp = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
         #
-        # for jackknife, need to build this for sampT versions. see EmpCylSL::accumulate(), PCAVAR
-        if verbose > 1: print('Do variance...')
-        accum_cos2 = np.zeros([VAR,MMAX+1,NMAX])
-        accum_sin2 = np.zeros([VAR,MMAX+1,NMAX])
-
-        # consider the best way to do this...
-        upscale = 1.# float(r.size)/(np.floor(np.sqrt(r.size)))
-        
-        for T in range(0,VAR):           
-            use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
+        phi = np.tile(phitmp,(MMAX+1,NMAX,1))
+        #
+        vc,vs = get_pot(r, ParticleInstance.zpos, potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
+        #
+        vc *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
+        vs *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
+        #  
+        morder = np.tile(np.arange(0.,MMAX+1.,1.),(norb,NMAX,1)).T
+        mcos = np.cos(phi*morder)
+        msin = np.sin(phi*morder)
+        #
+        if (no_odd):
+            mask = np.abs(np.cos((np.pi/2.)*morder))
+        else:
+            mask = np.zeros_like(morder) + 1.
             #
-            accum_cos2[T] = upscale*np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
-            accum_sin2[T] = upscale*np.sum((norm * msin[:,:,use] * vs[:,:,use]),axis=2)
+        accum_cos = np.sum(norm * mcos * vc, axis=2)
+        accum_sin = np.sum(norm * msin * vs, axis=2)
+        #print(vc.shape,mcos.shape)
         #
-        return accum_cos,accum_sin,accum_cos2,accum_sin2
-    #
+        if VAR:
+            #
+            # this is the old MISE method: PCAEOF
+            #accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
+            #accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
+            #
+            # for jackknife, need to build this for sampT versions. see EmpCylSL::accumulate(), PCAVAR
+            if verbose > 1: print('Do variance...')
+            accum_cos2 = np.zeros([VAR,MMAX+1,NMAX])
+            accum_sin2 = np.zeros([VAR,MMAX+1,NMAX])
+
+            # consider the best way to do this...
+            upscale = 1.# float(r.size)/(np.floor(np.sqrt(r.size)))
+            
+            for T in range(0,VAR):           
+                use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
+                #
+                accum_cos2[T] = upscale*np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
+                accum_sin2[T] = upscale*np.sum((norm * msin[:,:,use] * vs[:,:,use]),axis=2)
+            #
+            return accum_cos,accum_sin,accum_cos2,accum_sin2
+        #
+        else:
+            return accum_cos,accum_sin
+
+
+
+
     else:
-        return accum_cos,accum_sin
+        norm = -4.*np.pi
+        norb = ParticleInstance.data['m'].size
+        #ParticleInstance.mass.size
+        #
+        # set up particles
+        #
+        r = (ParticleInstance.data['x']**2. + ParticleInstance.data['y']**2. + 1.e-10)**0.5
+        #(ParticleInstance.xpos**2. + ParticleInstance.ypos**2. + 1.e-10)**0.5
+        phitmp = np.arctan2(ParticleInstance.data['y'],ParticleInstance.data['x'])
+        #np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
+        #
+        phi = np.tile(phitmp,(MMAX+1,NMAX,1))
+        #
+        vc,vs = get_pot(r, ParticleInstance.data['z'], potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
+        #get_pot(r, ParticleInstance.zpos, potC,potS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=NUMX,numy=NUMY,fac=1.0,MMAX=MMAX,NMAX=NMAX,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
+        #
+        vc *= np.tile(ParticleInstance.data['m'],(MMAX+1,NMAX,1))
+        #np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
+        vs *= np.tile(ParticleInstance.data['m'],(MMAX+1,NMAX,1))
+        #np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
+        #  
+        morder = np.tile(np.arange(0.,MMAX+1.,1.),(norb,NMAX,1)).T
+        mcos = np.cos(phi*morder)
+        msin = np.sin(phi*morder)
+        #
+        if (no_odd):
+            mask = np.abs(np.cos((np.pi/2.)*morder))
+        else:
+            mask = np.zeros_like(morder) + 1.
+            #
+        accum_cos = np.sum(norm * mcos * vc, axis=2)
+        accum_sin = np.sum(norm * msin * vs, axis=2)
+        #print(vc.shape,mcos.shape)
+        #
+        if VAR:
+            #
+            # this is the old MISE method: PCAEOF
+            #accum_cos2 = np.sum((norm * mcos * vc) * (norm * mcos * vc),axis=2)
+            #accum_sin2 = np.sum((norm * msin * vs) * (norm * msin * vs),axis=2)
+            #
+            # for jackknife, need to build this for sampT versions. see EmpCylSL::accumulate(), PCAVAR
+            if verbose > 1: print('Do variance...')
+            accum_cos2 = np.zeros([VAR,MMAX+1,NMAX])
+            accum_sin2 = np.zeros([VAR,MMAX+1,NMAX])
+
+            # consider the best way to do this...
+            upscale = 1.# float(r.size)/(np.floor(np.sqrt(r.size)))
+            
+            for T in range(0,VAR):           
+                use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
+                #
+                accum_cos2[T] = upscale*np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
+                accum_sin2[T] = upscale*np.sum((norm * msin[:,:,use] * vs[:,:,use]),axis=2)
+            #
+            return accum_cos,accum_sin,accum_cos2,accum_sin2
+        #
+        else:
+            return accum_cos,accum_sin
 
 
 
@@ -972,7 +1052,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     #
     #
     #
-    norb = len(Particles.xpos)
+    norb = len(Particles.data['x'])#len(Particles.xpos)
     fr = np.zeros(norb);
     fz = np.zeros(norb);
     fp = np.zeros(norb)
@@ -982,9 +1062,13 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
         d = np.zeros(norb)
         d0 = np.zeros(norb)
     #
-    RR = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos+1.e-10)**0.5
-    PHI = np.arctan2(Particles.ypos,Particles.xpos)
-    R = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + 1.e-10)**0.5
+    RR = (Particles.data['x']*Particles.data['x'] + Particles.data['y']*Particles.data['y'] + Particles.data['z']*Particles.data['z']+1.e-10)**0.5
+
+    #(Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos+1.e-10)**0.5
+    PHI = np.arctan2(Particles.data['y'],Particles.data['x'])
+    #np.arctan2(Particles.ypos,Particles.xpos)
+    R = (Particles.data['x']*Particles.data['x'] + Particles.data['y']*Particles.data['y'] + 1.e-10)**0.5
+    #(Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + 1.e-10)**0.5
     #
     # cycle particles
     for part in range(0,norb):
@@ -1074,44 +1158,38 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
 def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,VAR=False,nanblock=False):
     '''
     compute_coefficients:
-         take a Particle Instance and eof_file and compute the cofficients.
+         take a PSP input file and eof_file and compute the cofficients
 
 
     inputs
     ---------------------------
-    PSPInput       : (io.particle instance) 
-    eof_file       : (string)
-    verbose        : (bool, default 1)
+    PSPInput       :
+    eof_file       :
+    verbose        :
     no_odd         : (bool, default False) if True, skip the odd m functions
     nprocs_max     : (int, default -1) the maximum number of processes to use for computation. will default to using all processors
-    VAR            : (bool, default False) if True, compute the variance calculations
-    nanblock       : (bool, default False) if True, reset NaN values to be something that can be handled
  
 
     returns
     --------------------------
     EOF_Out        :
-       .time       : (float)  the time of the snapshot, read fro the file
-       .dump       : (string) the filename of the component used, copied from input
-       .comp       : (string) the name of the component used
-       .nbodies    : (int)    the number of particles used
-       .eof_file   : (string) the eof file used in computation, copied from input
-       .cos        : (array)  the array of cosine coefficients
-       .sin        : (array)  the array of sine coefficients
-       .mmax       : (int)    the maximum harmonic order computed
-       .nmax       : (int)    the maximum radial order computed
+       .time       :
+       .dump       :
+       .comp       :
+       .nbodies    :
+       .eof_file   :
+       .cos        :
+       .sin        :
+       .mmax       :
+       .nmax       :
 
 
     '''
 
-    # check for legacy style and convert if new
-    try:
-        x= PSPInput.xpos[0]
-    except:
-        PSPInput = particle.convert_psp_to_legacy(PSPInput)
-
     # check for nan values in the input file
-    nanvals = np.where( np.isnan(PSPInput.xpos) | np.isnan(PSPInput.ypos) | np.isnan(PSPInput.zpos))[0]
+    nanvals = np.where( np.isnan(PSPInput.data['x']) | np.isnan(PSPInput.data['y']) | np.isnan(PSPInput.data['z']))[0]
+
+    #np.where( np.isnan(PSPInput.xpos) | np.isnan(PSPInput.ypos) | np.isnan(PSPInput.zpos))[0]
 
     if nanvals > 0:
         print('eof.compute_coefficients: NaN values found in output file {}.'.format(PSPInput.filename))
@@ -1126,11 +1204,11 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
             PSPInput.zpos[nanvals] = 0.
     
 
-    EOF_Out          = EOF_Object()
-    EOF_Out.time     = PSPInput.time
-    EOF_Out.dump     = PSPInput.filename
-    EOF_Out.comp     = PSPInput.comp
-    EOF_Out.nbodies  = PSPInput.mass.size
+    EOF_Out = EOF_Object()
+    EOF_Out.time = PSPInput.time
+    EOF_Out.dump = PSPInput.infile
+    EOF_Out.comp = PSPInput.comp
+    EOF_Out.nbodies = PSPInput.data['m'].size#PSPInput.mass.size
     EOF_Out.eof_file = eof_file
 
     # it would be nice to set up an override for laptop running here
@@ -1255,18 +1333,24 @@ a    fr
 def redistribute_particles(ParticleInstance,divisions):
     npart = np.zeros(divisions)
     holders = [particle.holder() for x in range(0,divisions)]
-    average_part = int(np.floor(len(ParticleInstance.xpos)/divisions))
-    first_partition = len(ParticleInstance.xpos) - average_part*(divisions-1)
+    average_part = int(np.floor(len(ParticleInstance.data['x'])/divisions))
+    #int(np.floor(len(ParticleInstance.xpos)/divisions))
+    first_partition = len(ParticleInstance.data['x']) - average_part*(divisions-1)
+    #len(ParticleInstance.xpos) - average_part*(divisions-1)
     #print average_part, first_partition
     low_particle = 0
     for i in range(0,divisions):
         end_particle = low_particle+average_part
         if i==0: end_particle = low_particle+first_partition
         #print low_particle,end_particle
-        holders[i].xpos = ParticleInstance.xpos[low_particle:end_particle]
-        holders[i].ypos = ParticleInstance.ypos[low_particle:end_particle]
-        holders[i].zpos = ParticleInstance.zpos[low_particle:end_particle]
-        holders[i].mass = ParticleInstance.mass[low_particle:end_particle]
+        holders[i].xpos = ParticleInstance.data['x'][low_particle:end_particle]
+        #ParticleInstance.xpos[low_particle:end_particle]
+        holders[i].ypos = ParticleInstance.data['y'][low_particle:end_particle]
+        #ParticleInstance.ypos[low_particle:end_particle]
+        holders[i].zpos = ParticleInstance.data['z'][low_particle:end_particle]
+        #ParticleInstance.zpos[low_particle:end_particle]
+        holders[i].mass = ParticleInstance.data['m'][low_particle:end_particle]
+        #ParticleInstance.mass[low_particle:end_particle]
         low_particle = end_particle
     return holders
 
@@ -1305,14 +1389,23 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
     sixteenth_arg = no_odd
     seventeenth_arg = VAR
 
-    a_coeffs = pool.map(accumulate_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+    # this is a bad way to do python2/3 compatibility
+    try:
+        a_coeffs = pool.map(accumulate_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                 itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                                                                 itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
                                                                 itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
                                                                 itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),fifteenth_arg,\
                                                                 itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg) \
                                                                ))
-
+    except:
+        a_coeffs = pool.map(accumulate_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+                                                                itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
+                                                                itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
+                                                                itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
+                                                                itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),fifteenth_arg,\
+                                                                itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg) \
+                                                                )) #izip doesnt exist anymore
     pool.close()
     pool.join()                                                        
     return a_coeffs
@@ -1323,7 +1416,7 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     '''
     make_coefficients_multi
 
-    main process to distribute particles for accumulation
+    master process to distribute particles for accumulation
 
 
     '''
@@ -1341,7 +1434,7 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     
     if (verbose):
         print ('eof.make_coefficients_multi: Accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'\
-          .format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
+          .format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.data['m'])))#len(ParticleInstance.mass)))
 
     # sum over processes
     scoefs = np.sum(np.array(a_coeffs),axis=0)
@@ -1397,7 +1490,8 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
     twentythird_arg[0] = verbose
     twentyfourth_arg = density
 
-    a_vals = pool.map(accumulated_eval_particles_star,\
+    try:
+        a_vals = pool.map(accumulated_eval_particles_star,\
                          zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                          itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                          itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
@@ -1407,18 +1501,24 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
                          itertools.repeat(nineteenth_arg),itertools.repeat(twentieth_arg),\
                          itertools.repeat(twentyfirst_arg),itertools.repeat(twentysecond_arg),\
                          twentythird_arg,itertools.repeat(twentyfourth_arg)))
-
+    except:
+        a_vals = pool.map(accumulated_eval_particles_star,\
+                         zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+                         itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
+                         itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
+                         itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
+                         itertools.repeat(thirteenth_arg),itertools.repeat(fourteenth_arg),itertools.repeat(fifteenth_arg),\
+                         itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg),itertools.repeat(eighteenth_arg),\
+                         itertools.repeat(nineteenth_arg),itertools.repeat(twentieth_arg),\
+                         itertools.repeat(twentyfirst_arg),itertools.repeat(twentysecond_arg),\
+                         twentythird_arg,itertools.repeat(twentyfourth_arg)))#izip doesnt exist anymore
     pool.close()
     pool.join()
     return a_vals 
 
 
 
-def find_forces_multi(ParticleInstance,
-                      nprocs,a_cos,a_sin,
-                      potC,rforceC,zforceC,
-                      potS,rforceS,zforceS,
-                      XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0,density=False):
+def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0,density=False):
     
     holding = redistribute_particles(ParticleInstance,nprocs)
     
@@ -1428,7 +1528,8 @@ def find_forces_multi(ParticleInstance,
     a_vals = multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=verbose,density=density)
     
     if (verbose):
-        print('eof.find_forces_multi: Force Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
+        print('eof.find_forces_multi: Force Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.data['m'])))
+        #len(ParticleInstance.mass)))
               
     # accumulate over processes
 
@@ -1666,6 +1767,196 @@ def extract_eof_coefficients(f):
 #
 
 
+def parse_components(simulation_directory,simulation_name,output_number):
+
+    # set up a dictionary to hold the details
+    ComponentDetails = {}
+
+    PSP = particle.Input(simulation_directory+'OUT.'+simulation_name+'.%05i' %output_number,validate=True)
+
+    for comp_num in range(0,PSP.ncomp):
+
+        # find components that have cylindrical matches
+        if PSP.comp_expansions[comp_num] == 'cylinder':
+
+            # set up a dictionary based on the component name
+            ComponentDetails[PSP.comp_titles[comp_num]] = {}
+
+            # set up flag for expansion type
+            ComponentDetails[PSP.comp_titles[comp_num]]['expansion'] = 'cylinder'
+
+            # population dictionary with desirables
+            ComponentDetails[PSP.comp_titles[comp_num]]['nbodies'] = PSP.comp_nbodies[comp_num]
+
+            # break basis string for eof_file
+            broken_basis = PSP.comp_basis[comp_num].split(',')
+            broken_basis = [v.strip() for v in broken_basis] # rip out spaces
+            basis_dict = {}
+            for value in broken_basis:  basis_dict[value.split('=')[0]] = value.split('=')[1]
+
+            # ^^^
+            # ideally this will be populated with defaults as well so that all values used are known
+
+            try:
+                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = simulation_directory+basis_dict['eof_file']
+                
+            except:
+                print('eof.parse_components: Component {0:s} has no EOF file specified (setting None).'.format(PSP.comp_titles[comp_num]))
+                ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = None
+
+    return ComponentDetails
+
+
+#
+# visualizing routines
+#
+
+def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linspace(-0.03,0.03,75),zaspect=1.,zoffset=0.,coord='Y',axis=False,density=False):
+    '''
+    make_eof_wake: evaluate a simple grid of points along an axis
+
+    inputs
+    ---------
+    EOFObj: 
+
+
+
+
+
+    '''
+    #     now a simple grid
+    #
+    # this will always be square in resolution--could think how to change this?
+    zline = xline*zaspect
+    xgrid,ygrid = np.meshgrid(xline,zline)
+
+
+    if axis:
+        zline = np.array([0.])
+        xgrid = xline[np.where(xline>=0.)[0]]
+        xline = xgrid
+        ygrid = np.array([0.])
+    
+    #
+    P = particle.holder()
+    P.xpos = xgrid.reshape(-1,)
+
+    # set the secondary coordinate
+    if coord=='Y':
+        P.ypos = ygrid.reshape(-1,)
+        P.zpos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
+
+    if coord=='Z':
+        P.ypos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
+        P.zpos = ygrid.reshape(-1,)
+        
+    P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
+    #
+    #
+    cos_coefs_in = np.copy(EOFObj.cos)
+    sin_coefs_in = np.copy(EOFObj.sin)
+    #
+    if exclude:
+        for i in orders:
+            cos_coefs_in[i] = np.zeros(EOFObj.nmax)
+            sin_coefs_in[i] = np.zeros(EOFObj.nmax)
+    #
+   # p0,p,d0,d,fr,fp,fz,R = accumulated_eval_particles(P,
+   # cos_coefs_in,
+   # sin_coefs_in,m1=m1,m2=m2,eof_file=EOFObj.eof_file,density=True)
+    if density:
+        p0,p,d0,d,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=True)
+    else:
+        p0,p,fr,fp,fz,R = compute_forces(P,EOFObj,verbose=1,nprocs=-1,m1=m1,m2=m2,density=False)
+
+    #
+    #
+    wake = {}
+    wake['X'] = xgrid
+    wake['Y'] = ygrid
+
+    if zline.shape[0] > 1:
+
+        if m1 < 1:
+            wake['P'] = (p+p0).reshape([xline.shape[0],zline.shape[0]])
+            if density:
+                wake['D'] = (d+d0).reshape([xline.shape[0],zline.shape[0]])
+        else:
+            wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
+            if density:
+                wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
+            
+        wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
+        wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
+        wake['fP'] = fp.reshape([xline.shape[0],zline.shape[0]])
+        wake['fZ'] = fz.reshape([xline.shape[0],zline.shape[0]])
+
+    else:
+
+        if m1 < 1:
+            wake['P'] = p + p0
+            if density:
+                wake['D'] = d + d0
+        else:
+            wake['P'] = p
+            if density:
+                wake['D'] = d
+            
+        wake['fR'] = fr
+        wake['R'] = R
+        wake['fP'] = fp
+        wake['fZ'] = fz
+
+        
+    return wake
+
+
+
+#
+# add eof visualizers
+#
+
+
+def reorganize_eof_dict(EOFDict):
+    #
+    # extract size of basis
+    mmax = EOFDict[0].mmax
+    nmax = EOFDict[0].nmax
+    #
+    # reorganize
+    coef_sums = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
+    coefs_cos = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
+    coefs_sin = np.zeros([mmax+1,nmax,np.array(list(EOFDict.keys())).shape[0]])
+    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])
+    #
+    keynum = 0
+    for keyval in EOFDict.keys():
+        for mm in range(0,mmax+1):
+            for nn in range(0,nmax):
+                coef_sums[mm,keynum,nn] = EOFDict[keyval].cos[mm,nn]**2. + EOFDict[keyval].sin[mm,nn]**2.
+                coefs_cos[mm,nn,keynum] = EOFDict[keyval].cos[mm,nn]
+                coefs_sin[mm,nn,keynum] = EOFDict[keyval].sin[mm,nn]
+        #
+        time_order[keynum] = EOFDict[keyval].time
+        keynum += 1
+    #
+    #   
+    # assemble into dictionary
+    CDict = {}
+    CDict['time']   = time_order[time_order.argsort()]
+    CDict['total'] = {}
+    CDict['sum'] = {}
+    CDict['cos'] = {}
+    CDict['sin'] = {}
+    for mm in range(0,mmax+1):
+        CDict['total'][mm] = coef_sums[mm,time_order.argsort(),:]
+        CDict['sum'][mm] = np.sum(coef_sums[mm],axis=1)[time_order.argsort()]
+        CDict['cos'][mm] = coefs_cos[mm,:,time_order.argsort()].T
+        CDict['sin'][mm] = coefs_sin[mm,:,time_order.argsort()].T
+    #
+    return CDict
+
+
 
 def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1.5*np.pi,nonan=False,signal_threshold=0.005):
     '''
@@ -1825,4 +2116,317 @@ def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0
     f.close()
 
 
+
+
+
+
+def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
+    '''
+    compute_variance : do variance computation on coefficients
+    using the MISE implementation
+    
+    deprecated 01.30.2019
+
+    inputs
+    -------------
+    ParticleInstance    :   particles to accumulate
+    accum_cos           :   accumulated cosine coefficients
+    accum_sin           :   accumulated   sine coefficients
+    accum_cos2          :   squared accumulated cosine coefficients
+    accum_sin2          :   squared accumulated   sine coefficients
+
+    outputs
+    -------------
+    varC                :   variance on the cosine coefficients
+    varS                :   variance on the   sine coefficients
+    facC                :   b_Hall for cosine coefficients
+    facS                :   b_Hall for   sine coefficients
+    
+    notes
+    -------------
+    there is some question about the methodology employed here; following Weinberg 1996, we use the MISE
+
+
+    '''    
+    
+    wgt = 1./(np.sum(ParticleInstance.data['m']))#1./(np.sum(ParticleInstance.mass))
+    nrm = wgt*wgt;
+    srm = 1./float(ParticleInstance.data['m'].size)
+    #1./float(ParticleInstance.mass.size)
+
+    
+    totC = accum_cos*wgt
+    totS = accum_sin*wgt
+
+    
+    sqrC = totC*totC
+    sqrS = totS*totS
+
+    
+    varC = accum_cos2*nrm - srm*sqrC
+    varS = accum_sin2*nrm - srm*sqrS
+
+    # this is b_Hall (see Weinberg 1996)
+    facC = sqrC/(varC/(float(ParticleInstance.data['m'].size)+1.) + sqrC + 1.0e-10)
+    #sqrC/(varC/(float(ParticleInstance.mass.size)+1.) + sqrC + 1.0e-10)
+    facS = sqrS/(varS/(float(ParticleInstance.data['m'].size)+1.) + sqrS + 1.0e-10)
+    #sqrS/(varS/(float(ParticleInstance.mass.size)+1.) + sqrS + 1.0e-10)
+
+    # signal to noise is (coeff^2 / var )^1/2
+    
+    return varC,varS,facC,facS
+    
+
+
+
+
+
+
+
+def compute_sn(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
+    '''
+    compute_sn : compute signal-to-noise metric on the coefficients
+
+    inputs
+    -------------
+    ParticleInstance    :   particles to accumulate
+    accum_cos           :   accumulated cosine coefficients
+    accum_sin           :   accumulated   sine coefficients
+    accum_cos2          :   squared accumulated cosine coefficients
+    accum_sin2          :   squared accumulated   sine coefficients
+
+    outputs
+    -------------
+    snC                 :   signal-to-noise of cosine coefficients
+    snS                 :   signal-to-noise of   sine coefficients
+    
+
+    '''    
+
+    varC,varS,facC,facS = compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
+
+  
+    # signal to noise is (coeff^2 / var )^1/2
+
+    snC = ((accum_cos*accum_cos)/varC)**0.5
+    snS = ((accum_sin*accum_sin)/varS)**0.5
+
+    return snC,snS
+    
+
+
+def read_binary_eof_coefficients(coeffile):
+    '''
+    read_binary_eof_coefficients
+        definitions to read EXP-generated binary coefficient files (generated by EmpOrth9thd.cc dump_coefs)
+        the file is self-describing, so no other items need to be supplied.
+
+    inputs
+    ----------------------
+    coeffile   : input coefficient file to be parsed
+
+    returns
+    ----------------------
+    times      : vector, time values for which coefficients are sampled
+    coef_array : (rank 4 matrix)
+                 0: times
+                 1: cos/0, sin/1 (note all m=0 sine terms are 0)
+                 2: azimuthal order
+                 3: radial order
+
+    '''
+
+
+    f = open(coeffile)
+
+    # get the length of the file
+    f.seek(0, os.SEEK_END)
+    filesize = f.tell()
+
+    # return to beginning
+    f.seek(0)
+
+    [time0] = np.fromfile(f, dtype=np.float,count=1)
+    [mmax,nmax] = np.fromfile(f, dtype=np.uint32,count=2)
+
+    # hard-coded to match specifications.
+    n_outputs = int(filesize/(8*((mmax+1)+mmax)*nmax + 4*2 + 8))
+
+    # set up arrays given derived quantities
+    times = np.zeros(n_outputs)
+    coef_array = np.zeros([n_outputs,2,mmax+1,nmax])
+
+    # return to beginning
+    f.seek(0)
+
+
+    for tt in range(0,n_outputs):
+
+        [time0] = np.fromfile(f, dtype=np.float,count=1)
+        [dummym,dummyn] = np.fromfile(f, dtype=np.uint32,count=2)
+
+        times[tt] = time0
+        
+        for mm in range(0,mmax+1):
+            
+            coef_array[tt,0,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+            
+            if mm > 0:
+                coef_array[tt,1,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+
+            
+    return times,coef_array
+
+
+
+
+
+def read_binary_eof_coefficients_dict(coeffile):
+    '''
+    read_binary_eof_coefficients_dict
+        definitions to read EXP-generated binary coefficient files (generated by EmpOrth9thd.cc dump_coefs)
+        the file is self-describing, so no other items need to be supplied.
+        AND returns as dictionary
+
+    inputs
+    ----------------------
+    coeffile   : input coefficient file to be parsed
+
+    returns
+    ----------------------
+    EOF_Dict   : 
+
+    '''
+
+
+    f = open(coeffile)
+
+    # get the length of the file
+    f.seek(0, os.SEEK_END)
+    filesize = f.tell()
+
+    # return to beginning
+    f.seek(0)
+
+    [time0] = np.fromfile(f, dtype=np.float,count=1)
+    [mmax,nmax] = np.fromfile(f, dtype=np.uint32,count=2)
+
+    # hard-coded to match specifications.
+    n_outputs = int(filesize/(8*((mmax+1)+mmax)*nmax + 4*2 + 8))
+
+    # return to beginning
+    f.seek(0)
+
+    EOF_Dict = {}
+
+
+    for tt in range(0,n_outputs):
+
+        EOF_Obj = EOF_Object()
+
+        [EOF_Obj.time] = np.fromfile(f, dtype=np.float,count=1)
+        [EOF_Obj.mmax,EOF_Obj.nmax] = np.fromfile(f, dtype=np.uint32,count=2)
+
+        # fill in dummy values
+        EOF_Obj.dump = '[redacted]'
+        EOF_Obj.comp = 'star'
+        EOF_Obj.nbodies = 0.
+        EOF_Obj.eof_file = '[redacted]'
+
+        EOF_Obj.cos = np.zeros([mmax+1,nmax])
+        EOF_Obj.sin = np.zeros([mmax+1,nmax])
+
+        for mm in range(0,mmax+1):
+
+            EOF_Obj.cos[mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+            
+            if mm > 0:
+                EOF_Obj.sin[mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+
+        EOF_Dict[EOF_Obj.time] = EOF_Obj
+            
+    return EOF_Dict
+
+
+
+
+
+def quick_plot_coefs(coeffile,label=''):
+
+    EOF2Dict = read_binary_eof_coefficients_dict(coeffile)
+
+    DC = reorganize_eof_dict(EOF2Dict)
+
+    DCp = calculate_eof_phase(EOF2Dict)
+
+
+    
+    fig = plt.figure(figsize=(12.0875,   5.8875))
+
+    ax = fig.add_axes([0.18,0.55,0.6,0.3])
+    ax2 = fig.add_axes([0.18,0.22,0.6,0.3])
+
+    ax3 = fig.add_axes([0.81,0.22,0.02,0.63])
+
+
+
+    for mm in range(EOF2Dict[0].mmax,0,-1):
+        ax.plot(DC['time'],np.log10((DC['sum'][mm]**0.5)/(DC['sum'][0]**0.5)),color=cm.gnuplot(float(mm-1)/float(EOF2Dict[0].mmax-1),1.))
+        ax2.plot(DCp['time'],DCp['speed'][mm][:,0]/float(mm),color=cm.gnuplot(float(mm-1)/float(EOF2Dict[0].mmax-1),1.))
+
+
+
+    maxt = np.max(DC['time'])
+    ax2.axis([0.0,maxt,0.0,120.])
+    ax.axis([0.0,maxt,-2.8,-.4])
+
+    ax.set_xticklabels(())
+    ax.set_ylabel('log m$_\mu$/m$_0$\nAmplitude',size=18)
+    ax2.set_xlabel('Time',size=18)
+    ax2.set_ylabel('m$_\mu$\nPattern Speed',size=18)
+
+    ax.set_title(label)
+
+    #for label in ax.get_xticklabels(): label.set_rotation(30); label.set_horizontalalignment("right")
+
+    try:
+        cmap = mpl.cm.magma
+    except:
+        cmap = mpl.cm.gnuplot
+        
+    norm = mpl.colors.BoundaryNorm(boundaries=np.arange(1,len(DC['sum'].keys())+1,1), ncolors=256)
+    cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
+    cb1.set_label('Azimuthal Order, $\mu$',size=24)
+    cb1.set_ticks(np.arange(1,len(DC['sum'].keys()),1)+0.5)
+    cb1.set_ticklabels([str(x) for x in np.arange(1,len(DC['sum'].keys()),1)])
+
+
+    
+def rotate_coefficients(cos,sin,rotangle=0.):
+    """
+    helper definition to rotate coefficients (or really anything)
+    
+    inputs
+    -----------
+    cos : input cosine coefficients
+    sin : input sine coefficients
+    rotangle : float value for uniform rotation, or array of length cos.size
+    
+    returns
+    -----------
+    cos_rot : rotated cosine coefficients
+    sin_rot : rotated sine coefficients
+    
+    todo
+    -----------
+    add some sort of clockwise/counterclockwise check?
+    
+    """
+    cosT = np.cos(rotangle)
+    sinT = np.sin(rotangle)
+    
+    cos_rot =  cosT*cos + sinT*sin
+    sin_rot = -sinT*cos + cosT*sin
+    
+    return cos_rot,sin_rot
 

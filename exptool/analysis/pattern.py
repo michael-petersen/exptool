@@ -99,9 +99,12 @@ class BarTransform():
 
         self.bar_angle = bar_angle
 
+        self.data = dict()
         
         if self.bar_angle == None:
-            self.bar_angle = -1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.xpos,self.ParticleInstanceIn.ypos,maxr=maxr)
+            self.bar_angle = -1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.data['x'],self.ParticleInstanceIn.data['y'],maxr=maxr)
+
+            #-1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.xpos,self.ParticleInstanceIn.ypos,maxr=maxr)
 
         # do an arbitary rotation of the particles relative to the bar?
         self.bar_angle += rel_bar_angle
@@ -122,26 +125,34 @@ class BarTransform():
         '''
 
         
-        transformed_x = self.ParticleInstanceIn.xpos*np.cos(self.bar_angle) - self.ParticleInstanceIn.ypos*np.sin(self.bar_angle)
-        transformed_y = self.ParticleInstanceIn.xpos*np.sin(self.bar_angle) + self.ParticleInstanceIn.ypos*np.cos(self.bar_angle)
+        transformed_x = self.ParticleInstanceIn.data['x']*np.cos(self.bar_angle) - self.ParticleInstanceIn.data['y']*np.sin(self.bar_angle)
+        #self.ParticleInstanceIn.xpos*np.cos(self.bar_angle) - self.ParticleInstanceIn.ypos*np.sin(self.bar_angle)
+        transformed_y = self.ParticleInstanceIn.data['x']*np.sin(self.bar_angle) + self.ParticleInstanceIn.data['y']*np.cos(self.bar_angle)
+        #self.ParticleInstanceIn.xpos*np.sin(self.bar_angle) + self.ParticleInstanceIn.ypos*np.cos(self.bar_angle)
 
-        transformed_vx = self.ParticleInstanceIn.xvel*np.cos(self.bar_angle) - self.ParticleInstanceIn.yvel*np.sin(self.bar_angle)
-        transformed_vy = self.ParticleInstanceIn.xvel*np.sin(self.bar_angle) + self.ParticleInstanceIn.yvel*np.cos(self.bar_angle)
+        transformed_vx = self.ParticleInstanceIn.data['vx']*np.cos(self.bar_angle) - self.ParticleInstanceIn.data['vy']*np.sin(self.bar_angle)
+        #self.ParticleInstanceIn.xvel*np.cos(self.bar_angle) - self.ParticleInstanceIn.yvel*np.sin(self.bar_angle)
+        transformed_vy = self.ParticleInstanceIn.data['vx']*np.sin(self.bar_angle) + self.ParticleInstanceIn.data['vy']*np.cos(self.bar_angle)
+        #self.ParticleInstanceIn.xvel*np.sin(self.bar_angle) + self.ParticleInstanceIn.yvel*np.cos(self.bar_angle)
 
 
-        self.xpos = transformed_x
-        self.ypos = transformed_y
-        self.zpos = np.copy(self.ParticleInstanceIn.zpos) # interesting. needs to be a copy for later operations to work!
+        self.data['x'] = transformed_x
+        self.data['y'] = transformed_y
+        self.data['z'] = np.copy(self.ParticleInstanceIn.data['z'])
+        #np.copy(self.ParticleInstanceIn.zpos) # interesting. needs to be a copy for later operations to work!
 
-        self.xvel = transformed_vx
-        self.yvel = transformed_vy
-        self.zvel = np.copy(self.ParticleInstanceIn.zvel)
+        self.data['vx'] = transformed_vx
+        self.data['vy'] = transformed_vy
+        self.data['vz'] = np.copy(self.ParticleInstanceIn.data['vz'])
+        #np.copy(self.ParticleInstanceIn.zvel)
 
-        self.mass = self.ParticleInstanceIn.mass
-        self.pote = self.ParticleInstanceIn.pote
+        self.data['m'] = self.ParticleInstanceIn.data['m']
+        #self.ParticleInstanceIn.mass
+        self.data['potE'] = self.ParticleInstanceIn.data['potE']
+        #self.ParticleInstanceIn.pote
 
         self.time = self.ParticleInstanceIn.time
-        self.infile = self.ParticleInstanceIn.infile
+        self.infile = self.ParticleInstanceIn.filename
         self.comp = self.ParticleInstanceIn.comp
 
     
@@ -229,7 +240,8 @@ class BarDetermine():
         for i in range(0,len(self.SLIST)):
                 O = particle.Input(self.SLIST[i],comp='star',verbose=self.verbose)
                 self.time[i] = O.time
-                self.pos[i] = BarDetermine.bar_fourier_compute(self,O.xpos,O.ypos,maxr=self.maxr)
+                self.pos[i] = BarDetermine.bar_fourier_compute(self,O.data['x'],O.data['y'],maxr=self.maxr)
+                #BarDetermine.bar_fourier_compute(self,O.xpos,O.ypos,maxr=self.maxr)
 
 
         if self.verbose >= 2:
@@ -261,27 +273,36 @@ class BarDetermine():
         for i in range(1,len(self.SLIST)-1):
 
             # open three files to compare
-            Oa = particle.Input(self.SLIST[i-1],legacy=True,comp=comp,nout=nout,verbose=0)
-            Ob = particle.Input(self.SLIST[i],legacy=True,comp=comp,nout=nout,verbose=self.verbose)
-            Oc = particle.Input(self.SLIST[i+1],legacy=True,comp=comp,nout=nout,verbose=0)
+            Oa = particle.Input(self.SLIST[i-1],comp=comp,verbose=0)
+            #particle.Input(self.SLIST[i-1],legacy=True,comp=comp,nout=nout,verbose=0)
+            Ob = particle.Input(self.SLIST[i],comp=comp,verbose=self.verbose)
+            #particle.Input(self.SLIST[i],legacy=True,comp=comp,nout=nout,verbose=self.verbose)
+            Oc = particle.Input(self.SLIST[i+1],comp=comp,verbose=0)
+            #particle.Input(self.SLIST[i+1],legacy=True,comp=comp,nout=nout,verbose=0)
 
             # compute 2d radial positions
             if threedee:
-                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos + Oa.zpos*Oa.zpos)**0.5
-                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos + Ob.zpos*Ob.zpos)**0.5
-                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos + Oc.zpos*Oc.zpos)**0.5
+                Oa.R = (Oa.data['x']*Oa.data['x'] + Oa.data['y']*Oa.data['y'] + Oa.data['z']*Oa.data['z'])**0.5
+                #(Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos + Oa.zpos*Oa.zpos)**0.5
+                Ob.R = (Ob.data['x']*Ob.data['x'] + Ob.data['y']*Ob.data['y'] + Ob.data['z']*Ob.data['z'])**0.5
+                #(Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos + Ob.zpos*Ob.zpos)**0.5
+                Oc.R = (Oc.data['x']*Oc.data['x'] + Oc.data['y']*Oc.data['y'] + Oc.data['z']*Oc.data['z'])**0.5
+                #(Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos + Oc.zpos*Oc.zpos)**0.5
 
             else:
-                Oa.R = (Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
-                Ob.R = (Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
-                Oc.R = (Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
+                Oa.R = (Oa.data['x']*Oa.data['x'] + Oa.data['y']*Oa.data['y'])**0.5
+                #(Oa.xpos*Oa.xpos + Oa.ypos*Oa.ypos)**0.5
+                Ob.R = (Ob.data['x']*Ob.data['x'] + Ob.data['y']*Ob.data['y'])**0.5
+                #(Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
+                Oc.R = (Oc.data['x']*Oc.data['x'] + Oc.data['y']*Oc.data['y'])**0.5
+                #(Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
                 
             # use logic to find aps
             aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
 
             
-            xposlist = Ob.xpos[aps]
-            yposlist = Ob.ypos[aps]
+            xposlist = Ob.data['x'][aps] #Ob.xpos[aps]
+            yposlist = Ob.data['y'][aps]#Ob.ypos[aps]
                 
             self.time[i] = Ob.time
             self.pos[i] = BarDetermine.bar_fourier_compute(self,xposlist,yposlist,maxr=self.maxr)
@@ -439,7 +460,7 @@ class BarDetermine():
         self.pos = np.array(pos)
         self.deriv = np.array(deriv)
 
-        if len(self.deriv < 1):
+        if len(self.deriv) < 1:
 
             BarDetermine.frequency_and_derivative(self)
 
@@ -456,8 +477,10 @@ def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
     # simple fourier method to calculate where the particles are in relation to the bar
     #
     '''
-    R = (ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
-    TH = np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
+    R = (ParticleInstance.data['x']*ParticleInstance.data['x'] + ParticleInstance.data['y']*ParticleInstance.data['y'])**0.5
+    #(ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
+    TH = np.arctan2(ParticleInstance.data['y'],ParticleInstance.data['x'])
+    #np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
     loR = np.where( R < rcut)[0]
     A2 = np.sum(ParticleInstance.mass[loR] * np.cos(2.*TH[loR]))
     B2 = np.sum(ParticleInstance.mass[loR] * np.sin(2.*TH[loR]))

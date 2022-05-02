@@ -383,21 +383,21 @@ eval_particles
 def redistribute_particles(ParticleInstance,divisions):
     npart = np.zeros(divisions,dtype=object)
     holders = [particle.holder() for x in range(0,divisions)]
-    average_part = int(np.floor(len(ParticleInstance['x'])/divisions))
+    average_part = int(np.floor(len(ParticleInstance.data['x'])/divisions))
     #int(np.floor(len(ParticleInstance.xpos)/divisions))
-    first_partition = len(ParticleInstance['x']) - average_part*(divisions-1)    #len(ParticleInstance.xpos) - average_part*(divisions-1)
+    first_partition = len(ParticleInstance.data['x']) - average_part*(divisions-1)    #len(ParticleInstance.xpos) - average_part*(divisions-1)
     low_particle = 0
     for i in range(0,divisions):
         end_particle = low_particle+average_part
         if i==0: end_particle = low_particle+first_partition
         #print low_particle,end_particle
-        holders[i].xpos = ParticleInstance['x'][low_particle:end_particle]
+        holders[i].xpos = ParticleInstance.data['x'][low_particle:end_particle]
         #ParticleInstance.xpos[low_particle:end_particle]
-        holders[i].ypos = ParticleInstance['y'][low_particle:end_particle]
+        holders[i].ypos = ParticleInstance.data['y'][low_particle:end_particle]
         #ParticleInstance.ypos[low_particle:end_particle]
-        holders[i].zpos = ParticleInstance['z'][low_particle:end_particle]
+        holders[i].zpos = ParticleInstance.data['z'][low_particle:end_particle]
         #ParticleInstance.zpos[low_particle:end_particle]
-        holders[i].mass = ParticleInstance['m'][low_particle:end_particle]
+        holders[i].mass = ParticleInstance.data['m'][low_particle:end_particle]
         #ParticleInstance.mass[low_particle:end_particle]
         low_particle = end_particle
     return holders
@@ -440,10 +440,10 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
 
     SL_Out = SL_Object()
     SL_Out.time = PSPInput.time
-    ##SL_Out.dump = PSPInput.infile # I carrie Filion edited this out. maybe want halof.bods?
-    SL_Out.dump = PSPInput.filename # I carrie Filion edited this 
+    SL_Out.dump = PSPInput.infile 
+    #SL_Out.dump = PSPInput.filename 
     SL_Out.comp = PSPInput.comp
-    SL_Out.nbodies = PSPInput.header[PSPInput.comp]['nbodies'] #I carrie filion edited this
+    SL_Out.nbodies = PSPInput.data['m'].size #edited this- 
     #PSPInput.mass.size # in case we aren't using the full total; how many were input?
     SL_Out.sph_file = sph_file
     SL_Out.model_file = mod_file
@@ -455,7 +455,7 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
     
     nprocs = multiprocessing.cpu_count()
 
-    holding = redistribute_particles(PSPInput.data,nprocs) # carrie filion edited
+    holding = redistribute_particles(PSPInput,nprocs) 
 
     if (verbose):
             print('sl.compute_coefficients: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
@@ -1252,17 +1252,17 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
   #
   
   # begin function
-  norb = len(Particles['x'])
+  norb = len(Particles.data['x'])
   #len(Particles.xpos)
-  r = (Particles['x']*Particles['x'] + Particles['y']*Particles['y'] + Particles['z']*Particles['z'])**0.5
+  r = (Particles.data['x']*Particles.data['x'] + Particles.data['y']*Particles.data['y'] + Particles.data['z']*Particles.data['z'])**0.5
     #(Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos)**0.5
-  rr = (Particles['x']*Particles['x'] + Particles['y']*Particles['y'])**0.5
+  rr = (Particles.data['x']*Particles.data['x'] + Particles.data['y']*Particles.data['y'])**0.5
   #(Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos)**0.5
-  phi = np.arctan2(Particles['y'],Particles['x'])
+  phi = np.arctan2(Particles.data['y'],Particles.data['x'])
   #np.arctan2(Particles.ypos,Particles.xpos)
   #
   # is this over planar or 3d r??
-  costh = Particles['z']/r #Particles.zpos/r
+  costh = Particles.data['z']/r #Particles.zpos/r
   #
   # allocate arrays
   den0 = np.zeros(norb)
