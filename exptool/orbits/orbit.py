@@ -141,12 +141,14 @@ class Orbits(dict):
         # check initial file for memmap construction
         O = psp_io.Input(infile_template+'%05i' %time_array[0])
 
-        id_comp = np.where(np.array(O.comp_titles) == comp)[0]
-
+        id_comp = np.where(np.array(list(O.header.keys())) == comp)[0] # I, Carrie Filion, Edited This
+        #np.where(np.array(O.comp_titles) == comp)[0]
+        ####I Carrie Filion added this line
+        id_comp = list(O.header)[id_comp[0]]
         # make the holding array
-        out_arr = np.zeros( [time_array.size,8,orbvals.size]) # 8 is only valid if no extra parameters in the psp file (update later)
-
-
+        
+        #out_arr = np.zeros( [time_array.size,8,orbvals.size]) # 8 is only valid if no extra parameters in the psp file (update later)
+        out_arr = np.zeros( [time_array.size,10,orbvals.size]) # I, Carrie Filion, edited this line
         times = []
         bad_times = []
         prev_time = -1.
@@ -159,7 +161,6 @@ class Orbits(dict):
             infile = infile_template+'%05i' %val
 
             O = psp_io.Input(infile)
-
             # sift through times to make sure always increasing
             if (indx > 0):
 
@@ -173,13 +174,17 @@ class Orbits(dict):
 
                 else:
                     times.append(O.time)
-                    tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.comp_pos_data[id_comp]),mode='r',order='f')
+                    tmp = np.memmap(infile,dtype='f',shape=(10,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I Carrie Filion edited this
 
+                    #tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I Carrie Filion edited this
+                    #np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.comp_pos_data[id_comp]),mode='r',order='f')
                     out_arr[indx] = tmp[:,orbvals]
                     
             else:
                 times.append(O.time)
-                tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.comp_pos_data[id_comp]),mode='r',order='f')
+                tmp = np.memmap(infile,dtype='f',shape=(10,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I, Carrie Filion, Edited this
+                #tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I, Carrie Filion, Edited this
+                #tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.comp_pos_data[id_comp]),mode='r',order='f')
                 out_arr[indx] = tmp[:,orbvals]
 
             prev_time = O.time
@@ -187,19 +192,31 @@ class Orbits(dict):
         times = np.array(times)
         
         out_arr = out_arr[0:times.size,:,:]
-
+        
         #
         # populate the dictionary
+        #self['T'] = times
+        #self['M'] = out_arr[0,0,:]
+        #self['X'] = out_arr[:,1,:]
+        #self['Y'] = out_arr[:,2,:]
+        #self['Z'] = out_arr[:,3,:]
+        #self['VX'] = out_arr[:,4,:]
+        #self['VY'] = out_arr[:,5,:]
+        #self['VZ'] = out_arr[:,6,:]
+        #self['P'] = out_arr[:,7,:]
+        #index, m, x, y, z, vx, vy, vz, potE
+        #time is 0, mass is 2
+        #everything filling the self dictonary is edits from Carrie Filion
         self['T'] = times
-        self['M'] = out_arr[0,0,:]
-        self['X'] = out_arr[:,1,:]
-        self['Y'] = out_arr[:,2,:]
-        self['Z'] = out_arr[:,3,:]
-        self['VX'] = out_arr[:,4,:]
-        self['VY'] = out_arr[:,5,:]
-        self['VZ'] = out_arr[:,6,:]
-        self['P'] = out_arr[:,7,:]
-
+        self['M'] = out_arr[0,2,:]
+        self['X'] = out_arr[:,3,:]
+        self['Y'] = out_arr[:,4,:]
+        self['Z'] = out_arr[:,5,:]
+        self['VX'] = out_arr[:,6,:]
+        self['VY'] = out_arr[:,7,:]
+        self['VZ'] = out_arr[:,8,:]
+        self['P'] = out_arr[:,9,:]
+        #end of edits
 
     def compute_quantities(self):
         '''

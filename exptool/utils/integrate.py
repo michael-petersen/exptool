@@ -21,10 +21,14 @@ TODO:
 # compatibility imports
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import sys
+sys.path.append('/home/filion/martinsims/exptools/exptool/exptool/orbits')
+sys.path.append('/home/filion/martinsims/exptools/exptool/exptool/potential')
 # exptool imports
 from ..orbits import orbit
 from ..basis import potential
-
+from ..analysis import pattern
+from ..io import psp_io
 # standard imports
 import numpy as np
 import time
@@ -324,7 +328,7 @@ def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,
 def multi_compute_integration(subrads,nprocs,vels,F,\
                    nint,dt,rotfreq,no_odd,halo_l,disk_m,\
                    dyn_res,ap_max,\
-                   verbose=0):
+                   verbose=5):
     #
     pool = Pool(nprocs)
     #
@@ -345,12 +349,14 @@ def multi_compute_integration(subrads,nprocs,vels,F,\
     twelvth_arg = [0 for i in range(0,nprocs)]
     twelvth_arg[0] = verbose
     #
-    out_vals = pool.map(integrate_grid_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
+    out_vals = pool.imap(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg),5) #I carrie Filion edited this
+    #pool.map(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
     #
     # clean up to exit
     pool.close()
     pool.join()
     #
+    #print(list(out_vals))
     return out_vals
 
 
@@ -436,6 +442,7 @@ def redistribute_arrays(rads,divisions):
 
 def re_form_orbit_arrays(array):
     #
+    print(array) #I, carrie filion edited this
     norb_master = 0
     for processor in range(0,len(array)): norb_master += array[processor].shape[0]
     #
@@ -444,7 +451,7 @@ def re_form_orbit_arrays(array):
     net_array = np.zeros([norb_master,array[0].shape[1],array[0].shape[2],array[0].shape[3]],dtype='f4')
     #
     start_index = 0
-    for processor in range(0,len(array)):
+    for processor in range(0,len(array)): #I, Carrie Filion, Edited this!
         #
         end_index = start_index + array[processor].shape[0]
         #
@@ -547,6 +554,107 @@ def run_time(simulation_directory,simulation_name,\
 
     f.close()
 
+
+def run_time_mod(simulation_directory,simulation_name,\
+                 eof_file,sph_file,model_file,\
+                 intime,\
+                 rads,vels,\
+                 nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
+                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=False,
+                 save_field=True, field_file_name='',field_file=None, bar_file=''):
+    '''
+    run_time
+          execute all necessary steps to run an integration grid
+
+
+    inputs
+    ------------------
+    simulation_directory
+    simulation_name
+    eof_file
+    sph_file
+    model_file
+    intime
+    rads
+    vels
+    nint
+    dt
+    no_odd
+    halo_l
+    max_m
+    dyn_res
+    ap_max
+    verbose
+    nprocs=-1
+    omegap=-1.
+    orbitfile=''
+    transform=True
+
+
+    returns
+    ------------------
+
+    '''
+
+    if verbose:
+        print('exptool.integrate.run_time: in directory {}, run {} at output {}, with transform={}'.format(simulation_directory,simulation_name,intime,transform))
+    
+    if transform == True:
+        if bar_file == '':
+            print('error - no bar file supplied for transform')
+            return
+
+    if field_file == None:
+        F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform, bar_file=bar_file)
+        if save_field == True:
+            if str(field_file_name) != '':
+                F.save_field(str(field_file_name))
+            else:
+                print('saving field file with default name (field_file) to local directory')
+                F.save_field('field_file')
+
+    if field_file != None:
+        print('field file supplied! File name:')
+        print(field_file_name)
+        F = potential.restore_field(str(field_file_name))
+        
+
+        if transform:
+            BarInstance = pattern.BarDetermine()
+            BarInstance.read_bar(bar_file)
+            
+            # reset the derivative
+            BarInstance.frequency_and_derivative(spline_derivative=2)
+
+            # put in modern psp reader format
+            infile = simulation_directory+'OUT.'+simulation_name+'.%05.i' %intime
+            PSPDump = psp_io.Input(infile)
+    
+            patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
+    
+            rotfreq = patt/(2.*np.pi)
+
+        else:
+            patt = 0.
+            rotfreq = 0.
+    # use a supplied pattern speed if given
+    if omegap >= 0.:
+        patt = omegap
+        
+    rotfreq = -1.*abs(patt/(2.*np.pi))
+    
+    OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
+
+
+    if orbitfile != '':
+        f = open(orbitfile,'w')
+        
+    else:
+        f = open(simulation_directory+'omap_'+str(intime)+'.txt','w')
+
+    print_orbit_array(f,OrbitArray)
+
+    f.close()
 
 
 

@@ -383,17 +383,22 @@ eval_particles
 def redistribute_particles(ParticleInstance,divisions):
     npart = np.zeros(divisions,dtype=object)
     holders = [particle.holder() for x in range(0,divisions)]
-    average_part = int(np.floor(len(ParticleInstance.xpos)/divisions))
-    first_partition = len(ParticleInstance.xpos) - average_part*(divisions-1)
+    average_part = int(np.floor(len(ParticleInstance.data['x'])/divisions))
+    #int(np.floor(len(ParticleInstance.xpos)/divisions))
+    first_partition = len(ParticleInstance.data['x']) - average_part*(divisions-1)    #len(ParticleInstance.xpos) - average_part*(divisions-1)
     low_particle = 0
     for i in range(0,divisions):
         end_particle = low_particle+average_part
         if i==0: end_particle = low_particle+first_partition
         #print low_particle,end_particle
-        holders[i].xpos = ParticleInstance.xpos[low_particle:end_particle]
-        holders[i].ypos = ParticleInstance.ypos[low_particle:end_particle]
-        holders[i].zpos = ParticleInstance.zpos[low_particle:end_particle]
-        holders[i].mass = ParticleInstance.mass[low_particle:end_particle]
+        holders[i].xpos = ParticleInstance.data['x'][low_particle:end_particle]
+        #ParticleInstance.xpos[low_particle:end_particle]
+        holders[i].ypos = ParticleInstance.data['y'][low_particle:end_particle]
+        #ParticleInstance.ypos[low_particle:end_particle]
+        holders[i].zpos = ParticleInstance.data['z'][low_particle:end_particle]
+        #ParticleInstance.zpos[low_particle:end_particle]
+        holders[i].mass = ParticleInstance.data['m'][low_particle:end_particle]
+        #ParticleInstance.mass[low_particle:end_particle]
         low_particle = end_particle
     return holders
 
@@ -417,8 +422,8 @@ def multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=1,no_odd
         a_coeffs = pool.map(compute_coefficients_solitary_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                                                                            fourth_arg,itertools.repeat(fifth_arg)))
     except:
-        a_coeffs = pool.map(compute_coefficients_solitary_star, itertools.izip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
-                                                                           fourth_arg,itertools.repeat(fifth_arg)))
+        a_coeffs = pool.map(compute_coefficients_solitary_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+                                                                           fourth_arg,itertools.repeat(fifth_arg))) #is no longer izip 
                                                                            
                                                                            
     pool.close()
@@ -435,9 +440,11 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
 
     SL_Out = SL_Object()
     SL_Out.time = PSPInput.time
-    SL_Out.dump = PSPInput.infile
+    SL_Out.dump = PSPInput.infile 
+    #SL_Out.dump = PSPInput.filename 
     SL_Out.comp = PSPInput.comp
-    SL_Out.nbodies = PSPInput.mass.size # in case we aren't using the full total; how many were input?
+    SL_Out.nbodies = PSPInput.data['m'].size #edited this- 
+    #PSPInput.mass.size # in case we aren't using the full total; how many were input?
     SL_Out.sph_file = sph_file
     SL_Out.model_file = mod_file
 
@@ -448,7 +455,7 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
     
     nprocs = multiprocessing.cpu_count()
 
-    holding = redistribute_particles(PSPInput,nprocs)
+    holding = redistribute_particles(PSPInput,nprocs) 
 
     if (verbose):
             print('sl.compute_coefficients: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
@@ -458,7 +465,7 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
     
     a_coeffs = multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=verbose,no_odd=no_odd)
     
-    if (verbose > 0): print('spheresl.compute_coefficients: accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(PSPInput.mass)))
+    if (verbose > 0): print('spheresl.compute_coefficients: accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(PSPInput.data['m'])))
 
     # sum over processes
     summed_coefs = np.sum(np.array(a_coeffs,dtype=object),axis=0)
@@ -509,7 +516,7 @@ def eval_particles(ParticleInstance,expcoef,sph_file,mod_file,nprocs=-1,verbose=
         #
         
         if (verbose):
-            print('spheresl.eval_particles: particle Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.mass)))
+            print('spheresl.eval_particles: particle Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance['m'])))
         # sum over processes
         den0,den1,pot0,pot1,potr,pott,potp,rr = mix_outputs_sph(np.array(a_vals))
         
@@ -1245,13 +1252,17 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
   #
   
   # begin function
-  norb = len(Particles.xpos)
-  r = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos)**0.5
-  rr = (Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos)**0.5
-  phi = np.arctan2(Particles.ypos,Particles.xpos)
+  norb = len(Particles.data['x'])
+  #len(Particles.xpos)
+  r = (Particles.data['x']*Particles.data['x'] + Particles.data['y']*Particles.data['y'] + Particles.data['z']*Particles.data['z'])**0.5
+    #(Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos + Particles.zpos*Particles.zpos)**0.5
+  rr = (Particles.data['x']*Particles.data['x'] + Particles.data['y']*Particles.data['y'])**0.5
+  #(Particles.xpos*Particles.xpos + Particles.ypos*Particles.ypos)**0.5
+  phi = np.arctan2(Particles.data['y'],Particles.data['x'])
+  #np.arctan2(Particles.ypos,Particles.xpos)
   #
   # is this over planar or 3d r??
-  costh = Particles.zpos/r
+  costh = Particles.data['z']/r #Particles.zpos/r
   #
   # allocate arrays
   den0 = np.zeros(norb)
