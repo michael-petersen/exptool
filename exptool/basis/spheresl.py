@@ -10,7 +10,7 @@
 # 06-14-18: fixed evaluation bugs, added documentation, checked Python3 compatibility
 # 10-08-20: add factorial correction; need to be careful about bookkeeping between exp and exptool.
 #
-'''     
+'''
 
 spheresl (part of exptool.basis)
     Implementation of Martin Weinberg's SphereSL routines for EXP simulation analysis
@@ -91,7 +91,7 @@ class SPHTable(object):
         # descriptors
         self.cmap = None
         self.scale = None
-        
+
         # harmonic functions
         self.evtable = None
         self.eftable = None
@@ -99,7 +99,7 @@ class SPHTable(object):
         # spherical table
         self.xi = None
         self.d0 = None
-        
+
 
 
 
@@ -121,30 +121,30 @@ def get_halo_dens_pot_force(x, lmax, nmax, evtable, eftable, xi, d0,
     force_mat = np.zeros([lmax+1,nmax])
 
     x = r_to_xi(x,cmap,scale);
-    
+
     if (cmap==1):
         if (x<-1.0): x=-1.0;
         if (x>=1.0): x=1.0-1.0e-08;
     if (cmap==2):
         if (x<xmin): x=xmin;
         if (x>xmax): x=xmax;
-    
+
     dxi = xi[1]-xi[0]
-    
+
     indx = int(np.floor( (x-np.min(xi))/(dxi) ))
-    
+
     if (indx<0): indx = 0;
     if (indx>numr-2): indx = numr - 2;
-    
+
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x - xi[indx])/(dxi);
-    
+
     fac = d_xi_to_r(x,cmap,scale)/dxi;
-    
+
     for l in range(0,lmax+1):
 
         for n in range(0,nmax):
-        
+
             dens_mat[l][n] = (x1*eftable[l][n][indx] + x2*eftable[l,n,indx+1])*np.sqrt(evtable[l,n]) * (x1*d0[indx] + x2*d0[indx+1]);
 
             if indx == 0:
@@ -190,7 +190,7 @@ def get_halo_dens(x, lmax, nmax, evtable, eftable, xi, d0, cmap, scale):#, int w
 
 
 
-    
+
 def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
     '''
     get_halo_force
@@ -205,30 +205,30 @@ def get_halo_force(x, lmax, nmax, evtable, eftable, xi, p0, cmap=0, scale=1.0):
     '''
     numr = p0.shape[0]
     mat = np.zeros([lmax+1,nmax])
-    
+
     x = r_to_xi(x,cmap,scale);
-    
+
     if (cmap==1):
         if (x<-1.0): x=-1.0;
         if (x>=1.0): x=1.0-1.0e-08;
     if (cmap==2):
         if (x<xmin): x=xmin;
         if (x>xmax): x=xmax;
-            
+
     dxi = xi[1]-xi[0]
     indx = int(np.floor( (x-np.min(xi))/(dxi) ))
-    
+
     if (indx < 1): indx = 1;
     if (indx > (numr-2) ): indx = numr - 2;
-        
+
     p = (x - xi[indx])/dxi;
-        
+
     fac = d_xi_to_r(x,cmap,scale)/dxi;
-    
+
     for l in range(0,lmax+1):
-        
+
         for n in range(0,nmax):
-            
+
             mat[l][n] = fac * ((p - 0.5)*eftable[l,n,indx-1]*p0[indx-1] - 2.0*p*eftable[l,n,indx]*p0[indx] + (p + 0.5)*eftable[l,n,indx+1]*p0[indx+1]) / np.sqrt(evtable[l,n]);
 
     return mat
@@ -251,35 +251,35 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
 
     if nmax < nmax_check:
       evtable = evtable[:,0:nmax+1]
-      eftable = eftable[:,0:nmax+1]      
+      eftable = eftable[:,0:nmax+1]
     '''
 
     numr = p0.shape[0]
-    
+
     x = r_to_xi(x_in,cmap,scale);
-    
+
     #print x
     if (cmap==1):
         if (x<-1.0): x=-1.0;
         if (x>=1.0): x=1.0-1.0e-08;
-            
+
     if (cmap==2):
         if (x<xmin): x=xmin;
         if (x>xmax): x=xmax;
-    
+
     dxi = xi[1]-xi[0]
 
     fac = d_xi_to_r(x,cmap,scale)/dxi;
 
     indx = int(np.floor( (x-np.min(xi))/(dxi) ))
     #print indx
-    
+
     if (indx<0): indx = 0;
     if (indx>numr-2): indx = numr - 2;
-        
+
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x - xi[indx])/(dxi);
-    
+
     pot_mat = np.zeros([lmax+1,nmax])
     force_mat = np.zeros([lmax+1,nmax])
 
@@ -293,7 +293,7 @@ def get_halo_force_pot(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale):
     else:
         force_mat = fac * ((x2 - 0.5)*eftable[:,:,indx-1]*p0[indx-1] - 2.0*x2*eftable[:,:,indx]*p0[indx] + (x2 + 0.5)*eftable[:,:,indx+1]*p0[indx+1]) / np.sqrt(evtable)
 
-    
+
     return pot_mat,force_mat
 
 
@@ -304,33 +304,33 @@ def get_halo_pot_matrix(x_in, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
     #
 
     numr = p0.shape[0]
-    
+
     x = r_to_xi(x_in,cmap,scale);
-    
+
     #print x
     if (cmap==1):
         if (x<-1.0): x=-1.0;
         if (x>=1.0): x=1.0-1.0e-08;
-            
+
     if (cmap==2):
         if (x<xmin): x=xmin;
         if (x>xmax): x=xmax;
-    
+
     dxi = xi[1]-xi[0]
 
     indx = int(np.floor( (x-np.min(xi))/(dxi) ))
     #print indx
-    
+
     if (indx < 0):      indx = 0;
     if (indx > numr-2): indx = numr - 2;
-        
+
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x -   xi[indx])/(dxi);
-    
+
     mat = np.zeros([lmax+1,nmax])
 
     mat = (x1*eftable[:,:,indx] + x2*eftable[:,:,indx+1])/np.sqrt(evtable) * (x1*p0[indx] + x2*p0[indx+1]);
-    
+
 
     return mat
 
@@ -359,7 +359,7 @@ def get_halo_pot(x, l, n, evtable, eftable, xi, p0, cmap, scale):#, int which):
     if (indx>numr-2): indx = numr - 2;
     x1 = (xi[indx+1] - x)/(dxi);
     x2 = (x - xi[indx])/(dxi);
-    
+
     return (x1*eftable[l,n,indx] + x2*eftable[l,n,indx+1])/np.sqrt(evtable[l,n]) * (x1*p0[indx] + x2*p0[indx+1]);
 
 
@@ -423,9 +423,9 @@ def multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=1,no_odd
                                                                            fourth_arg,itertools.repeat(fifth_arg)))
     except:
         a_coeffs = pool.map(compute_coefficients_solitary_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
-                                                                           fourth_arg,itertools.repeat(fifth_arg))) #is no longer izip 
-                                                                           
-                                                                           
+                                                                           fourth_arg,itertools.repeat(fifth_arg))) #is no longer izip
+
+
     pool.close()
     pool.join()
     return a_coeffs
@@ -440,10 +440,10 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
 
     SL_Out = SL_Object()
     SL_Out.time = PSPInput.time
-    SL_Out.dump = PSPInput.infile 
-    #SL_Out.dump = PSPInput.filename 
+    SL_Out.filename = PSPInput.filename
+    #SL_Out.filename = PSPInput.filename
     SL_Out.comp = PSPInput.comp
-    SL_Out.nbodies = PSPInput.data['m'].size #edited this- 
+    SL_Out.nbodies = PSPInput.data['m'].size #edited this-
     #PSPInput.mass.size # in case we aren't using the full total; how many were input?
     SL_Out.sph_file = sph_file
     SL_Out.model_file = mod_file
@@ -452,26 +452,26 @@ def compute_coefficients(PSPInput,sph_file,mod_file,verbose=1,no_odd=False):
     lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
     SL_Out.lmax = lmax
     SL_Out.nmax = nmax
-    
+
     nprocs = multiprocessing.cpu_count()
 
-    holding = redistribute_particles(PSPInput,nprocs) 
+    holding = redistribute_particles(PSPInput,nprocs)
 
     if (verbose):
             print('sl.compute_coefficients: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
-    
+
     t1 = time.time()
     freeze_support()
-    
+
     a_coeffs = multi_compute_coefficients(holding,nprocs,sph_file,mod_file,verbose=verbose,no_odd=no_odd)
-    
+
     if (verbose > 0): print('spheresl.compute_coefficients: accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(PSPInput.data['m'])))
 
     # sum over processes
     summed_coefs = np.sum(np.array(a_coeffs,dtype=object),axis=0)
 
     SL_Out.expcoef = summed_coefs
-    
+
     return SL_Out
 
 
@@ -489,10 +489,10 @@ def multi_all_eval_particles(holding,nprocs,expcoef,sph_file,mod_file,verbose):
     fourth_arg = mod_file
     fifth_arg = [0 for i in range(0,nprocs)]
     fifth_arg[0] = verbose
-    
+
     a_vals = pool.map(all_eval_particles_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg)\
                                                               ,itertools.repeat(fourth_arg),fifth_arg))
-                                                              
+
     pool.close()
     pool.join()
     return a_vals
@@ -514,17 +514,17 @@ def eval_particles(ParticleInstance,expcoef,sph_file,mod_file,nprocs=-1,verbose=
         # this doesn't handle l1/l2
         a_vals = multi_all_eval_particles(holding,nprocs,expcoef,sph_file,mod_file,verbose)
         #
-        
+
         if (verbose):
             print('spheresl.eval_particles: particle Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance['m'])))
         # sum over processes
         den0,den1,pot0,pot1,potr,pott,potp,rr = mix_outputs_sph(np.array(a_vals))
-        
+
 
     else:
         den0,den1,pot0,pot1,potr,pott,potp,rr = all_eval_particles(ParticleInstance, expcoef, sph_file, mod_file,verbose,L1=l1,L2=l2)
 
-        
+
     return den0,den1,pot0,pot1,potr,pott,potp,rr
 
 
@@ -566,11 +566,11 @@ def mix_outputs_sph(MultiOutput):
 
 def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0,no_odd=False):
     '''
-    
+
      follows compute_coefficients from EXP's SphereSL.cc (see also SphericalBasis.cc)
-    
+
         this is the workhorse that does the accumulation.
-     
+
 
     inputs
     -----------------
@@ -580,22 +580,22 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
     returns
     ----------------
     expcoef               : (matrix, (lmax)*(lmax+2)+1 x nmax) coefficient matrix
-    
+
     '''
-    
+
     fac0 = -4.0*np.pi;
     lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
     xi,r,p0,d0 = halo_methods.init_table(model_file,numr,rmin,rmax,cmap,scale)
 
-    
+
     expcoef = np.zeros([lmax*(lmax+2)+1,nmax])
 
-    
+
     factorial = factorial_return(lmax)
-    
+
     norb = len(ParticleInstance.mass)
 
-    for p in range(0,norb): 
+    for p in range(0,norb):
 
         if (verbose > 0) & ( ((float(p)+1.) % 1000. == 0.0) | (p==0)): utils.print_progress(p,norb,'spheresl.compute_coefficients')
 
@@ -611,7 +611,7 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
         r = np.nanmax([np.sqrt(r2),1.0e-10]);
         costh = zz/r;
         phi = np.arctan2(yy,xx);
-        
+
         #
         # now compute the legendre polynomial value tables
         #
@@ -622,7 +622,7 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
         #
         potd = get_halo_pot_matrix(r, lmax, nmax, evtable, eftable, xi, p0, cmap, scale)
            # returns potd, (lmax+1,nmax)
-        
+
         loffset = 0
         for l in range(0,lmax+1):
 
@@ -630,29 +630,29 @@ def compute_coefficients_solitary(ParticleInstance,sph_file,model_file,verbose=0
             if ( (l % 2) != 0) & (no_odd):
                 loffset += (2*l+1)  # advance expcoef position anyway
                 continue
-            
+
             moffset = 0
             for m in range(0,l+1):
 
                 fac = factorial[l][m] * legs[l][m]
 
-                fac4 = potd[l]*fac*fac0; 
-                
+                fac4 = potd[l]*fac*fac0;
+
                 if (m==0):
-                     
+
                     expcoef[loffset+moffset] += fac4 * mass
-                    
+
                     moffset += 1  # advance expcoef position
-                    
+
                 else:
-                  
+
                     expcoef[loffset+moffset  ] += np.cos( phi * m ) * fac4 * mass
                     expcoef[loffset+moffset+1] += np.sin( phi * m ) * fac4 * mass
-                    
+
                     moffset += 2  # advance expcoef position
-                    
+
             loffset += (2*l+1)  # advance expcoef position
-            
+
     return expcoef
 
 
@@ -671,10 +671,10 @@ def legendre_R(lmax, x):
 
     '''
     p = np.zeros([lmax+1,lmax+1])
-    
+
     p[0][0] = 1.0
     pll = 1.0
-    
+
     if (lmax > 0):
         somx2 = np.sqrt( (1.0 - x)*(1.0 + x) );
         fact = 1.0;
@@ -682,21 +682,21 @@ def legendre_R(lmax, x):
             pll *= -fact*somx2;
             p[m][m] = pll;
             fact += 2.0;
-    
-    
+
+
     for m in range(0,lmax):#(m=0; m<lmax; m++) {
         pl2 = p[m][m];
         p[m+1][m] = x*(2.*m+1)*pl2
         pl1       = x*(2.*m+1)*pl2
-        
+
         for l in range(m+2,lmax+1):
             p[l][m] = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
             pll = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
             pl2 = pl1
             pl1 = pll
-    
+
     p[~np.isfinite(p)] = 0.
-    
+
     return p
 
 
@@ -723,10 +723,10 @@ def dlegendre_R(lmax, x):
     '''
     p = np.zeros([lmax+1,lmax+1])
     dp = np.zeros([lmax+1,lmax+1])
-    
+
     p[0][0] = 1.0
     pll = 1.0
-    
+
     if (lmax > 0):
         somx2 = np.sqrt( (1.0 - x)*(1.0 + x) );
         fact = 1.0;
@@ -734,13 +734,13 @@ def dlegendre_R(lmax, x):
             pll *= -fact*somx2;
             p[m][m] = pll;
             fact += 2.0;
-    
-    
+
+
     for m in range(0,lmax):#(m=0; m<lmax; m++) {
         pl2 = p[m][m];
         p[m+1][m] = x*(2.*m+1)*pl2
         pl1       = x*(2.*m+1)*pl2
-        
+
         for l in range(m+2,lmax+1):
             p[l][m] = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
             pll     = (x*(2*l-1)*pl1-(l+m-1)*pl2)/(l-m)
@@ -748,7 +748,7 @@ def dlegendre_R(lmax, x):
             pl1     = pll
 
     p[~np.isfinite(p)] = 0.
-    
+
     MINEPS=1.e-8
     if (1.0-np.abs(x) < MINEPS):
         if (x>0): x =   1.0 - MINEPS;
@@ -781,7 +781,7 @@ def sinecosine_R(mmax, phi):
 
     c = np.zeros([mmax+1])
     s = np.zeros([mmax+1])
-    
+
     c[0] = 1.0;
     s[0] = 0.0;
 
@@ -839,7 +839,7 @@ def factorial_return(lmax):
 
     for (int l=0; l<=lmax; l++) {
       for (int m=0; m<=l; m++) {
-	factorial[l][m] = sqrt( (0.5*l+0.25)/M_PI * 
+	factorial[l][m] = sqrt( (0.5*l+0.25)/M_PI *
 				exp(lgamma(1.0+l-m) - lgamma(1.0+l+m)) );
 	if (m != 0) factorial[l][m] *= M_SQRT2;
       }
@@ -852,11 +852,11 @@ def factorial_return(lmax):
     '''
     factorial = np.zeros([lmax+1,lmax+1])
     for l in range(0,lmax+1):
-        
+
         for m in range(0,l+1):
-            
+
             factorial[l][m] = np.sqrt( (0.5*l+0.25)/np.pi * np.exp(gammaln(1.0+l-m) - gammaln(1.0+l+m)) );
-            
+
             if (m != 0):
                 factorial[l][m] *= np.sqrt(2.)
 
@@ -872,10 +872,10 @@ def get_pot_coefs(l, l_coef, l_potd, l_dpot):
     pp = 0.0
     dpp = 0.0;
     for n in range(0,nmax):
-        
+
         pp  += potd[i] * coef[i];
         dpp += dpot[i] * coef[i];
-        
+
     return -1.*pp, -1.*dpp
 
 
@@ -885,9 +885,9 @@ def get_dens_coefs(l, l_coef, dend):
     # and d array of coefficients
     pp = 0.0;
     for n in range(0,nmax):
-        
+
         pp  += dend[n] * l_coef[n];
-        
+
     return pp
 
 
@@ -931,7 +931,7 @@ def all_eval_table(r, costh, phi, expcoef, sph_file, mod_file,L1=0,L2=-1):
   #
   loffset = 1
   for l in range(1,lmax+1):
-    
+
     if (l>(L2+1)) | (l<(L1+1)):
       loffset+=(2*l+1)
       continue
@@ -997,8 +997,8 @@ def all_eval(r, costh, phi, expcoef,\
     inputs
     -------
     r is 3-dimensional
-    
-    
+
+
 
     '''
 
@@ -1018,7 +1018,7 @@ def all_eval(r, costh, phi, expcoef,\
       if verbose >=4: print('spheresl.all_eval: reducing nmax.')
       evtable = evtable[:,0:nmax]
       eftable = eftable[:,0:nmax]
-      expcoef = expcoef[:,0:nmax]   
+      expcoef = expcoef[:,0:nmax]
 
 
 
@@ -1028,13 +1028,13 @@ def all_eval(r, costh, phi, expcoef,\
 
     # begin function
     #sinth = -np.sqrt(np.abs(1.0 - costh*costh));
-    
+
     #
     # use the basis to get the density,potential,force arrays
     #
     # these three need to be stuffed together into one call to save loops
     dend,dpot,potd = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale)
-    
+
     #
     legs,dlegs = dlegendre_R(lmax,costh)
     #
@@ -1044,7 +1044,7 @@ def all_eval(r, costh, phi, expcoef,\
 
     # converted den1 to be the total density (not just perturbing density, NOTE CHANGE!) (01.20.2017)
     den1 = np.sum(fac1 * expcoef[0]*dend[0]);
-    
+
     pot1 = 0.0;
     pott = 0.0;
     potp = 0.0;
@@ -1058,21 +1058,21 @@ def all_eval(r, costh, phi, expcoef,\
       if ( (l % 2) != 0) & (no_odd):
                 loffset+=(2*l+1)
                 continue
-        
+
       # M loop
       moffset = 0
-      
+
       for m in range(0,l+1):
-        
+
         fac1 = factorial[l][m];
-        
+
         if (m==0):
               den1 += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * dend[l]));
               pot1 += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
               potr += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
               pott += np.sum(fac1*dlegs[l][m] * (expcoef[loffset+moffset] * potd[l]));
               moffset+=1;
-              
+
         else:
               cosm = np.cos(phi*m);
               sinm = np.sin(phi*m);
@@ -1082,12 +1082,12 @@ def all_eval(r, costh, phi, expcoef,\
               pott += np.sum(fac1*dlegs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm + expcoef[loffset+moffset+1] * potd[l]*sinm ));
               potp += np.sum(fac1* legs[l][m] * m * (-expcoef[loffset+moffset] * potd[l]*sinm + expcoef[loffset+moffset+1] * potd[l]*cosm ));
               moffset +=2;
-              
+
       loffset+=(2*l+1)
     #
     #
     #
-    
+
     #densfac = (1.0/(scale*scale*scale)) * (0.25/np.pi);
     densfac = 0.25/np.pi
     #potlfac = 1.0/scale;
@@ -1098,7 +1098,7 @@ def all_eval(r, costh, phi, expcoef,\
     #potr  *= potlfac/scale;
     #pott  *= potlfac*sinth;
     #potp  *= potlfac;
-    
+
     return den0,den1,pot0,pot1,potr,pott,potp
 
 
@@ -1118,7 +1118,7 @@ def force_eval(r, costh, phi, expcoef,\
     inputs
     -------
     r is 3-dimensional
-    
+
 
     outputs
     -------
@@ -1145,7 +1145,7 @@ def force_eval(r, costh, phi, expcoef,\
       if verbose >=4: print('spheresl.force_eval: reducing nmax.')
       evtable = evtable[:,0:nmax]
       eftable = eftable[:,0:nmax]
-      expcoef = expcoef[:,0:nmax]   
+      expcoef = expcoef[:,0:nmax]
 
 
 
@@ -1155,13 +1155,13 @@ def force_eval(r, costh, phi, expcoef,\
 
     # begin function
     #sinth = -np.sqrt(np.abs(1.0 - costh*costh));
-    
+
     #
     # use the basis to get the density,potential,force arrays
     #
     # these three need to be stuffed together into one call to save loops
     dend,dpot,potd = get_halo_dens_pot_force(r, lmax, nmax, evtable, eftable, xi, d0, p0, cmap, scale)
-    
+
     #
     legs,dlegs = dlegendre_R(lmax,costh)
     #
@@ -1177,19 +1177,19 @@ def force_eval(r, costh, phi, expcoef,\
         # verify length is that of MMAX
         if len(phi) != lmax+1:
             print('spheresl.force_eval: varying phi detected, with mismatched lengths. breaking...')
-            
+
 
         else:
             phiarr = np.tile(phi,(nmax,1)).T
-            
+
             cosm = np.cos(phiarr*morder)
             sinm = np.sin(phiarr*morder)
-            
+
     except:
         cosm = np.cos(phi*morder)
         sinm = np.sin(phi*morder)
 
-    
+
     pot1 = 0.0;
     pott = 0.0;
     potp = 0.0;
@@ -1203,20 +1203,20 @@ def force_eval(r, costh, phi, expcoef,\
       if ( (l % 2) != 0) & (no_odd):
                 loffset+=(2*l+1)
                 continue
-        
+
       # M loop
       moffset = 0
-      
+
       for m in range(0,l+1):
-        
+
         fac1 = factorial[l][m];
-        
+
         if (m==0):
               pot1 += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * potd[l]));
               potr += np.sum(fac1* legs[l][m] * (expcoef[loffset+moffset] * dpot[l]));
               pott += np.sum(fac1*dlegs[l][m] * (expcoef[loffset+moffset] * potd[l]));
               moffset+=1;
-              
+
         else:
 
               pot1 += np.sum(fac1* legs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm[l] + expcoef[loffset+moffset+1] * potd[l]*sinm[l] ));
@@ -1224,10 +1224,10 @@ def force_eval(r, costh, phi, expcoef,\
               pott += np.sum(fac1*dlegs[l][m] *     ( expcoef[loffset+moffset] * potd[l]*cosm[l] + expcoef[loffset+moffset+1] * potd[l]*sinm[l] ));
               potp += np.sum(fac1* legs[l][m] * m * (-expcoef[loffset+moffset] * potd[l]*sinm[l] + expcoef[loffset+moffset+1] * potd[l]*cosm[l] ));
               moffset +=2;
-              
+
       loffset+=(2*l+1)
 
-    
+
     #return den0,den1,pot0,pot1,potr,pott,potp
 
 
@@ -1246,11 +1246,11 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
   # parse model files
   lmax,nmax,numr,cmap,rmin,rmax,scale,ltable,evtable,eftable = halo_methods.read_cached_table(sph_file)
   xi,rarr,p0,d0 = halo_methods.init_table(mod_file,numr,rmin,rmax,cmap,scale)
-  
+
   # compute factorial array
   factorial = factorial_return(lmax)
   #
-  
+
   # begin function
   norb = len(Particles.data['x'])
   #len(Particles.xpos)
@@ -1299,26 +1299,26 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
 
         # if L truncation is set
         if (l > (L2)) | (l < (L1)):
-          
+
           loffset+=(2*l+1)
-          
+
           continue
 
         # if NO_ODD
-        if (NO_ODD) & (l%2 !=0): 
-                
+        if (NO_ODD) & (l%2 !=0):
+
                 loffset += (2*l+1)
-                
+
                 continue
 
-              
+
         # M loop
         moffset = 0
-        
+
         for m in range(0,l+1):
-          
+
           fac1 = factorial[l][m];
-          
+
           if (m==0):
                 den1[part] += np.sum(fac1* legs[1][m] * expcoef[loffset+moffset] * dend[l]);
                 pot1[part] += np.sum(fac1* legs[l][m] * expcoef[loffset+moffset] * potd[l]);
@@ -1326,7 +1326,7 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
                 pott[part] += np.sum(fac1*dlegs[l][m] * expcoef[loffset+moffset] * potd[l]);
                 # no potp when m=0
                 moffset+=1;
-                
+
           else:
                 cosm = np.cos(phi[part] * m);
                 sinm = np.sin(phi[part] * m);
@@ -1335,9 +1335,9 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
                 potr[part] += np.sum(fac1*  legs[l][m] * dpot[l] *     ( expcoef[loffset+moffset] * cosm + expcoef[loffset+moffset+1] * sinm ));
                 pott[part] += np.sum(fac1* dlegs[l][m] * potd[l] *     ( expcoef[loffset+moffset] * cosm + expcoef[loffset+moffset+1] * sinm ));
                 potp[part] += np.sum(fac1*  legs[l][m] * potd[l] * m * (-expcoef[loffset+moffset] * sinm + expcoef[loffset+moffset+1] * cosm ));
-                
+
                 moffset +=2;
-                
+
         loffset+=(2*l+1)
   # END particle loop
   #
@@ -1350,7 +1350,7 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
   #densfac = 1.0/(scale*scale*scale) * 0.25/np.pi;
   densfac = 0.25*np.pi
   #potlfac = 1.0/scale;
-  
+
   den0  *= densfac;
   den1  *= densfac;
   #pot0  *= potlfac;
@@ -1358,7 +1358,7 @@ def all_eval_particles(Particles, expcoef, sph_file, mod_file,verbose,L1=-1000,L
   #potr  *= potlfac/scale;
   #pott  *= potlfac*sinth;
   #potp  *= potlfac;
-  
+
   return den0,den1,pot0,pot1,potr,pott,potp,rr
 
 
@@ -1393,19 +1393,19 @@ def sl_coefficients_to_file(f,SL_Object):
     #
 
     np.array([SL_Object.time],dtype='f4').tofile(f)
-    np.array([SL_Object.dump],dtype='S100').tofile(f)
+    np.array([SL_Object.filename],dtype='S100').tofile(f)
     np.array([SL_Object.comp],dtype='S8').tofile(f)
     np.array([SL_Object.nbodies],dtype='i4').tofile(f)
     np.array([SL_Object.sph_file],dtype='S100').tofile(f)
     np.array([SL_Object.model_file],dtype='S100').tofile(f)
     # 4+100+8+4+100+100 = 316 bytes to here
-    
+
     np.array([SL_Object.lmax,SL_Object.nmax],dtype='i4').tofile(f)
     # 4x2 = 8 bytes
-    
+
     np.array(SL_Object.expcoef.reshape(-1,),dtype='f8').tofile(f)
     # 8 bytes x ((lmax)*(lmax+2)+1) x (nmax) bytes to end of array
-    
+
 
 
 # wrap the coefficients to file
@@ -1415,13 +1415,13 @@ def save_sl_coefficients(outfile,SL_Object,verbose=0):
     try:
         f = open(outfile,'rb+')
         f.close()
-        
+
     except:
         f = open(outfile,'wb')
         np.array([0],dtype='i4').tofile(f)
         f.close()
-        
-    
+
+
     f = open(outfile,'rb+')
 
     ndumps = np.memmap(outfile,dtype='i4',shape=(1))
@@ -1448,14 +1448,14 @@ def restore_sl_coefficients(infile):
 
     f.seek(0)
     [ndumps] = np.fromfile(f,dtype='i4',count=1)
-    
+
     f.seek(4)
 
     SL_Dict = {}
 
 
     for step in range(0,ndumps):
-        
+
         SL_Out = extract_sl_coefficients(f)
 
         SL_Dict[np.round(SL_Out.time,3)] = SL_Out
@@ -1466,14 +1466,14 @@ def restore_sl_coefficients(infile):
     return SL_Out,SL_Dict
 
 
-    
+
 def extract_sl_coefficients(f):
     # operates on an open file
     SL_Obj = SL_Object()
 
 
     [SL_Obj.time] = np.fromfile(f,dtype='f4',count=1)
-    [SL_Obj.dump] = np.fromfile(f,dtype='S100',count=1)
+    [SL_Obj.filename] = np.fromfile(f,dtype='S100',count=1)
     [SL_Obj.comp] = np.fromfile(f,dtype='S8',count=1)
     [SL_Obj.nbodies] = np.fromfile(f,dtype='i4',count=1)
     [SL_Obj.sph_file] = np.fromfile(f,dtype='S100',count=1)
@@ -1484,7 +1484,7 @@ def extract_sl_coefficients(f):
     cosine_flat = np.fromfile(f,dtype='f8',count=((SL_Obj.lmax)*(SL_Obj.lmax+2)+1)*(SL_Obj.nmax))
 
     SL_Obj.expcoef = cosine_flat.reshape([((SL_Obj.lmax)*(SL_Obj.lmax+2)+1),(SL_Obj.nmax)])
-    
+
     return SL_Obj
 
 
@@ -1530,7 +1530,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
 
             try:
                 ComponentDetails[PSP.comp_titles[comp_num]]['modelname'] = simulation_directory+basis_dict['modelname']
-                
+
             except:
                 print('spheresl.parse_components: Component %s has no Spherical Model file specified (setting None).' %PSP.comp_titles[comp_num])
                 ComponentDetails[PSP.comp_titles[comp_num]]['modelname'] = None
@@ -1556,7 +1556,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
 
     inputs
     ---------
-    SLObj: 
+    SLObj:
 
 
 
@@ -1574,7 +1574,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
         xgrid = xline[np.where(xline>=0.)[0]]
         xline = xgrid
         ygrid = np.array([0.])
-    
+
     #
     P = particle.holder()
     P.xpos = xgrid.reshape(-1,)
@@ -1587,7 +1587,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     if coord=='Z':
         P.ypos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
         P.zpos = ygrid.reshape(-1,)
-    
+
     P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
     #
     #
@@ -1606,7 +1606,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
     halo_rforce = ( rr*potr + P.zpos*pott )/( rr*2. + P.zpos**2.)**0.5
     halo_zforce = ( P.zpos*potr - rr*pott )/( rr*2. + P.zpos**2.)**0.5
 
-    
+
     wake = {}
     wake['X'] = xgrid
     wake['Y'] = ygrid
@@ -1627,7 +1627,7 @@ def make_sl_wake(SLObj,halofac=1.,exclude=False,orders=None,l1=0,l2=1000,xline =
         wake['fP'] = potp
         wake['fZ'] = halo_zforce
 
-        
+
     return wake
 
 
@@ -1663,7 +1663,7 @@ def read_binary_sl_coefficients(coeffile):
     # return to beginning
     f.seek(0)
 
-    
+
     [string1] = np.fromfile(f, dtype='a64',count=1)
     [time0,scale] = np.fromfile(f, dtype=np.float,count=2)
     [nmax,lmax] = np.fromfile(f, dtype=np.uint32,count=2)
@@ -1682,11 +1682,11 @@ def read_binary_sl_coefficients(coeffile):
 
 
     for tt in range(0,n_outputs):
-        
+
         [string1] = np.fromfile(f, dtype='a64',count=1)
         [time0,scale] = np.fromfile(f, dtype=np.float,count=2)
         [nmax,lmax] = np.fromfile(f, dtype=np.uint32,count=2)
-        
+
         times[tt] = time0
 
         for nn in range(0,nmax):
@@ -1702,37 +1702,37 @@ def read_binary_sl_coefficients(coeffile):
 
 def rotate_sl_coefficients(SL,rotangle=0.):
     """
-    helper definition to rotate SL coefficients 
-    
+    helper definition to rotate SL coefficients
+
     inputs
     -----------
-    SL : input array of 
+    SL : input array of
     rotangle : float value for uniform rotation, or array of length cos.size
-    
+
     returns
     -----------
     SLrot : rotated array of coefficients
-    
+
     todo
     -----------
     fix the recursion relation for the off-diagonal terms
     add some sort of clockwise/counterclockwise check?
     develop a way to handle single timesteps
-    
+
     """
     cosT = np.cos(rotangle)
     sinT = np.sin(rotangle)
-    
+
     SLrot = np.copy(SL)
     nmax = SLrot.shape[2]
-    
+
     # automate me please: the pattern is obvious-ish!
     # focus on the squares
     cos_terms = [2,5,7,10,12,14,17,19,21,23,26,28,30,32,34,37,39,41,43,45,47]
-    
+
     # always offset by 1...
     sin_terms = [3,6,8,11,13,15,18,20,22,24,27,29,31,33,35,38,39,41,43,45,47]
-    
+
     SL[:,cos_terms,:]
     for tmpcos in cos_terms:
         for nn in range(0,nmax):
@@ -1762,4 +1762,3 @@ def correct_SL_coefs(SLin):
                 expcoef_copy[indx] *= factorial[l,m]
                 indx+=1
     return expcoef_copy
-

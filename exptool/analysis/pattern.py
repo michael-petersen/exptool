@@ -58,7 +58,7 @@ from exptool.utils import utils
 
 
 
-   
+
 
 
 class BarTransform():
@@ -100,7 +100,7 @@ class BarTransform():
         self.bar_angle = bar_angle
 
         self.data = dict()
-        
+
         if self.bar_angle == None:
             self.bar_angle = -1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.data['x'],self.ParticleInstanceIn.data['y'],maxr=maxr)
 
@@ -110,7 +110,7 @@ class BarTransform():
         self.bar_angle += rel_bar_angle
 
         self.calculate_transform_and_return()
-        
+
 
     def calculate_transform_and_return(self):
         '''
@@ -124,7 +124,7 @@ class BarTransform():
 
         '''
 
-        
+
         transformed_x = self.ParticleInstanceIn.data['x']*np.cos(self.bar_angle) - self.ParticleInstanceIn.data['y']*np.sin(self.bar_angle)
         #self.ParticleInstanceIn.xpos*np.cos(self.bar_angle) - self.ParticleInstanceIn.ypos*np.sin(self.bar_angle)
         transformed_y = self.ParticleInstanceIn.data['x']*np.sin(self.bar_angle) + self.ParticleInstanceIn.data['y']*np.cos(self.bar_angle)
@@ -152,21 +152,21 @@ class BarTransform():
         #self.ParticleInstanceIn.pote
 
         self.time = self.ParticleInstanceIn.time
-        self.infile = self.ParticleInstanceIn.filename
+        self.filename = self.ParticleInstanceIn.filename
         self.comp = self.ParticleInstanceIn.comp
 
-    
+
     def bar_fourier_compute(self,posx,posy,minr=0.,maxr=1.):
         '''
-        
+
         use x and y positions to compute the m=2 power, and find phase angle
-        
+
         TODO:
             generalize to transform to any azimuthal order?
 
         '''
         w = np.where( ( (posx*posx + posy*posy)**0.5 > minr ) & ((posx*posx + posy*posy)**0.5 < maxr ))[0]
-        
+
         aval = np.sum( np.cos( 2.*np.arctan2(posy[w],posx[w]) ) )
         bval = np.sum( np.sin( 2.*np.arctan2(posy[w],posx[w]) ) )
 
@@ -174,7 +174,7 @@ class BarTransform():
 
 
 
-    
+
 
 
 class BarDetermine():
@@ -192,13 +192,13 @@ class BarDetermine():
                 # check to see if bar file has already been created
                 self.read_bar(kwargs['file'])
                 print('pattern.BarDetermine: BarInstance sucessfully read.')
-            
+
             except:
                 print('pattern.BarDetermine: no compatible bar file found.')
-                
+
 
         return None
-    
+
     def track_bar(self,filelist,verbose=0,maxr=1.,apse=False):
 
         self.slist = filelist
@@ -261,7 +261,7 @@ class BarDetermine():
 
         # eventually this could be flexible!
         comp='star'
-        
+
         if self.verbose >= 2:
                 t1 = time.time()
 
@@ -296,14 +296,14 @@ class BarDetermine():
                 #(Ob.xpos*Ob.xpos + Ob.ypos*Ob.ypos)**0.5
                 Oc.R = (Oc.data['x']*Oc.data['x'] + Oc.data['y']*Oc.data['y'])**0.5
                 #(Oc.xpos*Oc.xpos + Oc.ypos*Oc.ypos)**0.5
-                
+
             # use logic to find aps
             aps = np.logical_and( Ob.R > Oa.R, Ob.R > Oc.R )
 
-            
+
             xposlist = Ob.data['x'][aps] #Ob.xpos[aps]
             yposlist = Ob.data['y'][aps]#Ob.ypos[aps]
-                
+
             self.time[i] = Ob.time
             self.pos[i] = BarDetermine.bar_fourier_compute(self,xposlist,yposlist,maxr=self.maxr)
 
@@ -324,10 +324,10 @@ class BarDetermine():
 
         BarDetermine.print_bar(self,outfile)
 
-        
+
 
     def unwrap_bar_position(self,jbuffer=-1.,smooth=False,reverse=False,adjust=np.pi):
-    
+
 
         #
         # modify the bar position to smooth and unwrap
@@ -335,7 +335,7 @@ class BarDetermine():
         jnum = 0
         jset = np.zeros_like(self.pos)
 
-        
+
         for i in range(1,len(self.pos)):
 
             if reverse:
@@ -361,19 +361,19 @@ class BarDetermine():
 
     def frequency_and_derivative(self,smth_order=None,fft_order=None,spline_derivative=None,verbose=0):
 
-        
+
 
         if (smth_order or fft_order):
-            
+
             if (verbose):
-                
+
                 print('Cannot assure proper functionality of both order smoothing and low pass filtering.')
 
         self.deriv = np.zeros_like(self.pos)
         for i in range(1,len(self.pos)):
             self.deriv[i] = (self.pos[i]-self.pos[i-1])/(self.time[i]-self.time[i-1])
 
-            
+
         if (smth_order):
             smth_params = np.polyfit(self.time, self.deriv, smth_order)
             pos_func = np.poly1d(smth_params)
@@ -388,7 +388,7 @@ class BarDetermine():
             #    number is a smoothing factor between knots, see scipy.UnivariateSpline
             #
             #    recommended: 7 for dt=0.002 spacing
-            
+
             spl = UnivariateSpline(self.time, self.pos, k=3, s=spline_derivative)
             self.deriv = (spl.derivative())(self.time)
 
@@ -396,18 +396,18 @@ class BarDetermine():
             #
             # can also do a second deriv
             for indx,timeval in enumerate(self.time):
-                
+
                 self.dderiv[indx] = spl.derivatives(timeval)[2]
-                
-            
-            
+
+
+
     def bar_fourier_compute(self,posx,posy,maxr=1.):
 
         #
         # use x and y positions tom compute the m=2 power, and find phase angle
         #
         w = np.where( (posx*posx + posy*posy)**0.5 < maxr )[0]
-        
+
         aval = np.sum( np.cos( 2.*np.arctan2(posy[w],posx[w]) ) )
         bval = np.sum( np.sin( 2.*np.arctan2(posy[w],posx[w]) ) )
 
@@ -422,7 +422,7 @@ class BarDetermine():
         #
 
         # this will be broken in python 3 compatibility
-        
+
         f = open(outfile,'w')
 
         for i in range(0,len(self.time)):
@@ -431,7 +431,7 @@ class BarDetermine():
         f.close()
 
         return None
- 
+
     def place_ellipse(self):
 
         return None
@@ -466,7 +466,7 @@ class BarDetermine():
 
 
 
-            
+
 
 
 
@@ -485,10 +485,10 @@ def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
     A2 = np.sum(ParticleInstance.mass[loR] * np.cos(2.*TH[loR]))
     B2 = np.sum(ParticleInstance.mass[loR] * np.sin(2.*TH[loR]))
     bar_angle = 0.5*np.arctan2(B2,A2)
-    
+
     if (verbose):
         print('Position angle is {0:4.3f} . . .'.format(bar_angle))
-        
+
     #
     # two steps:
     #   1. rotate theta so that the bar is aligned at 0,2pi
@@ -502,7 +502,7 @@ def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
 
 
 
-    
+
 
 def find_barangle(time,BarInstance,interpolate=True):
     '''
@@ -517,7 +517,7 @@ def find_barangle(time,BarInstance,interpolate=True):
     # place in a guard against nan values
     BarInstance.pos[BarInstance.pos == np.nan] = 0.
 
-    
+
     sord = 0 # should this be a variable?
     #
     if (interpolate):
@@ -540,7 +540,7 @@ def find_barangle(time,BarInstance,interpolate=True):
     #
         else:
             indx_barpos = -BarInstance.pos[ abs(time-BarInstance.time).argmin()]
-    #    
+    #
     return indx_barpos
 
 
@@ -554,28 +554,24 @@ def find_barpattern(intime,BarInstance,smth_order=2):
     #    needs a guard for the end points
     #
     '''
-    
+
     # grab the derivative at whatever smoothing order
     BarInstance.frequency_and_derivative(smth_order=smth_order)
-    
+
     try:
-        
+
         barpattern = np.zeros([len(intime)])
-        
+
         for indx,timeval in enumerate(intime):
 
             best_time = abs(timeval-BarInstance.time).argmin()
-            
+
             barpattern[indx] = BarInstance.deriv[best_time]
-            
+
     except:
 
         best_time = abs(intime-BarInstance.time).argmin()
-        
+
         barpattern = BarInstance.deriv[best_time]
-        
+
     return barpattern
-
-
-
- 

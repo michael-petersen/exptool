@@ -84,7 +84,7 @@ import yaml
 #try:
 #    from exptool.basis._accumulate_c import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 #except:
-    
+
 from exptool.basis.compatibility import r_to_xi,xi_to_r,d_xi_to_r,z_to_y,y_to_z
 
 #############################################################################################
@@ -143,7 +143,7 @@ def eof_params(file,verbose=0):
       hscale  = data['hscl']
       cylmass = data['cmass']
       tnow    = data['time']
-        
+
       try:
         cmapr   = data["cmap" ]
         cmap    = data["cmap" ]
@@ -196,7 +196,7 @@ def eof_params(file,verbose=0):
 
 
     f.close()
-    
+
     return rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens
 
 
@@ -219,7 +219,7 @@ def read_eof_file(file):
     D['densS'] = denss
 
     return D
-    
+
 
 def parse_eof(file,verbose=0):
     '''
@@ -259,7 +259,7 @@ def parse_eof(file,verbose=0):
       f.seek(8+ssize[0])
     else:
       f.seek(76)
-    
+
     #
     # initialize blank arrays
     #
@@ -274,42 +274,42 @@ def parse_eof(file,verbose=0):
     #
     #
     for i in range(0,mmax+1):
-        
+
         for j in range(0,norder):
 
             for k in range(0,numx+1):
                 potC[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+
             for k in range(0,numx+1):
                 rforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+
             for k in range(0,numx+1):
                 zforcec[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+
             if (dens==1):
                 for k in range(0,numx+1):
                     densc[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                    
+
     for i in range(1,mmax+1): # no zero order m for sine terms
-        
+
         for j in range(0,norder):
-            
+
             for k in range(0,numx+1):
                 potS[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+
             for k in range(0,numx+1):
                 rforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+
             for k in range(0,numx+1):
                 zforces[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
-                
+
             if (dens==1):
                 for k in range(0,numx+1):
                     denss[i,j,k,:] = np.fromfile(f,dtype='<f8',count=numy+1)
 
 
     f.close()
-    
+
     return potC,rforcec,zforcec,densc,potS,rforces,zforces,denss
 
 
@@ -324,12 +324,12 @@ def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY
 
     returns
     -------
-    
+
 
     '''
     M_SQRT1_2 = np.sqrt(0.5)
     Rtable  = M_SQRT1_2 * RMAX
-    
+
     # check cmap, but if cmap=0, r_to_xi = r
     #
     # otherwise, r = (r/ASCALE - 1.0)/(r/ASCALE + 1.0);
@@ -343,7 +343,7 @@ def set_table_params(RMAX=20.0,RMIN=0.001,ASCALE=0.01,HSCALE=0.001,NUMX=128,NUMY
     YMIN    = z_to_y(-Rtable*ASCALE,HSCALE);
     YMAX    = z_to_y( Rtable*ASCALE,HSCALE);
     dY      = (YMAX - YMIN)/NUMY;
-        
+
     return XMIN,XMAX,dX,YMIN,YMAX,dY
 
 
@@ -367,7 +367,7 @@ def return_bins(r,z,\
     dZ                : (0)     delta z table value
     numx              : (0)     number of R table bins
     numy              : (0)     number of z table bins
-    ASCALE            : (0.01)  scalelength of table 
+    ASCALE            : (0.01)  scalelength of table
     HSCAL             : (0.001) scaleheight of table
     CMAP              : (0)     radial coordinate mapping
 
@@ -388,7 +388,7 @@ def return_bins(r,z,\
         r = r[None] # increase dimensionality
         z = z[None]
         scalar_input = True
-        
+
 
     # precise bin values
     X = (r_to_xi(r,CMAP,ASCALE) - rmin)/dR
@@ -403,27 +403,27 @@ def return_bins(r,z,\
     # don't  call out again
     ix = (X).astype(int)
     iy = (Y).astype(int)
-    
+
     #
     # check the boundaries and set guards
     #
     ix[(ix < 0)] = 0
     X[(ix < 0)] = 0
     X[(X < 0)] = 0
-    
+
     ix[(ix >= numx)] = numx - 1
     X[(ix >= numx)]  = numx - 1
-    
+
     iy[(iy < 0)] = 0
     Y[(iy < 0)] = 0
     Y[(Y < 0)] = 0
-    
+
     iy[(iy >= numy)] = numy - 1
     Y[(iy >= numy)]  = numy - 1
-    
+
     if scalar_input:
         return np.squeeze(X),np.squeeze(Y),np.squeeze(ix),np.squeeze(iy)
-    
+
     return X,Y,ix,iy
 
 
@@ -435,7 +435,7 @@ def get_pot(r,z,cos_array,sin_array,\
     #
     #
     '''
-    
+
     # find the corresponding bins
     X,Y,ix,iy = return_bins(r,z,rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
 
@@ -444,14 +444,14 @@ def get_pot(r,z,cos_array,sin_array,\
     dely0 = iy + 1.0 - Y;
     delx1 = X - ix;
     dely1 = Y - iy;
-    
+
     c00 = delx0*dely0;
     c10 = delx1*dely0;
     c01 = delx0*dely1;
     c11 = delx1*dely1;
-    
+
     Vc = fac * ( cos_array[:,:,ix,iy] * c00 + cos_array[:,:,ix+1,iy] * c10 + cos_array[:,:,ix,iy+1] * c01 + cos_array[:,:,ix+1,iy+1] * c11 )
-    
+
     Vs = fac * ( sin_array[:,:,ix,iy] * c00 + sin_array[:,:,ix+1,iy] * c10 + sin_array[:,:,ix,iy+1] * c01 + sin_array[:,:,ix+1,iy+1] * c11 );
 
     return Vc,Vs
@@ -459,30 +459,30 @@ def get_pot(r,z,cos_array,sin_array,\
 
 def get_pot_single_m(r,z,cos_array,sin_array,MORDER,rmin=0,dR=0,zmin=0,dZ=0,numx=0,numy=0,fac = 1.0,NMAX=18,ASCALE=0.01,HSCALE=0.001,CMAP=0):
     '''
-    
+
      returns potential fields for single C and S order
-    
-    
+
+
     '''
     # find the corresponding bins
     X,Y,ix,iy = return_bins(r,z,rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
-    
+
     delx0 = ix + 1.0 - X;
     dely0 = iy + 1.0 - Y;
     delx1 = X - ix;
     dely1 = Y - iy;
-    
+
     c00 = delx0*dely0;
     c10 = delx1*dely0;
     c01 = delx0*dely1;
     c11 = delx1*dely1;
-    
+
     Vc = np.zeros([1,NMAX])
     Vs = np.zeros([1,NMAX])
-    
+
     Vc = fac * ( cos_array[MORDER,:,ix,iy] * c00 + cos_array[MORDER,:,ix+1,iy] * c10 + \
                          cos_array[MORDER,:,ix,iy+1] * c01 + cos_array[MORDER,:,ix+1,iy+1] * c11 )
-    
+
     if (MORDER>0):
         Vs = fac * ( sin_array[MORDER,:,ix,iy] * c00 + sin_array[MORDER,:,ix+1,iy] * c10 + \
                              sin_array[MORDER,:,ix,iy+1] * c01 + sin_array[MORDER,:,ix+1,iy+1] * c11 );
@@ -537,7 +537,7 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         #
         vc *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
         vs *= np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
-        #  
+        #
         morder = np.tile(np.arange(0.,MMAX+1.,1.),(norb,NMAX,1)).T
         mcos = np.cos(phi*morder)
         msin = np.sin(phi*morder)
@@ -564,8 +564,8 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
 
             # consider the best way to do this...
             upscale = 1.# float(r.size)/(np.floor(np.sqrt(r.size)))
-            
-            for T in range(0,VAR):           
+
+            for T in range(0,VAR):
                 use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
                 #
                 accum_cos2[T] = upscale*np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
@@ -600,7 +600,7 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
         #np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
         vs *= np.tile(ParticleInstance.data['m'],(MMAX+1,NMAX,1))
         #np.tile(ParticleInstance.mass,(MMAX+1,NMAX,1))
-        #  
+        #
         morder = np.tile(np.arange(0.,MMAX+1.,1.),(norb,NMAX,1)).T
         mcos = np.cos(phi*morder)
         msin = np.sin(phi*morder)
@@ -627,8 +627,8 @@ def accumulate(ParticleInstance,potC,potS,MMAX,NMAX,XMIN,dX,YMIN,dY,NUMX,NUMY,AS
 
             # consider the best way to do this...
             upscale = 1.# float(r.size)/(np.floor(np.sqrt(r.size)))
-            
-            for T in range(0,VAR):           
+
+            for T in range(0,VAR):
                 use = np.random.randint(r.size,size=int(np.floor(np.sqrt(r.size))))
                 #
                 accum_cos2[T] = upscale*np.sum((norm * mcos[:,:,use] * vc[:,:,use]),axis=2)
@@ -678,7 +678,7 @@ def map_basis(eof_file):
 
     '''
     copyfile(eof_file, eof_file+'.original')
-    
+
     rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
 
     if (dens):
@@ -766,7 +766,7 @@ def force_eval(r, z, phi, \
     --------
     r,z,phi : positions in cylindrical coordinates
     accum_cos :
-    accum_sin : 
+    accum_sin :
     potC, rforceC, zforceC : cosine terms for the potential, radial force, and vertical force
     potS, rforceS, zforceS :   sine terms for the potential, radial force, and vertical force
 
@@ -777,14 +777,14 @@ def force_eval(r, z, phi, \
     fp    :   azimuthal force
     p     :   potential
     p0    :   monopole potential
-    
+
     '''
 
     # reduce the array sizes to the specified sizes
     accum_cos = accum_cos[0:MMAX+1,0:NMAX]
     accum_sin = accum_sin[0:MMAX+1,0:NMAX]
 
-    
+
     potC    =    potC[0:MMAX+1,0:NMAX,:,:]
     rforceC = rforceC[0:MMAX+1,0:NMAX,:,:]
     zforceC = zforceC[0:MMAX+1,0:NMAX,:,:]
@@ -815,14 +815,14 @@ def force_eval(r, z, phi, \
         # verify length is that of MMAX
         if len(phi) != MMAX:
             print('eof.force_eval: varying phi detected, with mismatched lengths. breaking...')
-            
+
 
         else:
             phiarr = np.tile(phi,(NMAX,1)).T
-            
+
             ccos = np.cos(phiarr*morder)
             ssin = np.sin(phiarr*morder)
-            
+
     except:
         # this assumes scalar is being passed
         ccos = np.cos(phi*morder)
@@ -838,7 +838,7 @@ def force_eval(r, z, phi, \
     #
     # modified 04-19-17 to be perturbation based.
     #
-    
+
     fac  = accum_cos[1:,:] * ccos;
     p    = np.sum(mask * fac *   (   potC[1:,:,ix,iy] * c00 +    potC[1:,:,ix+1,iy  ] * c10 +    potC[1:,:,ix,iy+1] * c01 +    potC[1:,:,ix+1,iy+1] * c11 ));
     fr   = np.sum(mask * fac *   (rforceC[1:,:,ix,iy] * c00 + rforceC[1:,:,ix+1,iy  ] * c10 + rforceC[1:,:,ix,iy+1] * c01 + rforceC[1:,:,ix+1,iy+1] * c11 ));
@@ -854,7 +854,7 @@ def force_eval(r, z, phi, \
 
     # do sine terms
     fac = accum_sin[1:,:] * ssin;
-                
+
     p  += np.sum(mask * fac * (   potS[1:,:,ix,iy] * c00 +    potS[1:,:,ix+1,iy  ] * c10 +    potS[1:,:,ix,iy+1] * c01 +    potS[1:,:,ix+1,iy+1] * c11 ));
     fr += np.sum(mask * fac * (rforceS[1:,:,ix,iy] * c00 + rforceS[1:,:,ix+1,iy  ] * c10 + rforceS[1:,:,ix,iy+1] * c01 + rforceS[1:,:,ix+1,iy+1] * c11 ));
     fz += np.sum(mask * fac * (zforceS[1:,:,ix,iy] * c00 + zforceS[1:,:,ix+1,iy  ] * c10 + zforceS[1:,:,ix,iy+1] * c01 + zforceS[1:,:,ix+1,iy+1] * c11 ));
@@ -862,10 +862,10 @@ def force_eval(r, z, phi, \
     # switch factor for azimuthal force
     fac = -accum_sin[1:,:] * ccos;
     fp += np.sum(mask * fac * morder * ( potS[1:,:,ix,iy  ] * c00 + potS[1:,:,ix+1,iy  ] * c10 + potS[1:,:,ix,iy+1] * c01 + potS[1:,:,ix+1,iy+1] * c11 ))
-                
+
     if perturb:
         return fr,fp,fz,p,p0,fr0,fz0
-    
+
     else:
         return (fr+fr0),fp,(fz+fz0),(p+p0),p0
 
@@ -898,7 +898,7 @@ def accumulated_eval(r, z, phi, accum_cos, accum_sin, potC, rforceC, zforceC, de
 
         if ((mm % 2) != 0) & (no_odd):
             continue
-        
+
         ccos = np.cos(phi*mm);
         ssin = np.sin(phi*mm);
         #
@@ -1021,7 +1021,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     HSCALE
     CMAP
 
-    
+
     m1         :  minimum azimuthal order to include
     m2         :  maximum azimuthal order to include
     verbose    :  verbosity (1=print errors, 2=print progress)
@@ -1048,7 +1048,7 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     if (dens == 0) & (density == True) & (verbose > 0):
         print('eof.accumulated_eval_particles: cannot compute density (functions not specified). moving on without...')
         density = False
-    
+
     #
     #
     #
@@ -1072,9 +1072,9 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
     #
     # cycle particles
     for part in range(0,norb):
-        
+
         if (verbose > 1) & ( ((float(part)+1.) % 1000. == 0.0) | (part==0)): utils.print_progress(part,norb,'eof.accumulated_eval_particles')
-            
+
         phi = PHI[part]
         X,Y,ix,iy = return_bins(R[part],Particles.zpos[part],rmin=rmin,dR=dR,zmin=zmin,dZ=dZ,numx=numx,numy=numy,ASCALE=ASCALE,HSCALE=HSCALE,CMAP=CMAP)
         #
@@ -1090,23 +1090,23 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
         #
 
         for mm in range(0,MMAX+1):
-            
+
             if (mm > m2) | (mm < m1):
                 continue
-            
+
             ccos = np.cos(phi*mm);
             ssin = np.sin(phi*mm);
-            
-            
+
+
             fac = accum_cos[mm] * ccos;
             p[part]  += np.sum(fac * (   potC[mm,:,ix,iy] * c00 +    potC[mm,:,ix+1,iy  ] * c10 +    potC[mm,:,ix,iy+1] * c01 +    potC[mm,:,ix+1,iy+1] * c11))
             fr[part] += np.sum(fac * (rforceC[mm,:,ix,iy] * c00 + rforceC[mm,:,ix+1,iy  ] * c10 + rforceC[mm,:,ix,iy+1] * c01 + rforceC[mm,:,ix+1,iy+1] * c11))
             fz[part] += np.sum(fac * (zforceC[mm,:,ix,iy] * c00 + zforceC[mm,:,ix+1,iy  ] * c10 + zforceC[mm,:,ix,iy+1] * c01 + zforceC[mm,:,ix+1,iy+1] * c11))
 
             if density: d[part] += np.sum(fac * (   densC[mm,:,ix,iy] * c00 +    densC[mm,:,ix+1,iy  ] * c10 +    densC[mm,:,ix,iy+1] * c01 +    densC[mm,:,ix+1,iy+1] * c11))
-                                              
+
             fac = accum_cos[mm] * ssin;
-            
+
             fp[part] += np.sum(fac * mm * ( potC[mm,:,ix,iy] * c00 + potC[mm,:,ix+1,iy] * c10 + potC[mm,:,ix,iy+1] * c01 + potC[mm,:,ix+1,iy+1] * c11 ));
 
 
@@ -1125,11 +1125,11 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
                 fp[part] += np.sum(fac * mm * ( potS[mm,:,ix,iy  ] * c00 + potS[mm,:,ix+1,iy  ] * c10 + potS[mm,:,ix,iy+1] * c01 + potS[mm,:,ix+1,iy+1] * c11 ))
                 #
 
-                
+
             if (mm==0):
-                
+
                 p0[part] = p[part]
-                
+
                 # reset for perturbing potential
                 p[part]  = 0.
 
@@ -1139,14 +1139,14 @@ def accumulated_eval_particles(Particles, accum_cos, accum_sin, \
 
     if density:
         return p0,p,d0,d,fr,fp,fz,R
-    
+
     else:
         return p0,p,fr,fp,fz,R
 
 
 
 
-    
+
 
 ############################################################################################
 #
@@ -1168,13 +1168,13 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
     verbose        :
     no_odd         : (bool, default False) if True, skip the odd m functions
     nprocs_max     : (int, default -1) the maximum number of processes to use for computation. will default to using all processors
- 
+
 
     returns
     --------------------------
     EOF_Out        :
        .time       :
-       .dump       :
+       .filename   :
        .comp       :
        .nbodies    :
        .eof_file   :
@@ -1202,11 +1202,11 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
             PSPInput.xpos[nanvals] = 0.
             PSPInput.ypos[nanvals] = 0.
             PSPInput.zpos[nanvals] = 0.
-    
+
 
     EOF_Out = EOF_Object()
     EOF_Out.time = PSPInput.time
-    EOF_Out.dump = PSPInput.infile
+    EOF_Out.filename = PSPInput.filename
     EOF_Out.comp = PSPInput.comp
     EOF_Out.nbodies = PSPInput.data['m'].size#PSPInput.mass.size
     EOF_Out.eof_file = eof_file
@@ -1218,7 +1218,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
         if nprocs > nprocs_max:   # is found number greater than desired number?
             nprocs = nprocs_max   # reset to desired number
 
-    
+
     if verbose > 1:
         rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file,verbose=1)
 
@@ -1228,7 +1228,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
 
     EOF_Out.mmax = mmax # don't forget +1 for array size
     EOF_Out.nmax = norder
-    
+
     if nprocs > 1:
 
         if VAR:
@@ -1236,7 +1236,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
 
         else:
             a_cos,a_sin = make_coefficients_multi(PSPInput,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd)
-        
+
     else:
         # single processor implementation (12.18.2017)
         print('eof.compute_coefficients: Starting single processor version.')
@@ -1256,7 +1256,7 @@ def compute_coefficients(PSPInput,eof_file,verbose=1,no_odd=False,nprocs_max=-1,
     if VAR:
         EOF_Out.cos2 = a_cos2
         EOF_Out.sin2 = a_sin2
-        
+
     return EOF_Out
 
 
@@ -1288,7 +1288,7 @@ a    fr
     '''
     if nprocs == -1:
         nprocs = multiprocessing.cpu_count()
-    
+
     if verbose > 1:
         eof_quickread(EOF_Object.eof_file)
 
@@ -1309,7 +1309,7 @@ a    fr
             p0,p,d0,d,fr,fp,fz,r = accumulated_eval_particles(PSPInput, EOF_Object.cos, EOF_Object.sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=numx,numy=numy,MMAX=mmax,NMAX=norder,ASCALE=ascale,HSCALE=hscale,CMAP=cmap,m1=m1,m2=m2,verbose=verbose,density=True)
         else:
             p0,p,fr,fp,fz,r = accumulated_eval_particles(PSPInput, EOF_Object.cos, EOF_Object.sin, potC, rforceC, zforceC, potS, rforceS, zforceS,rmin=XMIN,dR=dX,zmin=YMIN,dZ=dY,numx=numx,numy=numy,MMAX=mmax,NMAX=norder,ASCALE=ascale,HSCALE=hscale,CMAP=cmap,m1=m1,m2=m2,verbose=verbose)
-         
+
 
     if density:
         return p0,p,d0,d,fr,fp,fz,r
@@ -1407,7 +1407,7 @@ def multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,n
                                                                 itertools.repeat(sixteenth_arg),itertools.repeat(seventeenth_arg) \
                                                                 )) #izip doesnt exist anymore
     pool.close()
-    pool.join()                                                        
+    pool.join()
     return a_coeffs
 
 
@@ -1421,17 +1421,17 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
 
     '''
     holding = redistribute_particles(ParticleInstance,nprocs)
-    
+
 
     if (verbose):
         print('eof.make_coefficients_multi: {0:d} processors, {1:d} particles each.'.format(nprocs,len(holding[0].mass)))
 
-    # start timer    
+    # start timer
     t1 = time.time()
     multiprocessing.freeze_support()
-    
+
     a_coeffs = multi_accumulate(holding,nprocs,potC,potS,mmax,norder,XMIN,dX,YMIN,dY,numx,numy,ascale,hscale,cmap,verbose=verbose,no_odd=no_odd,VAR=VAR)
-    
+
     if (verbose):
         print ('eof.make_coefficients_multi: Accumulation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'\
           .format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.data['m'])))#len(ParticleInstance.mass)))
@@ -1440,7 +1440,7 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
     scoefs = np.sum(np.array(a_coeffs),axis=0)
 
     if debug: print('DEBUG eof.py: scoefs.shape=',scoefs.shape)
-    
+
     a_cos = scoefs[0]
     a_sin = scoefs[1]
 
@@ -1451,7 +1451,7 @@ def make_coefficients_multi(ParticleInstance,nprocs,potC,potS,mmax,norder,XMIN,d
         return a_cos,a_sin,a_cos2,a_sin2
 
     else:
-    
+
         return a_cos,a_sin
 
 
@@ -1514,23 +1514,23 @@ def multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS
                          twentythird_arg,itertools.repeat(twentyfourth_arg)))#izip doesnt exist anymore
     pool.close()
     pool.join()
-    return a_vals 
+    return a_vals
 
 
 
 def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=0,density=False):
-    
+
     holding = redistribute_particles(ParticleInstance,nprocs)
-    
+
     t1 = time.time()
     multiprocessing.freeze_support()
-    
+
     a_vals = multi_accumulated_eval(holding,nprocs,a_cos,a_sin,potC,rforceC, zforceC,potS,rforceS,zforceS,XMIN,dX,YMIN,dY,numx,numy, mmax,norder,ascale,hscale,cmap,m1=0,m2=1000,verbose=verbose,density=density)
-    
+
     if (verbose):
         print('eof.find_forces_multi: Force Evaluation took {0:3.2f} seconds, or {1:4.2f} microseconds per orbit.'.format(time.time()-t1, 1.e6*(time.time()-t1)/len(ParticleInstance.data['m'])))
         #len(ParticleInstance.mass)))
-              
+
     # accumulate over processes
 
     if density:
@@ -1543,7 +1543,7 @@ def find_forces_multi(ParticleInstance,nprocs,a_cos,a_sin,potC,rforceC, zforceC,
 
 #
 # helper class for making torques
-# 
+#
 def mix_outputs(MultiOutput,density=False):
     n_instances = len(MultiOutput)
     n_part = 0
@@ -1592,7 +1592,7 @@ def mix_outputs(MultiOutput,density=False):
 
 
 
-    
+
 #
 # some little helper functions: to be broken out
 #
@@ -1639,7 +1639,7 @@ class EOF_Object(object):
 
 # and a dictionary for storing multiple EOF_Objects?
 #    based on times
-    
+
 
 
 
@@ -1653,19 +1653,19 @@ def eof_coefficients_to_file(f,EOF_Object):
     '''
 
     np.array([EOF_Object.time],dtype='f4').tofile(f)
-    np.array([EOF_Object.dump],dtype='S100').tofile(f)
+    np.array([EOF_Object.filename],dtype='S100').tofile(f)
     np.array([EOF_Object.comp],dtype='S8').tofile(f)
     np.array([EOF_Object.nbodies],dtype='i4').tofile(f)
     np.array([EOF_Object.eof_file],dtype='S100').tofile(f)
     # 4+100+8+100 = 216 bytes to here
-    
+
     np.array([EOF_Object.mmax,EOF_Object.nmax],dtype='i4').tofile(f)
     # 4x2 = 8 bytes
-    
+
     np.array(EOF_Object.cos.reshape(-1,),dtype='f8').tofile(f)
     np.array(EOF_Object.sin.reshape(-1,),dtype='f8').tofile(f)
     # 8 bytes X 2 arrays x (m+1) x n = 16(m+1)n bytes to end of array
-    
+
 
 # wrap the coefficients to file
 def save_eof_coefficients(outfile,EOF_Object,verbose=0):
@@ -1682,13 +1682,13 @@ def save_eof_coefficients(outfile,EOF_Object,verbose=0):
     try:
         f = open(outfile,'rb+')
         f.close()
-        
+
     except:
         f = open(outfile,'wb')
         np.array([0],dtype='i4').tofile(f)
         f.close()
-        
-    
+
+
     f = open(outfile,'rb+')
 
     ndumps = np.memmap(outfile,dtype='i4',shape=(1))
@@ -1715,7 +1715,7 @@ def restore_eof_coefficients(infile):
 
     f.seek(0)
     [ndumps] = np.fromfile(f,dtype='i4',count=1)
-    
+
     f.seek(4)
 
     #
@@ -1738,25 +1738,25 @@ def restore_eof_coefficients(infile):
     return EOF_Out,EOF_Dict
 
 
-    
+
 def extract_eof_coefficients(f):
     # operates on an open file
     EOF_Obj = EOF_Object()
 
 
     [EOF_Obj.time] = np.fromfile(f,dtype='f4',count=1)
-    [EOF_Obj.dump] = np.fromfile(f,dtype='S100',count=1)
+    [EOF_Obj.filename] = np.fromfile(f,dtype='S100',count=1)
     [EOF_Obj.comp] = np.fromfile(f,dtype='S8',count=1)
     [EOF_Obj.nbodies] = np.fromfile(f,dtype='i4',count=1)
     [EOF_Obj.eof_file] = np.fromfile(f,dtype='S100',count=1)
-    
+
     [EOF_Obj.mmax,EOF_Obj.nmax] = np.fromfile(f,dtype='i4',count=2)
     cosine_flat = np.fromfile(f,dtype='f8',count=(EOF_Obj.mmax+1)*EOF_Obj.nmax)
     sine_flat = np.fromfile(f,dtype='f8',count=(EOF_Obj.mmax+1)*EOF_Obj.nmax)
 
     EOF_Obj.cos = cosine_flat.reshape([(EOF_Obj.mmax+1),EOF_Obj.nmax])
     EOF_Obj.sin = sine_flat.reshape([(EOF_Obj.mmax+1),EOF_Obj.nmax])
-    
+
     return EOF_Obj
 
 
@@ -1799,7 +1799,7 @@ def parse_components(simulation_directory,simulation_name,output_number):
 
             try:
                 ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = simulation_directory+basis_dict['eof_file']
-                
+
             except:
                 print('eof.parse_components: Component {0:s} has no EOF file specified (setting None).'.format(PSP.comp_titles[comp_num]))
                 ComponentDetails[PSP.comp_titles[comp_num]]['eof_file'] = None
@@ -1817,7 +1817,7 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
 
     inputs
     ---------
-    EOFObj: 
+    EOFObj:
 
 
 
@@ -1836,7 +1836,7 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
         xgrid = xline[np.where(xline>=0.)[0]]
         xline = xgrid
         ygrid = np.array([0.])
-    
+
     #
     P = particle.holder()
     P.xpos = xgrid.reshape(-1,)
@@ -1849,7 +1849,7 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
     if coord=='Z':
         P.ypos = np.zeros(xline.shape[0]*zline.shape[0]) + zoffset
         P.zpos = ygrid.reshape(-1,)
-        
+
     P.mass = np.zeros(xline.shape[0]*zline.shape[0]) # mass doesn't matter for evaluations, just get field values
     #
     #
@@ -1885,7 +1885,7 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
             wake['P'] = p.reshape([xline.shape[0],zline.shape[0]])
             if density:
                 wake['D'] = d.reshape([xline.shape[0],zline.shape[0]])
-            
+
         wake['fR'] = fr.reshape([xline.shape[0],zline.shape[0]])
         wake['R'] = R.reshape([xline.shape[0],zline.shape[0]])
         wake['fP'] = fp.reshape([xline.shape[0],zline.shape[0]])
@@ -1901,13 +1901,13 @@ def make_eof_wake(EOFObj,exclude=False,orders=None,m1=0,m2=1000,xline = np.linsp
             wake['P'] = p
             if density:
                 wake['D'] = d
-            
+
         wake['fR'] = fr
         wake['R'] = R
         wake['fP'] = fp
         wake['fZ'] = fz
 
-        
+
     return wake
 
 
@@ -1940,7 +1940,7 @@ def reorganize_eof_dict(EOFDict):
         time_order[keynum] = EOFDict[keyval].time
         keynum += 1
     #
-    #   
+    #
     # assemble into dictionary
     CDict = {}
     CDict['time']   = time_order[time_order.argsort()]
@@ -1998,7 +1998,7 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
     time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])           # time indices
     signal = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax]) # 1 if the signal is too low to finalize calculation
 
-    
+
     num = 0
     for keyval in EOFDict.keys():
         for mm in range(1,mmax+1):
@@ -2027,7 +2027,7 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
 
     # direction will range from 0. (completely clockwise) to 1. (completely counterclockwise)
     DC['direction'] = {}
-    
+
 
     # put phases in time order
     for mm in range(1,mmax+1):
@@ -2037,17 +2037,17 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
 
     # do a finite differencing the calculate the phases
     for mm in range(1,mmax+1):
-        
+
         # if desired, could put in blocks for unreasonable values here?
         #goodphase = np.where( DC['phase'][:,nterm] )
 
-        
 
-        
+
+
         DC['speed'][mm] = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
         DC['unphase'][mm] = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
         DC['direction'][mm] = np.zeros(nmax)
-        
+
         for nn in range(0,nmax):
 
             # detect clockwise vs. counter
@@ -2058,7 +2058,7 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
                 clock = False
             else:
                 clock = True
-                
+
 
             #DC['unphase'][mm][:,nn] = utils.unwrap_phase(DC['phase'][mm][:,nn],tol=tol,clock=clock)
 
@@ -2080,12 +2080,12 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
 
             # reset the initial value
             DC['speed'][mm][0,nn] = DC['speed'][mm][1,nn]
-                
+
         if filter:
             #DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
             DC['netspeed'][mm] = np.ediff1d(utils.savitzky_golay(utils.unwrap_phase(DC['time'],DC['netphase'][mm]),smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
 
-            
+
         else:
             #DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['netphase'][mm],tol=-1.5*np.pi,clock=clock),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
             DC['netspeed'][mm] = np.ediff1d(utils.unwrap_phase(DC['time'],DC['netphase'][mm]),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
@@ -2106,13 +2106,13 @@ def print_eof_barfile(DCp,simulation_directory,simulation_name,morder=2,norder=0
 
     '''
     f = open(simulation_directory+simulation_name+'_m{}n{}_barpos.dat'.format(morder,norder),'w')
-    
+
     for indx in range(0,len(DCp['time'])):
 
         # now compatible with Python3
         print(DCp['time'][indx],(1./float(morder))*DCp['unphase'][morder][indx,norder],(1./float(morder))*DCp['speed'][morder][indx,norder],end="\n",file=f)
 
-    
+
     f.close()
 
 
@@ -2124,7 +2124,7 @@ def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
     '''
     compute_variance : do variance computation on coefficients
     using the MISE implementation
-    
+
     deprecated 01.30.2019
 
     inputs
@@ -2141,28 +2141,28 @@ def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
     varS                :   variance on the   sine coefficients
     facC                :   b_Hall for cosine coefficients
     facS                :   b_Hall for   sine coefficients
-    
+
     notes
     -------------
     there is some question about the methodology employed here; following Weinberg 1996, we use the MISE
 
 
-    '''    
-    
+    '''
+
     wgt = 1./(np.sum(ParticleInstance.data['m']))#1./(np.sum(ParticleInstance.mass))
     nrm = wgt*wgt;
     srm = 1./float(ParticleInstance.data['m'].size)
     #1./float(ParticleInstance.mass.size)
 
-    
+
     totC = accum_cos*wgt
     totS = accum_sin*wgt
 
-    
+
     sqrC = totC*totC
     sqrS = totS*totS
 
-    
+
     varC = accum_cos2*nrm - srm*sqrC
     varS = accum_sin2*nrm - srm*sqrS
 
@@ -2173,9 +2173,9 @@ def compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
     #sqrS/(varS/(float(ParticleInstance.mass.size)+1.) + sqrS + 1.0e-10)
 
     # signal to noise is (coeff^2 / var )^1/2
-    
+
     return varC,varS,facC,facS
-    
+
 
 
 
@@ -2199,20 +2199,20 @@ def compute_sn(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2):
     -------------
     snC                 :   signal-to-noise of cosine coefficients
     snS                 :   signal-to-noise of   sine coefficients
-    
 
-    '''    
+
+    '''
 
     varC,varS,facC,facS = compute_variance(ParticleInstance,accum_cos,accum_sin,accum_cos2,accum_sin2)
 
-  
+
     # signal to noise is (coeff^2 / var )^1/2
 
     snC = ((accum_cos*accum_cos)/varC)**0.5
     snS = ((accum_sin*accum_sin)/varS)**0.5
 
     return snC,snS
-    
+
 
 
 def read_binary_eof_coefficients(coeffile):
@@ -2266,15 +2266,15 @@ def read_binary_eof_coefficients(coeffile):
         [dummym,dummyn] = np.fromfile(f, dtype=np.uint32,count=2)
 
         times[tt] = time0
-        
+
         for mm in range(0,mmax+1):
-            
+
             coef_array[tt,0,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
-            
+
             if mm > 0:
                 coef_array[tt,1,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
 
-            
+
     return times,coef_array
 
 
@@ -2294,7 +2294,7 @@ def read_binary_eof_coefficients_dict(coeffile):
 
     returns
     ----------------------
-    EOF_Dict   : 
+    EOF_Dict   :
 
     '''
 
@@ -2328,7 +2328,7 @@ def read_binary_eof_coefficients_dict(coeffile):
         [EOF_Obj.mmax,EOF_Obj.nmax] = np.fromfile(f, dtype=np.uint32,count=2)
 
         # fill in dummy values
-        EOF_Obj.dump = '[redacted]'
+        EOF_Obj.filename = '[redacted]'
         EOF_Obj.comp = 'star'
         EOF_Obj.nbodies = 0.
         EOF_Obj.eof_file = '[redacted]'
@@ -2339,12 +2339,12 @@ def read_binary_eof_coefficients_dict(coeffile):
         for mm in range(0,mmax+1):
 
             EOF_Obj.cos[mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
-            
+
             if mm > 0:
                 EOF_Obj.sin[mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
 
         EOF_Dict[EOF_Obj.time] = EOF_Obj
-            
+
     return EOF_Dict
 
 
@@ -2360,7 +2360,7 @@ def quick_plot_coefs(coeffile,label=''):
     DCp = calculate_eof_phase(EOF2Dict)
 
 
-    
+
     fig = plt.figure(figsize=(12.0875,   5.8875))
 
     ax = fig.add_axes([0.18,0.55,0.6,0.3])
@@ -2393,7 +2393,7 @@ def quick_plot_coefs(coeffile,label=''):
         cmap = mpl.cm.magma
     except:
         cmap = mpl.cm.gnuplot
-        
+
     norm = mpl.colors.BoundaryNorm(boundaries=np.arange(1,len(DC['sum'].keys())+1,1), ncolors=256)
     cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
     cb1.set_label('Azimuthal Order, $\mu$',size=24)
@@ -2401,32 +2401,31 @@ def quick_plot_coefs(coeffile,label=''):
     cb1.set_ticklabels([str(x) for x in np.arange(1,len(DC['sum'].keys()),1)])
 
 
-    
+
 def rotate_coefficients(cos,sin,rotangle=0.):
     """
     helper definition to rotate coefficients (or really anything)
-    
+
     inputs
     -----------
     cos : input cosine coefficients
     sin : input sine coefficients
     rotangle : float value for uniform rotation, or array of length cos.size
-    
+
     returns
     -----------
     cos_rot : rotated cosine coefficients
     sin_rot : rotated sine coefficients
-    
+
     todo
     -----------
     add some sort of clockwise/counterclockwise check?
-    
+
     """
     cosT = np.cos(rotangle)
     sinT = np.sin(rotangle)
-    
+
     cos_rot =  cosT*cos + sinT*sin
     sin_rot = -sinT*cos + cosT*sin
-    
-    return cos_rot,sin_rot
 
+    return cos_rot,sin_rot

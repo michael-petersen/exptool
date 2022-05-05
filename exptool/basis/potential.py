@@ -1,5 +1,5 @@
 #############################################
-#                                                                  
+#
 #  potential.py
 #    An exptool utility to handle energy and kappa calculations
 #
@@ -79,7 +79,7 @@ class Fields():
 
         '''
 
-        self.infile = infile
+        self.filename = infile
         self.eof_file = eof_file
         self.sph_file = sph_file
         self.model_file = model_file
@@ -91,7 +91,7 @@ class Fields():
 
         self.verbose = verbose
 
-        
+
 
         # do the total coefficient calculation?
         #Fields.total_coefficients(self)
@@ -110,7 +110,7 @@ class Fields():
         -----------------
         self
             time
-            
+
 
 
         '''
@@ -118,38 +118,38 @@ class Fields():
 
         # read in the files
         #
-        PSPDumpDisk = psp_io.Input(self.infile,comp='star')
+        PSPDumpDisk = psp_io.Input(self.filename,comp='star')
 
         # add for ability to tabulate
         self.time = PSPDumpDisk.time
-        
+
         if self.transform:
             PSPDumpDiskTransformed = pattern.BarTransform(PSPDumpDisk)
-            
+
             if self.verbose > 1:
                 print('potential.Fields.total_coefficients: Using bar_angle {0:4.3f}'.format(PSPDumpDiskTransformed.bar_angle))
-                
+
         else:
             # let's reread for safety
-            PSPDumpDiskTransformed = psp_io.Input(self.infile,comp='star')
+            PSPDumpDiskTransformed = psp_io.Input(self.filename,comp='star')
 
 
 
         # read in both partial and full halo to figure out the halofactor
-        PSPDumpHaloT = psp_io.Input(self.infile,comp='dark')
+        PSPDumpHaloT = psp_io.Input(self.filename,comp='dark')
 
-        PSPDumpHalo = psp_io.Input(self.infile,comp='dark')#,nbodies=self.nhalo) #I, carrie Filion Edited This line
+        PSPDumpHalo = psp_io.Input(self.filename,comp='dark')#,nbodies=self.nhalo) #I, carrie Filion Edited This line
 
 
         self.halofac = float(PSPDumpHaloT.header['dark']['nbodies'])/float(PSPDumpHalo.header['dark']['nbodies']) #I, carrie filion, edited this line
         #float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
 
-        
+
         if self.transform:
             PSPDumpHaloTransformed = pattern.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
-            
+
         else:
-            PSPDumpHaloTransformed = PSPDumpHalo = psp_io.Input(self.infile,comp='dark')#,nbodies=self.nhalo) #I, carrie filion, edited this line
+            PSPDumpHaloTransformed = PSPDumpHalo = psp_io.Input(self.filename,comp='dark')#,nbodies=self.nhalo) #I, carrie filion, edited this line
 
         #
         # do centering
@@ -166,7 +166,7 @@ class Fields():
                      PSPDumpDiskTransformed.data['z']*PSPDumpDiskTransformed.data['z'])**0.5 #edited to match new psp format
             '''(PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
                      PSPDumpDiskTransformed.ypos*PSPDumpDiskTransformed.ypos + \
-                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5''' 
+                     PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5'''
 
             cparticles = rrank.argsort()[0:ncenter]
 
@@ -191,13 +191,13 @@ class Fields():
 
 
             else:
-                
+
 
                 # rank order particles
                 rrank = (PSPDumpDiskTransformed.data['x']*PSPDumpDiskTransformed.data['x'] + \
                      PSPDumpDiskTransformed.data['y']*PSPDumpDiskTransformed.data['y'] + \
                      PSPDumpDiskTransformed.data['z']*PSPDumpDiskTransformed.data['z'])**0.5
-                
+
                 '''(PSPDumpDiskTransformed.xpos*PSPDumpDiskTransformed.xpos + \
                      PSPDumpDiskTransformed.ypos*PSPDumpDiskTransformed.ypos + \
                      PSPDumpDiskTransformed.zpos*PSPDumpDiskTransformed.zpos)**0.5'''
@@ -219,7 +219,7 @@ class Fields():
             PSPDumpDiskTransformed.data['x'] = PSPDumpDiskTransformed.data['x'] - self.xcen_disk
             PSPDumpDiskTransformed.data['y'] = PSPDumpDiskTransformed.data['y'] - self.ycen_disk
             PSPDumpDiskTransformed.data['z'] = PSPDumpDiskTransformed.data['z'] - self.zcen_disk
-            
+
             PSPDumpHaloTransformed.data['x'] = PSPDumpHaloTransformed.data['x'] - self.xcen_halo
             PSPDumpHaloTransformed.data['y'] = PSPDumpHaloTransformed.data['y'] - self.ycen_halo
             PSPDumpHaloTransformed.data['z'] = PSPDumpHaloTransformed.data['z'] - self.zcen_halo
@@ -227,7 +227,7 @@ class Fields():
             PSPDumpDiskTransformed.xpos = PSPDumpDiskTransformed.xpos - self.xcen_disk
             PSPDumpDiskTransformed.ypos = PSPDumpDiskTransformed.ypos - self.ycen_disk
             PSPDumpDiskTransformed.zpos = PSPDumpDiskTransformed.zpos - self.zcen_disk
-            
+
             PSPDumpHaloTransformed.xpos = PSPDumpHaloTransformed.xpos - self.xcen_halo
             PSPDumpHaloTransformed.ypos = PSPDumpHaloTransformed.ypos - self.ycen_halo
             PSPDumpHaloTransformed.zpos = PSPDumpHaloTransformed.zpos - self.zcen_halo
@@ -241,17 +241,17 @@ class Fields():
             self.xcen_halo = 0.
             self.ycen_halo = 0.
             self.zcen_halo = 0.
-                     
+
         #
         # compute coefficients
         #
         self.EOF = eof.compute_coefficients(PSPDumpDiskTransformed,self.eof_file,verbose=self.verbose,no_odd=self.no_odd)
 
-        
+
         self.SL = spheresl.compute_coefficients(PSPDumpHaloTransformed,self.sph_file,self.model_file,verbose=self.verbose,no_odd=self.no_odd)
 
 
-        
+
 
     def prep_tables(self):
         '''
@@ -271,10 +271,10 @@ class Fields():
         self.potC,self.rforceC,self.zforceC,self.densC,\
           self.potS,self.rforceS,self.zforceS,self.densS \
           = eof.parse_eof(self.EOF.eof_file)
-          
+
         self.rmindisk,self.rmaxdisk,self.numx,self.numy,self.mmax,self.norder,self.ascale,self.hscale,self.cmapdisk,self.densdisk \
           = eof.eof_params(self.EOF.eof_file)
-          
+
         self.XMIN,self.XMAX,self.dX,self.YMIN,self.YMAX,self.dY \
           = eof.set_table_params(RMAX=self.rmaxdisk,RMIN=self.rmindisk,ASCALE=self.ascale,HSCALE=self.hscale,NUMX=self.numx,NUMY=self.numy,CMAP=self.cmapdisk)
 
@@ -285,9 +285,9 @@ class Fields():
         self.lmaxhalo,self.nmaxhalo,self.numrhalo,self.cmaphalo,\
           self.rminhalo,self.rmaxhalo,self.scalehalo,self.ltablehalo,self.evtablehalo,self.eftablehalo \
           = halo_methods.read_cached_table(self.SL.sph_file)
-          
+
         self.xihalo,self.rarrhalo,self.p0halo,self.d0halo \
-          = halo_methods.init_table(self.SL.model_file,self.numrhalo,self.rminhalo,self.rmaxhalo,cmap=self.cmaphalo,scale=self.scalehalo)  
+          = halo_methods.init_table(self.SL.model_file,self.numrhalo,self.rminhalo,self.rmaxhalo,cmap=self.cmaphalo,scale=self.scalehalo)
 
         self.halo_use_l = self.lmaxhalo
         self.halo_use_n = self.nmaxhalo
@@ -299,7 +299,7 @@ class Fields():
         wrapped elsewhere to some end
 
         '''
-        
+
         try:
             x = self.EOF.eof_file
             y = self.potC
@@ -312,7 +312,7 @@ class Fields():
         costh = zval/r3val
         phival = np.arctan2(yval,xval)
 
-            
+
         # disk evaluation call
         diskp0,diskp,diskfr,diskfp,diskfz,diskden0,diskden1 = eof.accumulated_eval(r2val, zval, phival,\
                                               self.EOF.cos, self.EOF.sin,\
@@ -367,7 +367,7 @@ class Fields():
 
 
         '''
-        
+
         self.no_odd = no_odd
 
         if halo_l > -1: self.halo_use_l = halo_l
@@ -383,10 +383,10 @@ class Fields():
         self.halo_use_n = self.nmaxhalo
         self.disk_use_m = self.mmax
         self.disk_use_n = self.norder
-    
+
 
     def return_forces_cyl(self,xval,yval,zval,rotpos=0.0):
-        
+
         try:
             x = self.no_odd
 
@@ -419,7 +419,7 @@ class Fields():
                                                    self.halo_use_l,self.halo_use_n,\
                                                    #self.lmaxhalo,self.nmaxhalo,\
                                                    self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
-                                                   
+
         # recommended guards against bizarre phi forces
 
         # do we need any other guards?
@@ -429,7 +429,7 @@ class Fields():
 
         # convert halo to cylindrical coordinates
         frhalo = -1.*(r2val*halofr + zval*haloft)/r3val
-                
+
         fzhalo = -1.*(zval*halofr - r2val*haloft)/r3val
 
         # this is now returning the total potential in both disk and
@@ -439,10 +439,10 @@ class Fields():
         return diskfr,frhalo,diskfp,-1.*halofp,diskfz,fzhalo,-1.*diskp,(halop + halop0)
 
 
-            
+
 
     def return_forces_cart(self,xval,yval,zval,rotpos=0.0):
-        
+
         try:
             x = self.no_odd
 
@@ -475,27 +475,27 @@ class Fields():
                                                    self.halo_use_l,self.halo_use_n,\
                                                    #self.lmaxhalo,self.nmaxhalo,\
                                                    self.evtablehalo,self.eftablehalo,no_odd=self.no_odd)
-                                                   
+
         # recommended guards against bizarre phi forces
 
         # do we need any other guards?
         if r3val < np.min(self.xihalo):
             halofp = 0.
             diskfp = 0.
-        
+
         fxdisk = (diskfr*(xval/r2val) - diskfp*(yval/(r2val*r2val)) )
         fxhalo = -1.* ( halofr*(xval/r3val) - haloft*(xval*zval/(r3val*r3val*r3val))) + halofp*(yval/(r2val*r2val))
-        
+
         fydisk = (diskfr*(yval/r2val) + diskfp*(xval/(r2val*r2val)) )
         fyhalo = -1.* ( halofr*(yval/r3val) - haloft*(yval*zval/(r3val*r3val*r3val))) - halofp*(xval/(r2val*r2val))
-        
+
         fzdisk = diskfz
         fzhalo = -1.* ( halofr*(zval/r3val) + haloft*( (r2val*r2val)/(r3val*r3val*r3val)) )
 
         # this is now returning the total potential in both disk and halo case
         return fxdisk,fxhalo,fydisk,fyhalo,fzdisk,fzhalo,diskp,(halop + halop0)
 
-    
+
     def rotation_curve(self,rvals=np.linspace(0.0001,0.1,100),mono=False,angle=0.):
         '''
         returns the rotation curve, computed as$ v_c = \sqrt{r|F_r|}$.
@@ -506,7 +506,7 @@ class Fields():
 
         inputs
         --------------
-        self           : (Field instance)                 
+        self           : (Field instance)
         rvals          : (float, default=sampling to 0.1)  what rvalues to evaluate
         mono           : (bool, default=False)            use only the monopole?
         angle          : (float, default=0.)
@@ -519,7 +519,7 @@ class Fields():
         halo_rotation  :                            halo contribution to the rotation curve
         total_rotation :                            the total rotation curve
 
-        
+
         '''
 
         try:
@@ -541,7 +541,7 @@ class Fields():
 
 
 
-        
+
         disk_force = np.zeros_like(rvals)
         halo_force = np.zeros_like(rvals)
 
@@ -656,7 +656,7 @@ class Fields():
         self   : Fields instance
         rline  : spacing in radius to probe
         thline : spacing in theta to probe
-        
+
         returns
         ---------
         wake   : dictionary with the following keys
@@ -670,10 +670,10 @@ class Fields():
 
         '''
 
-        
+
         rgrid,thgrid = np.meshgrid(rline,thline)
-        
-        
+
+
         P = particle.holder() #psp_io.particle_holder()
         P.xpos = (rgrid*np.cos(thgrid)).reshape(-1,)
         P.ypos = (rgrid*np.sin(thgrid)).reshape(-1,)
@@ -715,7 +715,7 @@ class Fields():
         wake['P'] = (p+pot1+p0+pot0).reshape([thline.shape[0],rline.shape[0]])
         wake['P1'] = (p+pot1).reshape([thline.shape[0],rline.shape[0]])
         wake['D'] = (d+den0+den1).reshape([thline.shape[0],rline.shape[0]])
-        
+
         wake['tfR'] = (-1.*fr+halo_rforce).reshape([thline.shape[0],rline.shape[0]])
         wake['dfR'] = (-1.*fr).reshape([thline.shape[0],rline.shape[0]])
         wake['hfR'] = halo_rforce.reshape([thline.shape[0],rline.shape[0]])
@@ -729,7 +729,7 @@ class Fields():
 
         wake['Rline'] = rline
         wake['Tline'] = thline
-        
+
         self.wake = wake
 
 
@@ -754,13 +754,13 @@ class Fields():
 
         if filename=='':
             print('potential.Fields.save_field: No filename specified.')
-            
+
         f = open(filename,'wb')
-        
+
         #####################################################
         # global parameters
-        #self.infile
-        np.array([self.infile],dtype='S100').tofile(f)
+        #self.filename
+        np.array([self.filename],dtype='S100').tofile(f)
 
         #self.eof_file
         np.array([self.eof_file],dtype='S100').tofile(f)
@@ -792,19 +792,19 @@ class Fields():
         np.array([self.verbose],dtype='i4').tofile(f)
 
         #[nhalo,transform,no_odd,centering,mutual_center,verbose] = np.fromfile(f,dtype='i4',count=6)
-        
+
         #self.time
         np.array([self.time],dtype='f4').tofile(f)
 
         #[time] = np.fromfile(f,dtype='f4',count=1)
 
-        
+
         ####################################################
         # EOF parameters
 
         #self.numx
         np.array([self.numx],dtype='i4').tofile(f)
-     
+
         #self.numy
         np.array([self.numy],dtype='i4').tofile(f)
 
@@ -820,7 +820,7 @@ class Fields():
         #self.densdisk
         np.array([self.densdisk],dtype='i4').tofile(f)
 
-        
+
         #[numx,numy,mmax,norder,cmapdisk,densdisk] = np.fromfile(f,dtype='i4',count=6)
 
         #self.rmindisk
@@ -849,7 +849,7 @@ class Fields():
 
         #self.xcen_disk = 0.
         np.array([self.xcen_disk],dtype='f4').tofile(f)
-        
+
         #self.ycen_disk = 0.
         np.array([self.ycen_disk],dtype='f4').tofile(f)
 
@@ -866,13 +866,13 @@ class Fields():
 
         #EOF.cos = (np.fromfile(f,dtype='f8',count=(mmax+1)*norder)).reshape([(mmax+1),norder])
         #EOF.sin = (np.fromfile(f,dtype='f8',count=(mmax+1)*norder)).reshape([(mmax+1),norder])
-   
+
 
         #self.potC
         np.array(self.potC.reshape(-1,),dtype='f8').tofile(f)
         # 8 bytes x (numx+1) x (numy+1) = 8(numx+1)(numy+1) bytes
         #potC = (np.fromfile(f,dtype='f8',count=(mmax+1)*norder)).reshape([(mmax+1),norder])
-    
+
         #self.rforceC
         np.array(self.rforceC.reshape(-1,),dtype='f8').tofile(f)
 
@@ -911,7 +911,7 @@ class Fields():
 
         #self.xcen_halo = 0.
         np.array([self.xcen_halo],dtype='f4').tofile(f)
-        
+
         #self.ycen_halo = 0.
         np.array([self.ycen_halo],dtype='f4').tofile(f)
 
@@ -919,13 +919,13 @@ class Fields():
         np.array([self.zcen_halo],dtype='f4').tofile(f)
 
         #[halofac,rminhalo,rmaxhalo,scalehalo,xcen_halo,ycen_halo,zcen_halo] = np.fromfile(f,dtype='f4',count=7)
-    
+
         #self.numrhalo
         np.array([self.numrhalo],dtype='i4').tofile(f)
 
         #self.cmaphalo
         np.array([self.cmaphalo],dtype='i4').tofile(f)
-               
+
         #self.lmaxhalo
         np.array([self.lmaxhalo],dtype='i4').tofile(f)
 
@@ -937,31 +937,31 @@ class Fields():
         #self.xihalo
         np.array(self.xihalo.reshape(-1,),dtype='f8').tofile(f)
         #xihalo = (np.fromfile(f,dtype='f8',count=numrhalo))
-        
+
         #self.p0halo
         np.array(self.p0halo.reshape(-1,),dtype='f8').tofile(f)
-        
+
         #self.d0halo
         np.array(self.d0halo.reshape(-1,),dtype='f8').tofile(f)
 
         #self.ltablehalo
         np.array(self.ltablehalo.reshape(-1,),dtype='f8').tofile(f)
-        
+
         #self.evtablehalo
         np.array(self.evtablehalo.reshape(-1,),dtype='f8').tofile(f)
-        
+
         #self.eftablehalo
         np.array(self.eftablehalo.reshape(-1,),dtype='f8').tofile(f)
-    
+
         #self.SL.expcoef
         np.array(self.SL.expcoef.reshape(-1,),dtype='f8').tofile(f)
         # 8 bytes X 2 arrays x (m+1) x n = 16(m+1)n bytes to end of array
-    
+
 
 
         f.close()
 
-        
+
 
 
 def restore_field(filename=''):
@@ -1038,7 +1038,7 @@ def restore_field(filename=''):
 
     return F
 
-        
+
 
 class EnergyKappa():
 
@@ -1075,7 +1075,7 @@ class EnergyKappa():
 
         self.nbins = nbins
 
-        
+
 
         EnergyKappa.map_ekappa(self,percen=percen,eres=eres,spline_order=spline_order)
 
@@ -1111,7 +1111,7 @@ class EnergyKappa():
         #
         if twodee:
             R = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS)**0.5
-                
+
         else:
             R = (self.PA.XPOS*self.PA.XPOS + self.PA.YPOS*self.PA.YPOS + self.PA.ZPOS*self.PA.ZPOS)**0.5
 
@@ -1125,10 +1125,10 @@ class EnergyKappa():
         self.maxL = np.zeros_like(self.Ebins)
         self.circR = np.zeros_like(self.Ebins)
 
-        
+
         for i,energy in enumerate(self.Ebins):
             energy_range = np.where( eindx==i+1)[0]
-            
+
             if len(energy_range) > 1:
                 # reduce operations for speed
                 #maxLx[i] = np.percentile(LX[yese],percen)
@@ -1139,10 +1139,10 @@ class EnergyKappa():
                 #   (that is, radius of a circular orbit)
                 lzarg = energy_range[LZ[energy_range].argsort()]
                 self.circR[i] = np.median( R[lzarg[-100:-1]] )
-                
+
                 self.maxR[i] = np.percentile(R[energy_range],percen)
                 self.maxL[i] = np.percentile(L[energy_range],percen)
-                
+
             else: # guard for empty bins
                 #maxLx[i] = maxLx[i-1]
                 #maxLy[i] = maxLy[i-1]
@@ -1164,7 +1164,7 @@ class EnergyKappa():
             smthL  = smthLf(self.Ebins)
             smthR  = smthRf(self.Ebins)
 
-        
+
         # return energy and kappa for all orbits
         if smethod == 'sg':
             self.Kappa = LZ/smthLz[eindx-1]
@@ -1183,7 +1183,7 @@ class EnergyKappa():
     def output_map(self,file):
 
         #
-        # helper class to 
+        # helper class to
         #
         f = open(file,'w+')
         #print >>f,PA.TIME,len(self.Ebins),self.Ebins,self.maxLz,self.maxL,self.maxR,self.circR
@@ -1208,7 +1208,7 @@ class EnergyKappa():
         # sumval is an input of the same lengths as self.Eindx
 
 
-            
+
         # has ek_grid already been run?
         #     if not, run it.
         try:
@@ -1264,21 +1264,21 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
 
     if transform:
         BarInstance.read_bar(bar_file)
-            
+
         # reset the derivative
         BarInstance.frequency_and_derivative(spline_derivative=2)
 
         # put in modern psp reader format
         PSPDump = psp_io.Input(infile)#,legacy=False)
-    
+
         patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
-    
+
         rotfreq = patt/(2.*np.pi)
 
     else:
         patt = 0.
         rotfreq = 0.
-    
+
     F = Fields(infile,eof_file,sph_file,model_file,nhalo=nhalo,transform=transform,no_odd=False,centering=True,mutual_center=True)
 
     F.total_coefficients()
@@ -1301,12 +1301,10 @@ def make_rotation(simulation_directory,simulation_name,intime):
     F.EOF.eof_file = simulation_directory+'/.eof.cache.file'
     F.SL.model_file = simulation_directory+'/SLGridSph.model'
     F.SL.sph_file = simulation_directory+'/SLGridSph.cache.'+simulation_name
-    
+
     F.set_field_parameters(no_odd=True,halo_l=-1,halo_n=-1,disk_m=-1,disk_n=-1)
     F.make_force_grid()
     F.rotation_curve()
 
-    
+
     return F
-
-
