@@ -349,8 +349,8 @@ def multi_compute_integration(subrads,nprocs,vels,F,\
     twelvth_arg = [0 for i in range(0,nprocs)]
     twelvth_arg[0] = verbose
     #
-    out_vals = pool.imap(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg),5) #I carrie Filion edited this
-    #pool.map(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
+    out_vals = pool.map(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
+    #pool.imap(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg),5)
     #
     # clean up to exit
     pool.close()
@@ -462,7 +462,7 @@ def re_form_orbit_arrays(array):
 
 
 
-
+'''
 def print_orbit_array(f,OrbitArray):
     
     for rad in range(0,OrbitArray.shape[0]):
@@ -485,7 +485,22 @@ def print_orbit_array(f,OrbitArray):
 
             # force end of line
             print('',file=f)
-
+'''
+def print_orbit_array(f,OrbitArray):
+    for rad in range(0,OrbitArray.shape[0]):
+        for vel in range(0,OrbitArray.shape[1]):
+            # find non-zero values
+            try:
+                nsteps = np.where(OrbitArray[rad,vel,4] == 0.)[0][1]
+            except:
+                nsteps = OrbitArray.shape[3]
+            #
+            print(nsteps,OrbitArray[rad,vel,0,0],OrbitArray[rad,vel,3,0],OrbitArray[rad,vel,4,1],end=' ',file=f)
+            for x in range(0,nsteps):
+                print(OrbitArray[rad,vel,0,x],end=' ',file=f)
+            for x in range(0,nsteps):
+                print(OrbitArray[rad,vel,1,x],end=' ',file=f)
+            print('',file=f) # end the line
 
 
 def run_time(simulation_directory,simulation_name,\

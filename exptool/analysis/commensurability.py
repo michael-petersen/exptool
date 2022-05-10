@@ -113,10 +113,78 @@ def calculate_area(Orbit,ratio=10.,usex='TX',usey='TY'):
 
 
 
+def calculate_area_array(D,ratio=10.,usex='TX',usey='TY'):
+    """calculate the areas of orbits using volume tesselation 
+     make an array of all the areas. Here, we loop through a file of integrated orbits
+
+    inputs
+    --------------------
+    D : a file of integrated orbits, assuming same format as the read_integrations output
+    ratio : (float, default=10.) ratio of minimum side length to maximum to not count toward the area total
+    usex  : (string, default='TX') key in dictionary for x coordinate
+    usey  : (string, default='TY') key in dictionary for y coordinate
+
+    returns
+    -------------------
+    an array of the the area values, each normalized by the maximum circle area
 
 
 
+    todo
+    ------------------
+    1. turn into 3d
 
+    """
+    Aarr = np.array([])
+    points = np.array([[D[usex][x],D[usey][x]] for  x in range(0,len(D[usex]))])
+
+    for i in range(len(points[:,0,0])):
+    # do the triangulation
+        tri = Delaunay(points[i,:,:].T)
+
+
+        A = np.zeros(tri.simplices.shape[0])
+        legs = np.zeros([tri.simplices.shape[0],3])
+
+
+
+        for t in range(0,tri.simplices.shape[0]):
+
+            xvals = tri.simplices[t]
+            x1 = D[usex][i][xvals[0]]
+            x2 = D[usex][i][xvals[1]]
+            x3 = D[usex][i][xvals[2]]
+            y1 = D[usey][i][xvals[0]]
+            y2 = D[usey][i][xvals[1]]
+            y3 = D[usey][i][xvals[2]]
+
+            A[t] = 0.5*((x2-x1)*(y3-y1) - (x3-x1)*(y2-y1))
+
+            tmplegs = np.array([np.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)),\
+                        np.sqrt((x1-x3)*(x1-x3) + (y1-y3)*(y1-y3)),\
+                        np.sqrt((x2-x3)*(x2-x3) + (y2-y3)*(y2-y3))])
+
+            legs[t] = tmplegs[tmplegs.argsort()]
+
+        med = np.median(legs[:,0])
+        include = legs[:,1]/med
+        Aa = np.sum(A[include < ratio])/(np.pi*np.nanmax(D[usex][i])*np.nanmax(D[usex][i]))
+        Aarr = np.append(Aarr, Aa)
+        # this has the normalization in it now
+    return Aarr
+
+def plot_orbit_areas(Aarr, Rarr, Varr, cmap='magma', savestring=''):
+    fig, ax1 = plt.subplots(1,1, figsize=(12,10))
+    cb = ax1.imshow(Aarr.reshape(Rarr.size, Varr.size).T,
+            extent=[Rarr.min(), Rarr.max(), Varr.min(), Varr.max()], 
+            origin='lower',cmap=cmap, aspect='auto')
+    fig.colorbar(cb, label='Normalised Orbit Area')
+    ax1.set_xlabel('Radius')
+    ax1.set_ylabel('Velocity')
+    if savestring=='':
+        plt.savefig('orbit_area_plot.jpeg')
+    else:
+        plt.savefig(savestring)
 
 # read in orbit integrations
 
