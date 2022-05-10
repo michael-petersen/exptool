@@ -175,7 +175,7 @@ def calculate_area_array(D,ratio=10.,usex='TX',usey='TY'):
 
 def plot_orbit_areas(Aarr, Rarr, Varr, cmap='magma', savestring=''):
     fig, ax1 = plt.subplots(1,1, figsize=(12,10))
-    cb = ax1.imshow(Aarr.reshape(Rarr.size, Varr.size),
+    cb = ax1.imshow(Aarr.reshape(Rarr.size, Varr.size).T,
             extent=[Rarr.min(), Rarr.max(), Varr.min(), Varr.max()], 
             origin='lower',cmap=cmap, aspect='auto')
     fig.colorbar(cb, label='Normalised Orbit Area')
