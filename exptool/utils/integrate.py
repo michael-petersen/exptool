@@ -14,7 +14,7 @@ TODO:
 
 1. new integrators
 
-         
+
 
 '''
 
@@ -28,7 +28,7 @@ sys.path.append('/home/filion/martinsims/exptools/exptool/exptool/potential')
 from ..orbits import orbit
 from ..basis import potential
 from ..analysis import pattern
-from ..io import psp_io
+from ..io import particle
 # standard imports
 import numpy as np
 import time
@@ -92,7 +92,7 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
 
     # start the timer
     t0 = time.time()
-    
+
     times = np.arange(0,nint,1)*dt
 
     # this needs a guard for mismatched size at some point
@@ -100,16 +100,16 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
 
     # initialize blank arrays
     xarray = np.zeros(nint); yarray = np.zeros(nint); zarray = np.zeros(nint)
-    
+
     vxarray = np.zeros(nint); vyarray = np.zeros(nint); vzarray = np.zeros(nint)
-    
+
     force_xarray = np.zeros(nint); force_yarray = np.zeros(nint); force_zarray = np.zeros(nint)
 
     pote = np.zeros(nint)
 
     # initialize beginning values
     xarray[0] = initpos[0]; yarray[0] = initpos[1]; zarray[0] = initpos[2]
-    
+
     vxarray[0] = initvel[0]; vyarray[0] = initvel[1]; vzarray[0] = initvel[2]
 
     #
@@ -138,27 +138,27 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
         force_yarray[step] = dfy+hfy
         force_zarray[step] = dfz+hfz
         pote[step]         = dp+hp
-        
+
         # advance velocities
         vxarray[step]   = vxarray[step-1]   + (0.5*(force_xarray[step-1]+force_xarray[step])    *dt)
         vyarray[step]   = vyarray[step-1]   + (0.5*(force_yarray[step-1]+force_yarray[step])    *dt)
         vzarray[step]   = vzarray[step-1]   + (0.5*(force_zarray[step-1]+force_zarray[step])    *dt)
-        
+
         # check for completion of aps criteria
         if apse:
             if step > 1:
                 rstep0 = (xarray[step-2]*xarray[step-2] + yarray[step-2]*yarray[step-2])
                 rstep1 = (xarray[step-1]*xarray[step-1] + yarray[step-1]*yarray[step-1])
                 rstep2 = (xarray[step]*xarray[step] + yarray[step]*yarray[step])
-            
+
                 if (rstep1 > rstep0) & (rstep1 > rstep2):
                     n_aps += 1
 
         step += 1
-        
+
     if verbose:
         print('{0:4.3f} seconds to integrate.'.format(time.time()-t0))
-        
+
     # put into dictionary form
     OrbitDictionary = orbit.Orbits()
     OrbitDictionary['T'] = times[0:step]
@@ -170,25 +170,25 @@ def leapfrog_integrate(FieldInstance,nint,dt,initpos,initvel,\
     OrbitDictionary['VZ'] = vzarray[0:step]
     OrbitDictionary['P']  = pote[0:step]
     barpos = barpos[0:step]
-    
-    
+
+
     if force:
         OrbitDictionary['FX'] = force_xarray[0:step]
         OrbitDictionary['FY'] = force_yarray[0:step]
         OrbitDictionary['FZ'] = force_zarray[0:step]
 
-    
+
     # do transformations, adaptively finding which way bar is rotating
     if np.min(barpos) < 0.:
-          
+
         OrbitDictionary['TX'],OrbitDictionary['TY'] = transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
         OrbitDictionary['VTX'],OrbitDictionary['VTY'] = transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
-        
+
     else:
-        
+
         OrbitDictionary['TX'],OrbitDictionary['TY'] = clock_transform(OrbitDictionary['X'],OrbitDictionary['Y'],barpos)
         OrbitDictionary['VTX'],OrbitDictionary['VTY'] = clock_transform(OrbitDictionary['VX'],OrbitDictionary['VY'],barpos)
-      
+
     return OrbitDictionary
 
 
@@ -227,7 +227,7 @@ def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=100.,verbose=Fals
         dta = eps* phi/(v * a)   -- char. work time scale
         dtA = eps* sqrt(phi/a^2) -- char. "escape" time scale
 
-        
+
     inputs
     --------------
     FieldInstance  :
@@ -237,7 +237,7 @@ def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=100.,verbose=Fals
     #
     returns
     --------------
-    dt      
+    dt
     '''
     #
     eps = 1.e-10
@@ -265,8 +265,8 @@ def compute_timestep(FieldInstance,start_pos,start_vel,dyn_res=100.,verbose=Fals
     time_criteria = [T[x] for x in T.keys()]
     if verbose:
         print('The chosen time criteria is {0:s}, dt={1:6.5f}'.format(T.keys()[np.argmin(time_criteria)],np.min(time_criteria)/dyn_res))
-    #    
-    #    
+    #
+    #
     #
     #
     dt = np.min(time_criteria)/dyn_res
@@ -301,10 +301,10 @@ def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,
         nprocs = multiprocessing.cpu_count()
 
     subrads = redistribute_arrays(rads,nprocs)
-    
+
     if (verbose > 0):
         print('Beginning integration, using {} processors.'.format(nprocs))
-    
+
     t1 = time.time()
     freeze_support()
     #
@@ -321,7 +321,7 @@ def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,
     #print_orbit_array(outfile,orbit_array)
     #
     return orbit_array
-    
+
 
 
 
@@ -394,7 +394,7 @@ def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_m
             start_vel = [0.,vel,0.]
             #
             dtime = np.max([compute_timestep(F,start_pos,start_vel,dyn_res=dyn_res,verbose=False),dt])
-            
+
             Orbit = leapfrog_integrate(F,nint,dtime,start_pos,start_vel,rotfreq=rotfreq,no_odd=no_odd,halo_l=halo_l,disk_m=disk_m,verbose=verbose,ap_max=ap_max)
             #print_orbit(f,O)
             #
@@ -405,10 +405,10 @@ def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_m
             Oarray[irad,ivel,3] = np.concatenate((Orbit['VY'],np.zeros(nint-Orbit['T'].size)))
             Oarray[irad,ivel,4] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))
     #
-    #       
+    #
     return Oarray
-        
-   
+
+
 
 #
 def redistribute_arrays(rads,divisions):
@@ -430,10 +430,10 @@ def redistribute_arrays(rads,divisions):
         if (i>0):
             #
             subrads[i] = rads[((i-1)*rads_per_proc)+first_partition : ((i)*rads_per_proc)+first_partition]
-        #    
+        #
         else:
             subrads[i] = rads[0 : first_partition]
-    #        
+    #
     return subrads
 
 
@@ -464,16 +464,16 @@ def re_form_orbit_arrays(array):
 
 '''
 def print_orbit_array(f,OrbitArray):
-    
+
     for rad in range(0,OrbitArray.shape[0]):
         for vel in range(0,OrbitArray.shape[1]):
-            
+
             # find non-zero values
             try:
                 nsteps = np.where(OrbitArray[rad,vel,4] == 0.)[0][1]
             except:
                 nsteps = OrbitArray.shape[3]
-                
+
             # set up the header
             print(nsteps,OrbitArray[rad,vel,0,0],OrbitArray[rad,vel,3,0],OrbitArray[rad,vel,4,1],end='',file=f) # this prints X0, VY0, dt
 
@@ -508,7 +508,7 @@ def run_time(simulation_directory,simulation_name,\
                  intime,\
                  rads,vels,\
                  nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
-                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=True):
+                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=True,fileprefix='OUT'):
     '''
     run_time
           execute all necessary steps to run an integration grid
@@ -546,22 +546,22 @@ def run_time(simulation_directory,simulation_name,\
     if verbose:
         print('exptool.integrate.run_time: in directory {}, run {} at output {}, with transform={}'.format(simulation_directory,simulation_name,intime,transform))
 
-    F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform)
+    F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform,fileprefix=fileprefix)
 
 
 
     # use a supplied pattern speed if given
     if omegap >= 0.:
         patt = omegap
-        
+
     rotfreq = -1.*abs(patt/(2.*np.pi))
-    
+
     OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
 
 
     if orbitfile != '':
         f = open(orbitfile,'w')
-        
+
     else:
         f = open(simulation_directory+'omap_'+str(intime)+'.txt','w')
 
@@ -576,7 +576,7 @@ def run_time_mod(simulation_directory,simulation_name,\
                  rads,vels,\
                  nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
                  verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=False,
-                 save_field=True, field_file_name='',field_file=None, bar_file=''):
+                 save_field=True, field_file_name='',field_file=None, bar_file='',fileprefix='OUT'):
     '''
     run_time
           execute all necessary steps to run an integration grid
@@ -613,14 +613,14 @@ def run_time_mod(simulation_directory,simulation_name,\
 
     if verbose:
         print('exptool.integrate.run_time: in directory {}, run {} at output {}, with transform={}'.format(simulation_directory,simulation_name,intime,transform))
-    
+
     if transform == True:
         if bar_file == '':
             print('error - no bar file supplied for transform')
             return
 
     if field_file == None:
-        F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform, bar_file=bar_file)
+        F,patt,rotfreq = potential.get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,transform=transform, bar_file=bar_file,fileprefix=fileprefix)
         if save_field == True:
             if str(field_file_name) != '':
                 F.save_field(str(field_file_name))
@@ -632,21 +632,22 @@ def run_time_mod(simulation_directory,simulation_name,\
         print('field file supplied! File name:')
         print(field_file_name)
         F = potential.restore_field(str(field_file_name))
-        
+
 
         if transform:
             BarInstance = pattern.BarDetermine()
             BarInstance.read_bar(bar_file)
-            
+
             # reset the derivative
             BarInstance.frequency_and_derivative(spline_derivative=2)
 
             # put in modern psp reader format
-            infile = simulation_directory+'OUT.'+simulation_name+'.%05.i' %intime
-            PSPDump = psp_io.Input(infile)
-    
+
+            infile = simulation_directory+fileprefix+'.'+simulation_name+'.{0:05d}'.format(intime)
+            PSPDump = particle.Input(infile)
+
             patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
-    
+
             rotfreq = patt/(2.*np.pi)
 
         else:
@@ -655,23 +656,18 @@ def run_time_mod(simulation_directory,simulation_name,\
     # use a supplied pattern speed if given
     if omegap >= 0.:
         patt = omegap
-        
+
     rotfreq = -1.*abs(patt/(2.*np.pi))
-    
+
     OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
 
 
     if orbitfile != '':
         f = open(orbitfile,'w')
-        
+
     else:
         f = open(simulation_directory+'omap_'+str(intime)+'.txt','w')
 
     print_orbit_array(f,OrbitArray)
 
     f.close()
-
-
-
-
-    

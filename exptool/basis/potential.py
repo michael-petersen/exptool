@@ -32,7 +32,6 @@ import time
 
 # exptool classes
 from ..utils import utils
-from ..io import psp_io
 from ..analysis import pattern
 from . import eof
 from ..io import particle
@@ -118,7 +117,7 @@ class Fields():
 
         # read in the files
         #
-        PSPDumpDisk = psp_io.Input(self.filename,comp='star')
+        PSPDumpDisk = particle.Input(self.filename,comp='star',verbose=self.verbose)
 
         # add for ability to tabulate
         self.time = PSPDumpDisk.time
@@ -131,14 +130,14 @@ class Fields():
 
         else:
             # let's reread for safety
-            PSPDumpDiskTransformed = psp_io.Input(self.filename,comp='star')
+            PSPDumpDiskTransformed = particle.Input(self.filename,comp='star',verbose=self.verbose)
 
 
 
         # read in both partial and full halo to figure out the halofactor
-        PSPDumpHaloT = psp_io.Input(self.filename,comp='dark')
+        PSPDumpHaloT = particle.Input(self.filename,comp='dark',verbose=self.verbose)
 
-        PSPDumpHalo = psp_io.Input(self.filename,comp='dark')#,nbodies=self.nhalo) #I, carrie Filion Edited This line
+        PSPDumpHalo = particle.Input(self.filename,comp='dark',verbose=self.verbose)
 
 
         self.halofac = float(PSPDumpHaloT.header['dark']['nbodies'])/float(PSPDumpHalo.header['dark']['nbodies']) #I, carrie filion, edited this line
@@ -149,7 +148,7 @@ class Fields():
             PSPDumpHaloTransformed = pattern.BarTransform(PSPDumpHalo,bar_angle=PSPDumpDiskTransformed.bar_angle)
 
         else:
-            PSPDumpHaloTransformed = PSPDumpHalo = psp_io.Input(self.filename,comp='dark')#,nbodies=self.nhalo) #I, carrie filion, edited this line
+            PSPDumpHaloTransformed = PSPDumpHalo = particle.Input(self.filename,comp='dark',verbose=self.verbose)
 
         #
         # do centering
@@ -674,7 +673,7 @@ class Fields():
         rgrid,thgrid = np.meshgrid(rline,thline)
 
 
-        P = particle.holder() #psp_io.particle_holder()
+        P = particle.holder()
         P.xpos = (rgrid*np.cos(thgrid)).reshape(-1,)
         P.ypos = (rgrid*np.sin(thgrid)).reshape(-1,)
         P.zpos = np.zeros(rgrid.size)
@@ -1239,7 +1238,7 @@ class EnergyKappa():
 #
 # this is EXCLUSIVELY temporary until a better format is decided on
 #
-def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_file='',nhalo=1000000,transform=True):
+def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,model_file,bar_file='',nhalo=1000000,transform=True,fileprefix='OUT'):
     '''
     input
     -----------------------------------
@@ -1259,7 +1258,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
     rotfreq                  :
 
     '''
-    infile = simulation_directory+'OUT.'+simulation_name+'.%05i' %intime
+    infile = simulation_directory+fileprefix+'.'+simulation_name+'.%05i' %intime
     BarInstance = pattern.BarDetermine()
 
     if transform:
@@ -1269,7 +1268,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
         BarInstance.frequency_and_derivative(spline_derivative=2)
 
         # put in modern psp reader format
-        PSPDump = psp_io.Input(infile)#,legacy=False)
+        PSPDump = particle.Input(infile)
 
         patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
 

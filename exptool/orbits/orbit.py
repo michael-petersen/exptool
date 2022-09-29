@@ -12,7 +12,7 @@
 #    TODO:
         eliminate Python2 print formatting
         make indexing work
-#   
+#
 #    WISHLIST:
 #       orbit plotting routines
 #       may want saving capability, though 1000 dumps takes 6s, so perhaps no problem
@@ -26,10 +26,10 @@ from __future__ import print_function
 # exptool imports
 import numpy as np
 
-from exptool.io import psp_io
-from exptool.analysis import trapping
-from exptool.utils import utils
-from exptool.utils import kde_3d
+from ..io import particle
+from ..analysis import trapping
+from ..utils import utils
+from ..utils import kde_3d
 
 # standard imports
 from scipy.interpolate import UnivariateSpline
@@ -69,8 +69,8 @@ def initialize_orbit_dictionary():
     OrbitDictionary['M'] = None
 
     return OrbitDictionary
-    
-    
+
+
 
 
 class Orbits(dict):
@@ -83,7 +83,7 @@ class Orbits(dict):
 
 
 
-    def map_orbits(self,simulation_directory,runtag,time_array,norb=1,comp='star',verbose=0,**kwargs):
+    def map_orbits(self,simulation_directory,runtag,time_array,norb=1,comp='star',verbose=0,fileprefix='OUT',**kwargs):
         '''
         make_orbit_map
 
@@ -108,7 +108,7 @@ class Orbits(dict):
 
 
         verbose: integer
-            verbose keyword to be passed to psp_io
+            verbose keyword to be passed to particle
 
         **kwargs:
             'orblist' : integer array of orbit indices to be returned
@@ -126,7 +126,7 @@ class Orbits(dict):
 
         '''
 
-        infile_template = simulation_directory+'/OUT.'+runtag+'.'
+        infile_template = simulation_directory+'/'+fileprefix+'.'+runtag+'.'
 
 
         # check to see if an orbit list has been set
@@ -139,14 +139,15 @@ class Orbits(dict):
 
 
         # check initial file for memmap construction
-        O = psp_io.Input(infile_template+'%05i' %time_array[0])
+        #O = psp_io.Input(infile_template+'%05i' %time_array[0])
+        O = particle.Input(infile_template+'{0:05d}'.format(time_array[0]))
 
         id_comp = np.where(np.array(list(O.header.keys())) == comp)[0] # I, Carrie Filion, Edited This
         #np.where(np.array(O.comp_titles) == comp)[0]
         ####I Carrie Filion added this line
         id_comp = list(O.header)[id_comp[0]]
         # make the holding array
-        
+
         #out_arr = np.zeros( [time_array.size,8,orbvals.size]) # 8 is only valid if no extra parameters in the psp file (update later)
         out_arr = np.zeros( [time_array.size,10,orbvals.size]) # I, Carrie Filion, edited this line
         times = []
@@ -160,7 +161,7 @@ class Orbits(dict):
 
             infile = infile_template+'%05i' %val
 
-            O = psp_io.Input(infile)
+            O = particle.Input(infile)
             # sift through times to make sure always increasing
             if (indx > 0):
 
@@ -179,7 +180,7 @@ class Orbits(dict):
                     #tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I Carrie Filion edited this
                     #np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.comp_pos_data[id_comp]),mode='r',order='f')
                     out_arr[indx] = tmp[:,orbvals]
-                    
+
             else:
                 times.append(O.time)
                 tmp = np.memmap(infile,dtype='f',shape=(10,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I, Carrie Filion, Edited this
@@ -190,9 +191,9 @@ class Orbits(dict):
             prev_time = O.time
 
         times = np.array(times)
-        
+
         out_arr = out_arr[0:times.size,:,:]
-        
+
         #
         # populate the dictionary
         #self['T'] = times
@@ -248,7 +249,7 @@ class Orbits(dict):
         except:
             pass
 
-        
+
 
     def resample_orbit_map(self,impr=4,sord=0,transform=False,**kwargs):
         '''
@@ -263,7 +264,7 @@ class Orbits(dict):
         outputs
         -----------------------------
 
-        
+
         TODO
         -----------------------------
         what's the best way to extend this to multiple orbits?
@@ -274,7 +275,7 @@ class Orbits(dict):
 
         '''
         old_dict = copy.copy(self)
-        
+
         newT = np.linspace(np.min(old_dict['T']),np.max(old_dict['T']),len(old_dict['T'])*impr)
 
         # initialize a new dictionary
@@ -337,11 +338,11 @@ class Orbits(dict):
 #
 # visualizer tool 1
 #
-                
+
 def write_obj_skeleton(outfile,Orbit,lo=0,hi=10000,prefac=100.):
-    
+
     if hi > Orbit['T'].shape[0]:
-        
+
         hi = Orbit['T'].shape[0]
 
     npts = hi - lo
@@ -364,7 +365,7 @@ def write_obj_skeleton(outfile,Orbit,lo=0,hi=10000,prefac=100.):
 
 
 
-                
+
 #######################################################################################
 # Calculating frequencies
 
@@ -376,7 +377,7 @@ def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanni
     outputs
     -----------------
     returns first three frequencies, labeled as O+pos+[1,2,3]
-    
+
     '''
     #
     lo = window[0]
@@ -406,7 +407,7 @@ def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanni
         OrbitInstance['O'+pos+'1'][orbn] = omg[0]
         OrbitInstance['O'+pos+'2'][orbn] = omg[1]
         OrbitInstance['O'+pos+'3'][orbn] = omg[2]
-        
+
     return OrbitInstance
 
 
@@ -471,7 +472,7 @@ def organize_frequencies(freq,fftarr,order=4):
     # sort by power
     freq_order = (-1.*gvals).argsort()
 
-    
+
     return gomegas[freq_order],gvals[freq_order]
 
 
@@ -494,7 +495,7 @@ def find_orbit_frequencies(T,R,PHI,Z,window=[0,10000]):
 
     # get frequency values
     freq = np.fft.fftfreq(T[window[0]:window[1]].shape[-1],d=(T[1]-T[0]))
-    
+
     sp_r = np.fft.fft(  R[window[0]:window[1]])
     sp_t = np.fft.fft(PHI[window[0]:window[1]])
     sp_z = np.fft.fft(  Z[window[0]:window[1]])
@@ -506,14 +507,14 @@ def find_orbit_frequencies(T,R,PHI,Z,window=[0,10000]):
     OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5))])
     OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5))])
 
-    
+
     return OmegaR,OmegaT,OmegaZ
 
 
-                
 
 
-                
+
+
 
 def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
     '''
@@ -536,7 +537,7 @@ def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
 
     # get frequency values
     freq = np.fft.fftfreq(OrbitInstance['T'][window[0]:window[1]].shape[-1],d=(OrbitInstance['T'][1]-OrbitInstance['T'][0]))
-    
+
     sp_r = np.fft.fft(OrbitInstance['Rp'][window[0]:window[1]],axis=0)
     sp_t = np.fft.fft(OrbitInstance['Phi'][window[0]:window[1]],axis=0)
     sp_z = np.fft.fft(OrbitInstance['Z'][window[0]:window[1]],axis=0)
@@ -560,11 +561,11 @@ def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
     #OmegaT[np.where(OmegaT <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaT <= minfreq)[0]).size)
     #OmegaZ[np.where(OmegaZ <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaZ <= minfreq)[0]).size)
 
-    
+
     return OmegaR,OmegaT,OmegaZ
 
 
-                
+
 
 def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,scalelength=0.01,colorplot=True,nsamp=56,transform=True,rescale=True):
     '''
@@ -584,7 +585,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
     if (lo) > OrbitInstance['T'].size:
         print('orbit.make_orbit_density: invalid lower time boundary. resizing...')
         lo = 0
-    
+
     # check size boundaries
     if (hi+1) > OrbitInstance['T'].size: hi = OrbitInstance['T'].size - 1
 
@@ -593,7 +594,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
         try:
             x_coord_tmp = OrbitInstance['TX']
             y_coord_tmp = OrbitInstance['TY']
-            
+
         except:
             print('orbit.make_orbit_density: transformation must be defined in orbit dictionary.')
 
@@ -602,7 +603,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
         y_coord_tmp = OrbitInstance['Y']
 
     z_coord_tmp = OrbitInstance['Z']
-        
+
     # check if orbit instance is multidimensional
     try:
         orbit += 1
@@ -610,11 +611,11 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
         x_coord = x_coord_tmp[lo:hi,orbit]
         y_coord = y_coord_tmp[lo:hi,orbit]
         z_coord = z_coord_tmp[lo:hi,orbit]
-        
+
     except:
         x_coord = x_coord_tmp[lo:hi]
         y_coord = y_coord_tmp[lo:hi]
-        z_coord = z_coord_tmp[lo:hi]        
+        z_coord = z_coord_tmp[lo:hi]
 
 
     # undo scaling
@@ -627,7 +628,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
         plt.clf()
         fig = plt.gcf()
 
-    # 
+    #
     #want to re-scale the extent to make a more intelligent boundary
     #
     extentx_in = 1.2*np.max(abs(x_coord))
@@ -663,7 +664,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
 
     #
 
-    
+
     _ = ax1.contourf(scalefac*xx,scalefac*yy,np.flipud(tt/np.sum(tt)),cmap=cm.Greys)
     _ = ax2.contourf(scalefac*xxz,scalefac*zz,np.flipud(tz/np.sum(tz)),cmap=cm.Greys)
 
@@ -681,7 +682,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
         _ = ax4.set_ylabel('Y [R$_d$]')
         _ = ax4.set_xlabel('X [R$_d$]')
         _ = ax5.set_xlabel('X [R$_d$]')
-    
+
     _ = ax1.set_xticklabels(())
     _ = ax2.set_xticklabels(())
 
@@ -690,12 +691,12 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
         hiT = OrbitInstance['T'][hi]
         dT  = (hiT-loT)/float(hi-lo)
         spacing = 5
-        
+
         for indx in range(1,(hi-lo)+1,spacing):
             _ = ax4.plot(scalefac*x_coord[indx:indx+spacing+1],scalefac*y_coord[indx:indx+spacing+1],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
             _ = ax5.plot(scalefac*x_coord[indx:indx+spacing+1],scalefac*z_coord[indx:indx+spacing+1],color=cm.gnuplot(indx/float(hi-lo),1.),lw=0.5)
 
-        
+
     else:
         _ = ax4.plot(scalefac*x_coord,scalefac*y_coord,color='black',lw=0.5)
         _ = ax5.plot(scalefac*x_coord,scalefac*z_coord,color='black',lw=0.5)
@@ -710,7 +711,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
 
         if np.max([np.max(x_coord),np.max(y_coord)]) < 0.75*scalelength:
             pfac = 0.5
-        
+
         if np.min([np.max(x_coord),np.max(y_coord)]) > 1.5*scalelength:
             pfac = 2.
 
@@ -724,10 +725,10 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
             pfacz = 0.5
 
 
-    
+
     _ = ax1.axis([-2.*pfac,2.*pfac,-2.*pfac,2.*pfac])
     _ = ax4.axis([-2.*pfac,2.*pfac,-2.*pfac,2.*pfac])
-    
+
     _ = ax2.axis([-2.*pfac,2.*pfac,-0.8*pfacz,0.8*pfacz])
     _ = ax5.axis([-2.*pfac,2.*pfac,-0.8*pfacz,0.8*pfacz])
 
@@ -740,7 +741,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
     _ = ax2.set_yticklabels([xz_lims[0],'',xz_lims[1],'','0','',xz_lims[2],'',xz_lims[3]],size=12)
     _ = ax5.set_xticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
     _ = ax5.set_yticklabels([xz_lims[0],'',xz_lims[1],'','0','',xz_lims[2],'',xz_lims[3]],size=12)
-    
+
     cmap = mpl.cm.Greys; norm = mpl.colors.Normalize(vmin=0., vmax=1.)
     cb1 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap,norm=norm)
     _ = cb1.set_label('Relative Frequency',size=10)
@@ -758,7 +759,7 @@ def make_orbit_density(OrbitInstance,orbit=None,window=[0,10000],replot=False,sc
 
 
 
-                
+
 
 def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,scalelength=0.01,nsamp=56,transform=True,rescale=True,logscale=True,ncol=18):
     '''
@@ -778,7 +779,7 @@ def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,s
     if (lo) > OrbitInstance['T'].size:
         print('orbit.make_orbit_density: invalid lower time boundary. resizing...')
         lo = 0
-    
+
     # check size boundaries
     if (hi+1) > OrbitInstance['T'].size: hi = OrbitInstance['T'].size - 1
 
@@ -787,7 +788,7 @@ def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,s
         try:
             x_coord = OrbitInstance['TX'][lo:hi,:].flatten()
             y_coord = OrbitInstance['TY'][lo:hi,:].flatten()
-            
+
         except:
             print('orbit.make_orbit_density: transformation must be defined in orbit dictionary.')
 
@@ -807,7 +808,7 @@ def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,s
         plt.clf()
         fig = plt.gcf()
 
-    # 
+    #
     #want to re-scale the extent to make a more intelligent boundary
     #
     extentx_in = 1.2*np.max(abs(x_coord))
@@ -875,7 +876,7 @@ def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,s
 
         if np.max([np.max(x_coord),np.max(y_coord)]) < 0.75*scalelength:
             pfac = 0.5
-        
+
         if np.min([np.max(x_coord),np.max(y_coord)]) > 1.5*scalelength:
             pfac = 2.
 
@@ -889,9 +890,9 @@ def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,s
             pfacz = 0.5
 
 
-    
+
     _ = ax1.axis([-2.*pfac,2.*pfac,-2.*pfac,2.*pfac])
-    
+
     _ = ax2.axis([-2.*pfac,2.*pfac,-0.8*pfacz,0.8*pfacz])
 
     xy_lims = [str(int(np.round(-2.*pfac,0))),str(int(np.round(-1.*pfac,0))),str(int(np.round(1.*pfac,0))),str(int(np.round(2.*pfac,0)))]
@@ -901,7 +902,7 @@ def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,s
     _ = ax1.set_yticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
     _ = ax2.set_xticklabels([xy_lims[0],'',xy_lims[1],'','0','',xy_lims[2],'',xy_lims[3]],size=12)
     _ = ax2.set_yticklabels([xz_lims[0],'',xz_lims[1],'','0','',xz_lims[2],'',xz_lims[3]],size=12)
-    
+
     cmap = mpl.cm.Greys
 
     norm = mpl.colors.Normalize(vmin=0., vmax=1.)
@@ -916,8 +917,3 @@ def make_ensemble_density(OrbitInstance,ensemble,window=[0,10000],replot=False,s
     else:
         _ = cb1.set_ticks([0.,0.25,0.5,0.75,1.])
         _ = cb1.set_label('Relative Frequency',size=10)
-
-
-
-
-        
