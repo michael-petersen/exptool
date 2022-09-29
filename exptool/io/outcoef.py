@@ -20,11 +20,26 @@ try:
     import yaml
 except ImportError:
     raise ImportError("You will need to 'pip install pyyaml' to use this reader.")
-    
+
+
+
+class EOF_Object(object):
+    """# make an eof object to carry around interesting bits of data"""
+    time = None
+    dump = None
+    comp = None
+    nbodies = None
+    mmax = None
+    nmax = None
+    eof_file = None
+    cos  = None  # the cosine coefficient array
+    sin  = None  # the sine coefficient array
+
+
 
 class OutCoef(object):
     """python reader for outcoef files from exp
-    
+
     see specific calls below for the structure of the returned coefs matrix
 
     inputs
@@ -38,21 +53,21 @@ class OutCoef(object):
     ------------
     import matplotlib.pyplot as plt
     import outcoef
-    
+
     # for a spherical component 'dark':
     Sph = outcoef.OutCoef(indir+'outcoef.dark.'+runtag)
-    
+
     # then show the lowest-order (0,0) term
     m = 0
     n = 0
     plt.plot(Sph.T,Sph.coefs[:,m,n])
-    
+
     # similarly, for a cylinder component 'star':
     Cyl = outcoef.OutCoef(indir+'outcoef.star.'+runtag)
-    
+
     # again show the lowest-order (0,0) term
     plt.plot(Cyl.T,Cyl.coefs[:,0,m,n]) # the 0 in the second spot of coefs indicates cosine term, see below.
-    
+
     notes
     -------
     any other/better ideas for how to bring in the coefficients and make them more user-friendly would be welcome,
@@ -65,7 +80,7 @@ class OutCoef(object):
         # determine whether this is a spherical or cylindrical basis file
 
         self.coeffile = filename
-        
+
         f = open(self.coeffile)
 
         # check if new style
@@ -76,7 +91,7 @@ class OutCoef(object):
             f.close()
 
             self.basis = 'SphereSL'
-            
+
             print('OutCoef: reading SphereSL coefficients . . .')
             self.read_binary_sl_coefficients()
 
@@ -85,31 +100,31 @@ class OutCoef(object):
             f.close()
 
             self.basis = 'Cylinder'
-            
+
             print('OutCoef: reading Cylinder coefficients . . .')
             self.read_binary_eof_coefficients()
-                
+
 
         else:
-        
+
             # check if old format spherical
             f.seek(0)
             [string1] = np.fromfile(f, dtype='a64',count=1)
-        
+
             f.close()
-        
+
             if b'Sphere SL' in string1:
-            
+
                 self.basis = 'SphereSL'
-            
+
                 print('OutCoef: reading OLD SphereSL coefficients . . .')
                 print('CAUION. These coefficients have a different normalisation scheme.')
                 self.read_binary_sl_coefficients_old()
-            
+
             else:
-            
+
                 self.basis = 'Cylinder'
-            
+
                 print('OutCoef: reading OLD Cylinder coefficients . . .')
                 self.read_binary_eof_coefficients_old()
 
@@ -166,15 +181,15 @@ class OutCoef(object):
             [dummym,dummyn] = np.fromfile(f, dtype=np.uint32,count=2)
 
             times[tt] = time0
-        
+
             for mm in range(0,mmax+1):
-            
+
                 coef_array[tt,0,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
-            
+
                 if mm > 0:
                     coef_array[tt,1,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
 
-            
+
         #return times,coef_array
         self.T = times
         self.coefs = coef_array
@@ -210,7 +225,7 @@ class OutCoef(object):
         # return to beginning
         f.seek(0)
 
-    
+
         [string1] = np.fromfile(f, dtype='a64',count=1)
         [time0,scale] = np.fromfile(f, dtype=np.float,count=2)
         [nmax,lmax] = np.fromfile(f, dtype=np.uint32,count=2)
@@ -229,11 +244,11 @@ class OutCoef(object):
 
 
         for tt in range(0,n_outputs):
-        
+
             [string1] = np.fromfile(f, dtype='a64',count=1)
             [time0,scale] = np.fromfile(f, dtype=np.float,count=2)
             [nmax,lmax] = np.fromfile(f, dtype=np.uint32,count=2)
-        
+
             times[tt] = time0
 
             for nn in range(0,nmax):
@@ -277,12 +292,12 @@ class OutCoef(object):
 
         # return to beginning
         f.seek(0)
-    
+
         # check for cmagic
         [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)
         #if cmagic == 202004386: print('magic!')
-    
-        #[cmagic] = np.fromfile(f, dtype=np.uint32,count=1)    
+
+        #[cmagic] = np.fromfile(f, dtype=np.uint32,count=1)
         [string0] = np.fromfile(f, dtype=np.uint32,count=1)
         [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
         D = yaml.load(string1, Loader=yaml.FullLoader)
@@ -301,12 +316,12 @@ class OutCoef(object):
         tt = 0
         #for tt in range(0,n_outputs):
         while f.tell() < filesize:
-        
-            [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)    
+
+            [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)
             [string0] = np.fromfile(f, dtype=np.uint32,count=1)
             [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
             D = yaml.load(string1, Loader=yaml.FullLoader)
-        
+
             times[tt] = D['time']
 
             for nn in range(0,D['nmax']):
@@ -353,16 +368,16 @@ class OutCoef(object):
 
         [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)
         #if cmagic == 202004386: print('magic!')
-    
+
         [string0] = np.fromfile(f, dtype=np.uint32,count=1)
         [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
-    
+
         D = yaml.load(string1, Loader=yaml.FullLoader)
         #print(D['lmax'],D['nmax'])
 
         # would like to try a guess here...
         n_outputs = 100000
-    
+
         # set up arrays given derived quantities
         times = np.zeros(n_outputs)
         coef_array = np.zeros([n_outputs,2,D['mmax']+1,D['nmax']])
@@ -374,27 +389,27 @@ class OutCoef(object):
         #for tt in range(0,n_outputs):
         while f.tell() < filesize:
 
-            [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)    
+            [cmagic] = np.fromfile(f, dtype=np.uint32,count=1)
             [string0] = np.fromfile(f, dtype=np.uint32,count=1)
             [string1] = np.fromfile(f, dtype='a'+str(string0),count=1)
             D = yaml.load(string1, Loader=yaml.FullLoader)
-        
+
             times[tt] = D['time']
-        
+
             for mm in range(0,D['mmax']+1):
-            
+
                 coef_array[tt,0,mm,:] = np.fromfile(f, dtype=np.float,count=D['nmax'])
-            
+
                 if mm > 0:
                     coef_array[tt,1,mm,:] = np.fromfile(f, dtype=np.float,count=D['nmax'])
 
             tt += 1
-        
+
         f.close()
         self.T     = times[0:tt]
         self.coefs = coef_array[0:tt]
 
-    
+
     def _repackage_cylindrical_coefficients(self):
         """
         redefine the dictionary of cylindrical coefficients to be more interpretable, by sorting on
@@ -412,7 +427,7 @@ class OutCoef(object):
         """
 
         numt,_1,numm,numn = self.coefs.shape
-        
+
         self.C = dict()
 
         for m in range(0,numm):
@@ -423,7 +438,50 @@ class OutCoef(object):
 
                 for n in range(0,numn):
                     self.C[m][c][n] = self.coefs[:,ic,m,n]
-    
+
+    def _repackage_cylindrical_coefficients_compatibility(self):
+        """
+        redefine the dictionary of cylindrical coefficients to be more interpretable, by sorting on
+
+        -m order
+        -cos/sin
+        -n order
+        -time
+
+        this version includes a dictionary for backwards compatibility.
+
+        """
+
+        numt,_1,numm,numn = self.coefs.shape
+
+        EOF_Dict = dict()
+
+        for tt in range(0,numt):
+            EOF_Obj = EOF_Object()
+
+
+            EOF_Obj.time
+            EOF_Obj.mmax = numm
+            EOF_Obj.nmax = numn
+
+            # fill in dummy values
+            EOF_Obj.filename = '[redacted]'
+            EOF_Obj.comp = 'star'
+            EOF_Obj.nbodies = 0.
+            EOF_Obj.eof_file = '[redacted]'
+
+            EOF_Obj.cos = np.zeros([numm+1,numn])
+            EOF_Obj.sin = np.zeros([numm+1,numn])
+
+            for mm in range(0,numm+1):
+
+                EOF_Obj.cos[mm] = self.coefs[tt,0,mm,:]
+                EOF_Obj.sin[mm] = self.coefs[tt,1,mm,:]
+
+            EOF_Dict[EOF_Obj.time] = EOF_Obj
+
+        return EOF_Dict
+
     def _repackage_spherical_coefficients(self):
         """
         redefine the dictionary of spherical coefficients to be more interpretable, by sorting on
@@ -441,14 +499,14 @@ class OutCoef(object):
         m = 1
         p = 'cos'
         n = 0
-        
+
         plt.plot(self.T,self.C[l][m][p][n])
 
         """
 
         numt,numl2,numn = self.coefs.shape
         numl = int(np.sqrt(numl2))
-        
+
         self.C = dict()
 
         for l in range(0,numl):
@@ -464,13 +522,13 @@ class OutCoef(object):
                     for n in range(0,numn):
                         self.C[l][m]['cos'][n] = self.coefs[:,(l*l)+2*m-1,n]
                         self.C[l][m]['sin'][n] = self.coefs[:,(l*l)+2*m  ,n]
-                            
+
                 else:
                     self.C[l][m]['cos'] = dict()
 
                     for n in range(0,numn):
                         self.C[l][m]['cos'][n] = self.coefs[:,l*l,n]
-       
+
 
 
 
@@ -479,7 +537,7 @@ class OutCoef(object):
 
 class CylCoefs(object):
     """python reader for outcoef files from exp
-    
+
     see specific calls below for the structure of the returned coefs matrix
 
     inputs
@@ -520,13 +578,10 @@ class CylCoefs(object):
 
     def total_order_power(self):
 
-        return np.sum(coefs[:,0,:,:]*coefs[:,0,:,:] + 
+        return np.sum(coefs[:,0,:,:]*coefs[:,0,:,:] +
                       coefs[:,1,:,:]*coefs[:,1,:,:],axis=2)
 
     def total_order_amplitude(self):
 
-        return np.sqrt(np.sum(coefs[:,0,:,:]*coefs[:,0,:,:] + 
+        return np.sqrt(np.sum(coefs[:,0,:,:]*coefs[:,0,:,:] +
                       coefs[:,1,:,:]*coefs[:,1,:,:],axis=2))
-
-    
-
