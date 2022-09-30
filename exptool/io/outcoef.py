@@ -452,6 +452,7 @@ class OutCoef(object):
 
         """
 
+        # be aware: numm is mmax+1 already, because we are pulling it from the table size!
         numt,_1,numm,numn = self.coefs.shape
 
         EOF_Dict = dict()
@@ -470,10 +471,10 @@ class OutCoef(object):
             EOF_Obj.nbodies = 0.
             EOF_Obj.eof_file = '[redacted]'
 
-            EOF_Obj.cos = np.zeros([numm+1,numn])
-            EOF_Obj.sin = np.zeros([numm+1,numn])
+            EOF_Obj.cos = np.zeros([numm,numn])
+            EOF_Obj.sin = np.zeros([numm,numn])
 
-            for mm in range(0,numm+1):
+            for mm in range(0,numm):
 
                 EOF_Obj.cos[mm] = self.coefs[tt,0,mm,:]
                 EOF_Obj.sin[mm] = self.coefs[tt,1,mm,:]
