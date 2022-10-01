@@ -462,7 +462,7 @@ class OutCoef(object):
 
 
             EOF_Obj.time
-            EOF_Obj.mmax = numm
+            EOF_Obj.mmax = numm-1
             EOF_Obj.nmax = numn
 
             # fill in dummy values

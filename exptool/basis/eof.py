@@ -1987,8 +1987,9 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
     '''
 
     # pull mmax and nmax for ease of computing
-    mmax=EOFDict[0].mmax
-    nmax=EOFDict[0].nmax
+    firstkey = list(EOFDict.keys())[0]
+    mmax=EOFDict[firstkey].mmax
+    nmax=EOFDict[firstkey].nmax
 
     # calculate the raw phases
 
