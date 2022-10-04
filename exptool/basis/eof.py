@@ -1992,49 +1992,59 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
     nmax=EOFDict[firstkey].nmax
 
     # calculate the raw phases
+    # first, initialize the arrays
 
-    # initialize the arrays
-    phases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax]) # array per radial order
-    netphases = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0]])   # array where radial orders are weighted into one azimuthal order
-    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])           # time indices
-    signal = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax]) # 1 if the signal is too low to finalize calculation
+    # array per radial order
+    phases     = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
 
+    # array where radial orders are weighted into one azimuthal order
+    netphases  = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0]])
 
+    # time indices
+    time_order = np.zeros(np.array(list(EOFDict.keys())).shape[0])
+
+    # 1 if the signal is too low to finalize calculation
+    signal = np.zeros([mmax+1,np.array(list(EOFDict.keys())).shape[0],nmax])
+
+    # now, loop through all keys and compute the raw phase using arctan2
     num = 0
     for keyval in EOFDict.keys():
         for mm in range(1,mmax+1):
             for nn in range(0,nmax):
+
+                # the raw phase
                 phases[mm,num,nn] = np.arctan2(EOFDict[keyval].sin[mm,nn],EOFDict[keyval].cos[mm,nn])
+
+                # the amplitude in each (m,n) combo, normalised by
                 signal[mm,num,nn] = np.sqrt(EOFDict[keyval].cos[mm,nn]*EOFDict[keyval].cos[mm,nn] +\
                                                 EOFDict[keyval].sin[mm,nn]*EOFDict[keyval].sin[mm,nn])/\
                                                 np.sum(np.sqrt(EOFDict[keyval].cos[0]*EOFDict[keyval].cos[0]))
 
-            #
+            # arctan2 of the weighted sum of sine/cosine
+            # this could be improved as a heuristic
             netphases[mm,num] = np.arctan2(np.sum(EOFDict[keyval].sin[mm,:]),np.sum(EOFDict[keyval].cos[mm,:]))
+
         time_order[num] = EOFDict[keyval].time
         num += 1
 
 
     # initialize the output dictionary
-    DC = {}
-    DC['time'] = time_order[time_order.argsort()]
-    DC['phase'] = {}
-    DC['netphase'] = {}
-    DC['unphase'] = {}
-    DC['speed'] = {}
-    DC['netspeed'] = {}
-    DC['signal'] = {}
+    DC = dict()
+    DC['time']      = time_order[time_order.argsort()] # re-sort the input times, just in case
+    DC['phase']     = dict() # the raw phase by n order (arctan2(sin,cos))
+    DC['netphase']  = dict() # the net phase by m order (weighted average by n order)
+    DC['unphase']   = dict() # the unwrapped phase, split by n order
+    DC['speed']     = dict()
+    DC['netspeed']  = dict()
+    DC['signal']    = dict()
+    DC['direction'] = dict() # direction will range from 0. (completely clockwise) to 1. (completely counterclockwise)
 
 
-    # direction will range from 0. (completely clockwise) to 1. (completely counterclockwise)
-    DC['direction'] = {}
-
-
-    # put phases in time order
+    # put phases in time order (no m=0 term)
     for mm in range(1,mmax+1):
-        DC['phase'][mm] = phases[mm,time_order.argsort(),:]
+        DC['phase'][mm]    =    phases[mm,time_order.argsort(),:]
         DC['netphase'][mm] = netphases[mm,time_order.argsort()]
-        DC['signal'][mm] = signal[mm,time_order.argsort(),:]
+        DC['signal'][mm]   =    signal[mm,time_order.argsort(),:]
 
     # do a finite differencing the calculate the phases
     for mm in range(1,mmax+1):
@@ -2042,17 +2052,17 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
         # if desired, could put in blocks for unreasonable values here?
         #goodphase = np.where( DC['phase'][:,nterm] )
 
+        # allocate arrays for pattern speed by m order: each array is (number of times by number of radial functions)
+        DC['speed'][mm]     = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
+        DC['unphase'][mm]   = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
 
-
-
-        DC['speed'][mm] = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
-        DC['unphase'][mm] = np.zeros([np.array(list(EOFDict.keys())).shape[0],nmax])
+        # mean direction of rotation
         DC['direction'][mm] = np.zeros(nmax)
 
+        # loop through radial orders to obtain all pattern speeds
         for nn in range(0,nmax):
 
-            # detect clockwise vs. counter
-
+            # detect clockwise vs. counter: is the finite difference derivative mroe positive or more negative?
             DC['direction'][mm][nn] = float(np.where( (np.ediff1d(DC['phase'][mm][:,nn]) > 0.))[0].size)/float(DC['phase'][mm][:,nn].size)
 
             if DC['direction'][mm][nn] >= 0.5:
@@ -2060,8 +2070,6 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
             else:
                 clock = True
 
-
-            #DC['unphase'][mm][:,nn] = utils.unwrap_phase(DC['phase'][mm][:,nn],tol=tol,clock=clock)
 
             # make all positive, because we are finite differencing: phase will then be positive
             tmp_unphase = np.abs(utils.unwrap_phase(DC['time'],DC['phase'][mm][:,nn]))
@@ -2073,13 +2081,16 @@ def calculate_eof_phase(EOFDict,filter=True,smooth_box=101,smooth_order=2,tol=-1
             else:
                 DC['unphase'][mm][:,nn] = tmp_unphase
 
+            # compute the pattern speed either with Savitzky-Golay filter or without
             if filter:
+
                 DC['speed'][mm][:,nn] = np.ediff1d(utils.savitzky_golay(DC['unphase'][mm][:,nn],smooth_box,smooth_order),to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
 
             else:
+
                 DC['speed'][mm][:,nn] = np.ediff1d(DC['unphase'][mm][:,nn],to_begin=0.)/np.ediff1d(DC['time'],to_begin=100.)
 
-            # reset the initial value
+            # reset the initial value to be the same as the second value (instead of zero)
             DC['speed'][mm][0,nn] = DC['speed'][mm][1,nn]
 
         if filter:
