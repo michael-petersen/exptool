@@ -140,7 +140,9 @@ class Fields():
         PSPDumpHalo = particle.Input(self.filename,comp='dark',verbose=self.verbose)
 
 
-        self.halofac = float(PSPDumpHaloT.header['dark']['nbodies'])/float(PSPDumpHalo.header['dark']['nbodies']) #I, carrie filion, edited this line
+        self.halofac = float(PSPDumpHaloT.data['m'].size)/float(PSPDumpHalo.data['m'].size) 
+        #edited this, not sure its right?
+        #float(PSPDumpHaloT.header['dark']['nbodies'])/float(PSPDumpHalo.header['dark']['nbodies']) #I, carrie filion, edited this line
         #float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
 
 
