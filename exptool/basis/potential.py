@@ -1270,7 +1270,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
         BarInstance.frequency_and_derivative(spline_derivative=2)
 
         # put in modern psp reader format
-        PSPDump = particle.Input(infile)
+        PSPDump = particle.Input(infile, comp='star')
 
         patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
 

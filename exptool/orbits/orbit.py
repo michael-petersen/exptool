@@ -161,7 +161,7 @@ class Orbits(dict):
 
             infile = infile_template+'%05i' %val
 
-            O = particle.Input(infile)
+            O = particle.Input(infile, comp='star') #need to give comp - not sure if we want to hard-code in that this is always for stars?
             # sift through times to make sure always increasing
             if (indx > 0):
 
