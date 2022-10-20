@@ -644,7 +644,7 @@ def run_time_mod(simulation_directory,simulation_name,\
             # put in modern psp reader format
 
             infile = simulation_directory+fileprefix+'.'+simulation_name+'.{0:05d}'.format(intime)
-            PSPDump = particle.Input(infile)
+            PSPDump = particle.Input(infile, comp='star')
 
             patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
 

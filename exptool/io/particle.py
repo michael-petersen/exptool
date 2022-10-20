@@ -63,7 +63,7 @@ class Input():
 
 
     """
-    def __init__(self, filename,comp=None, legacy=True,verbose=0):
+    def __init__(self, filename,comp=None, legacy=False,verbose=0): #edited
         """the main driver for the class"""
 
         # auto-determine the file type

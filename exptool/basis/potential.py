@@ -140,7 +140,9 @@ class Fields():
         PSPDumpHalo = particle.Input(self.filename,comp='dark',verbose=self.verbose)
 
 
-        self.halofac = float(PSPDumpHaloT.header['dark']['nbodies'])/float(PSPDumpHalo.header['dark']['nbodies']) #I, carrie filion, edited this line
+        self.halofac = float(PSPDumpHaloT.data['m'].size)/float(PSPDumpHalo.data['m'].size) 
+        #edited this, not sure its right?
+        #float(PSPDumpHaloT.header['dark']['nbodies'])/float(PSPDumpHalo.header['dark']['nbodies']) #I, carrie filion, edited this line
         #float(PSPDumpHaloT.nbodies)/float(PSPDumpHalo.nbodies)
 
 
@@ -1268,7 +1270,7 @@ def get_fields(simulation_directory,simulation_name,intime,eof_file,sph_file,mod
         BarInstance.frequency_and_derivative(spline_derivative=2)
 
         # put in modern psp reader format
-        PSPDump = particle.Input(infile)
+        PSPDump = particle.Input(infile, comp='star')
 
         patt = pattern.find_barpattern(PSPDump.time,BarInstance,smth_order=None)
 
