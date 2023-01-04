@@ -12,7 +12,7 @@ import glob
 
 # just in case ...
 #https://github.com/blog/2104-working-with-submodules
-    
+
 #accumulate C extension
 accumulate_c_src= glob.glob('exptool/basis/accumulate_c/*.c')
 
@@ -28,10 +28,10 @@ accumulate_c= Extension('exptool.basis._accumulate_c',
 
 ext_modules = []
 ext_modules.append(accumulate_c)
-                             
-    
+
+
 setup(name='exptool',
-      version='0.3',
+      version='0.3.1',
       description='exp analysis in Python',
       author='Michael Petersen',
       author_email='michael.petersen@roe.ac.uk,petersen@iap.fr',
@@ -47,6 +47,3 @@ setup(name='exptool',
       ext_modules=ext_modules,
       classifiers = ["Programming Language :: Python", "Intended Audience :: Science/Research"]
       )
-
-
-

@@ -61,7 +61,7 @@ class Input:
         vy      : float, the y velocity
         vz      : float, the z velocity
         mass    : float, the mass of the particle
-        index   : int, the integer index of the particle
+        id   : int, the integer index of the particle
         potE    : float, the potential energy value
 
     """
@@ -197,7 +197,7 @@ class Input:
         if self.header[self.comp]['parameters']['indexing']:
             # if indexing is on, the 0th column is Long
             dtype_str = dtype_str + ['l']
-            colnames  = colnames + ['index']
+            colnames  = colnames + ['id']
 
         dtype_str = dtype_str + [self._float_str] * 8
         colnames = colnames + ['m', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'potE']

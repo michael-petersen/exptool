@@ -21,7 +21,7 @@ try:
     import yaml
 except ImportError:
     raise ImportError("You will need to 'pip install pyyaml' to use this reader.")
-    
+
 
 class Input:
     """Input class to adaptively handle SPL. format specifically
@@ -34,7 +34,7 @@ class Input:
         the name of the component for which to extract data. If None, will read primary header and exit.
     verbose  : int, default 0
         verbosity flag.
-    
+
     returns
     ---------------
     self        : Input instance
@@ -53,7 +53,7 @@ class Input:
         vy      : float, the y velocity
         vz      : float, the z velocity
         mass    : float, the mass of the particle
-        index   : int, the integer index of the particle
+        id   : int, the integer index of the particle
         potE    : float, the potential energy value
 
     """
@@ -74,7 +74,7 @@ class Input:
         # initialise dictionaries
         self.component_map = dict()
         self.header        = dict()
-        
+
         self._read_primary_header()
 
         self.comp = comp
@@ -88,9 +88,9 @@ class Input:
         if comp != None:
             if comp not in _comps:
                 raise IOError('The specified component does not exist.')
-                
+
             else:
-                
+
                 # set up assuming the directory of the main file is the same
                 # as the subfiles. could add verbose flag to warn?
                 self.indir = filename.split('SPL')[0]
@@ -109,7 +109,7 @@ class Input:
         """read the primary header from an SPL. file"""
 
         self._check_magic_number()
-        
+
         self.f.seek(0)
         self.time, = np.fromfile(self.f, dtype='<f8', count=1)
         self._nbodies_tot, self._ncomp = np.fromfile(self.f, dtype=np.uint32,count=2)
@@ -118,10 +118,10 @@ class Input:
 
         # now read the component headers
         for comp in range(0,self._ncomp):
-            self.f.seek(data_start) 
-            next_comp = self._read_spl_component_header()               
-            data_start = next_comp 
-    
+            self.f.seek(data_start)
+            next_comp = self._read_spl_component_header()
+            data_start = next_comp
+
 
     def _read_spl_component_header(self):
         """read in the header for a single component, from an SPL. file"""
@@ -135,12 +135,12 @@ class Input:
         head_normal = head[0].decode()
         head_dict = yaml.safe_load(head_normal)
 
-        
+
         head_dict['nint_attr']   = nint_attr
         head_dict['nfloat_attr'] = nfloat_attr
         # data starts at ...
         next_comp = 4*7 + infostringlen + data_start
-            
+
         self.component_map[head_dict['name']]  = next_comp
         self.header[head_dict['name']]         = head_dict
 
@@ -151,19 +151,19 @@ class Input:
             self.indexing = head_dict['parameters']['indexing']
         except:
             self.indexing = head_dict['indexing']=='true'
-        
+
         return next_comp
 
-                
+
     def _make_spl_file_list(self,comp):
-        
+
         self.f.seek(self.component_map[comp])
-        
+
         PBUF_SZ = 1024
         PBUF_SM = 32
 
         self.subfiles = []
-    
+
         for procnum in range(0,self.nprocs):
             PBUF = np.fromfile(self.f, dtype=np.dtype((np.bytes_, PBUF_SZ)),count=1)
             subfile = PBUF[0].split(b'\x00')[0].decode()
@@ -178,10 +178,10 @@ class Input:
 
         for n in range(0,ncomponents):
             print("Component {}: {}".format(n,comp_list[n]))
-            
+
 
     def _read_spl_component_data(self):
-        
+
         FullParticles = dict()
 
         # first pass: get everything into memory
@@ -190,7 +190,7 @@ class Input:
 
             if self.verbose>1:
                 print('spl_io._read_spl_component_data: On file {} of {}.'.format(n,len(self.subfiles)))
-            
+
             tbl = self._handle_spl_subfile(self.subfiles[n])
 
             for k in tbl.keys():
@@ -203,8 +203,8 @@ class Input:
 
         # cleanup...
         del FullParticles
-        
-            
+
+
     def _check_magic_number(self):
 
         self.f.seek(16)  # find magic number
@@ -217,7 +217,7 @@ class Input:
         else:
             self._float_len = 8
             self._float_str = 'd'
-        
+
 
     def _handle_spl_subfile(self,subfilename):
 
@@ -234,41 +234,37 @@ class Input:
 
     def _read_component_data(self,filename,nbodies,offset):
         """read in all data for component"""
-        
+
         dtype_str = []
         colnames  = []
         if self.header[self.comp]['parameters']['indexing']:
             # if indexing is on, the 0th column is Long
             dtype_str = dtype_str + ['l']
-            colnames  = colnames + ['index']
-        
+            colnames  = colnames + ['id']
+
         dtype_str = dtype_str + [self._float_str] * 8
         colnames = colnames + ['m', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'potE']
-        
+
         dtype_str = dtype_str + ['i'] * self.header[self.comp]['nint_attr']
         colnames = colnames + ['i_attr{}'.format(i)
                                for i in range(self.header[self.comp]['nint_attr'])]
-        
+
         dtype_str = dtype_str + [self._float_str] * self.header[self.comp]['nfloat_attr']
         colnames = colnames + ['f_attr{}'.format(i)
                                for i in range(self.header[self.comp]['nfloat_attr'])]
-        
+
         dtype = np.dtype(','.join(dtype_str))
-        
+
         out = np.memmap(filename,
                         dtype=dtype,
                         shape=(1, nbodies),
                         offset=offset,
                         order='F', mode='r')
-        
+
         tbl = dict()
         for i, name in enumerate(colnames):
             tbl[name] = np.array(out['f{}'.format(i)][0], copy=True)
-        
+
         del out  # close the memmap instance
-        
+
         return tbl
-
-
-
-

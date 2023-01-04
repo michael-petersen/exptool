@@ -27,7 +27,7 @@ class Input():
         if True, return attributes rather than a dictionary of particle data
     verbose  : int, default 0
         verbosity flag.
-    
+
     returns
     ---------------
     self        : Input instance
@@ -46,11 +46,11 @@ class Input():
         vy      : float, the y velocity
         vz      : float, the z velocity
         mass    : float, the mass of the particle
-        index   : int, the integer index of the particle
+        id   : int, the integer index of the particle
         potE    : float, the potential energy value
 
       ---or, if legacy=True---
-      
+
       .xpos     : float, the x position
       .ypos     : float, the y position
       .zpos     : float, the z position
@@ -58,7 +58,7 @@ class Input():
       .yvel     : float, the y velocity
       .zvel     : float, the z velocity
       .mass     : float, the mass of the particle
-      .indx     : int, the integer index of the particle
+      .id     : int, the integer index of the particle
       .pote     : float, the potential energy value
 
 
@@ -73,7 +73,7 @@ class Input():
             self.style = 'OUT'
         else:
             self.style = 'unknown'
-        
+
         if self.style=='SPL':
             I = spl_io.Input(filename,comp=comp,verbose=verbose)
         elif self.style=='OUT':
@@ -83,12 +83,12 @@ class Input():
 
         # expose the header
         self.header = I.header
-        
-        
+
+
         # what is the ideal legacy error handling?
         if I.comp==None:
             return
-            
+
         if legacy:
             self.mass = I.data['m']
             self.xpos = I.data['x']
@@ -98,9 +98,9 @@ class Input():
             self.yvel = I.data['vy']
             self.zvel = I.data['vz']
             self.pote = I.data['potE']
-            
+
             if (I.header[I.comp]['parameters']['indexing']):
-                self.indx = I.data['index']
+                self.id = I.data['id']
 
         else:
             self.data = I.data
@@ -108,9 +108,9 @@ class Input():
         self.filename = I.filename
         self.comp     = I.comp
         self.time     = I.time
-        
 
-        
+
+
 
 
 
@@ -132,13 +132,13 @@ def convert_psp_to_legacy(PSPInput):
     PSPOutput.yvel = PSPInput.data['vy']
     PSPOutput.zvel = PSPInput.data['vz']
     PSPOutput.pote = PSPInput.data['potE']
-            
+
     #if (I.header[I.comp]['parameters']['indexing']):
-    #    PSPOutput.indx = I.data['index']
+    #    PSPOutput.id = I.data['id']
     return PSPOutput
 
 
-        
+
 class holder(object):
     '''all the quantities you could ever want to fill in your own PSP-style output.
     '''
@@ -154,6 +154,7 @@ class holder(object):
     zvel = None
     mass = None
     pote = None
+    id   = None
 
 
 
@@ -162,7 +163,7 @@ class holder(object):
 def subdivide_particles_list(ParticleInstance,particle_roi):
     '''fill a new array with particles that meet this criteria
     '''
-    holder = particle_holder()
+    holder = holder()
     holder.xpos = ParticleInstance.xpos[particle_roi]
     holder.ypos = ParticleInstance.ypos[particle_roi]
     holder.zpos = ParticleInstance.zpos[particle_roi]
@@ -186,7 +187,7 @@ def mix_particles(ParticleInstanceArray):
     n_part = 0
     for i in range(0,n_instances):
         n_part += len(ParticleInstanceArray[i].xpos)
-    final_holder = particle_holder()
+    final_holder = holder()
     final_holder.xpos = np.zeros(n_part)
     final_holder.ypos = np.zeros(n_part)
     final_holder.zpos = np.zeros(n_part)
@@ -239,4 +240,3 @@ def _create_particle_blocks(nmax,nsplit):
     IndexList[nsplit-1] = all_indices[(nsplit-1)*npersplit:]
 
     return IndexList
-
