@@ -212,6 +212,9 @@ class Input:
 
         dtype = np.dtype(','.join(dtype_str))
 
+        # a typical dtype with indexing on will look like:
+        # dtype([('f0', '<i8'), ('f1', '<f8'), ('f2', '<f8'), ('f3', '<f8'), ('f4', '<f8'), ('f5', '<f8'), ('f6', '<f8'), ('f7', '<f8'), ('f8', '<f8')])
+
         out = np.memmap(filename,
                         dtype=dtype,
                         shape=(1, nbodies),

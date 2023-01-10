@@ -19,10 +19,6 @@
 #
 """
 
-
-# future compatibility: let's make this Python 3 setup
-from __future__ import print_function
-
 # exptool imports
 import numpy as np
 
@@ -319,13 +315,13 @@ class Orbits(dict):
                 # make a tiled version for fast computation
                 manybar = np.tile(bar_positions,(self['M'].shape[0],1)).T
 
-                # transform positions
+                # transform positions: these are hard-wired in one direction: bad!
                 self['TX'] = self['X']*np.cos(manybar) - self['Y']*np.sin(manybar)
-                self['TY'] = -self['X']*np.sin(manybar) - self['Y']*np.cos(manybar)
+                self['TY'] = self['X']*np.sin(manybar) + self['Y']*np.cos(manybar)
 
                 # transform velocities
                 self['VTX'] = self['VX']*np.cos(manybar) - self['VY']*np.sin(manybar)
-                self['VTY'] = -self['VX']*np.sin(manybar) - self['VY']*np.cos(manybar)
+                self['VTY'] = self['VX']*np.sin(manybar) + self['VY']*np.cos(manybar)
 
 
 

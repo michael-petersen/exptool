@@ -56,19 +56,11 @@ from multiprocessing import Pool, freeze_support
 import multiprocessing
 
 
-
 # exptool imports: relative
 from ..io import particle
 from ..utils import kmeans
 from ..utils import utils
 from ..analysis import pattern
-'''
-# absolute imports
-from exptool.io import particle
-from exptool.utils import kmeans
-from exptool.utils import utils
-from exptool.analysis import pattern
-'''
 
 
 class ApsFinding():
@@ -86,7 +78,7 @@ class ApsFinding():
     >>> TrappingInstance = A.determine_r_aps(simulation_directory+'simfiles.dat',trapping_comp,particle_indx=np.arange(0,1000,1),out_directory=simulation_directory,return_aps=True)
 
     To read back in a saved aps file:
-    
+
     >>> TrappingInstance = A.read_aps_file(aps_file)
     >>> print TrappingInstance['desc']
 
@@ -95,23 +87,39 @@ class ApsFinding():
     '''
 
     def __init__(self,verbose=0):
+        """
+        initialise a blank holder for performing the aps finding
+
+        """
 
         self.verbose = verbose
 
         return None
-    
+
 
     def accept_files(self,filelist,verbose=0):
-        
+        """
+        parse files from the input list (wrapper)
+
+        """
+
         self.slist = filelist
         self.verbose = verbose
-        
+
         ApsFinding.parse_list(self)
-        
+
 
     def parse_list(self):
-        
+        """
+        parse files from the input list
+
+        the list of files is in a format where each file corresponds to one line.
+        full paths are always best, but would work with local paths as well.
+
+        """
+
         f = open(self.slist)
+
         s_list = []
         for line in f:
             d = [q for q in line.split()]
@@ -122,15 +130,26 @@ class ApsFinding():
         if self.verbose >= 1:
             print('ApsFinding.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
 
-    
-    def determine_r_aps(self,filelist,comp,particle_indx=-1,out_directory='',threedee=False,return_aps=False):
 
+    def determine_r_aps(self,filelist,comp,particle_indx=-1,runtag='',out_directory='',threedee=False,return_aps=False,changingindx=False):
+        """
+        determine_r_aps
+
+        generate
+
+        """
+
+        # take the inputs and identify all files that we will loop through
+        self.slist = filelist
+        ApsFinding.parse_list(self)
+        # now we have self.SLIST, the parsed list of files we will analyse
 
         # first, check type of particle_index
         if isinstance(particle_indx,int):
             if particle_indx < 0:
                 # if particle_indx < 0, make the comparison index all particles
-                particle_indx = np.arange(0,nparticles,1)
+                Oa = particle.Input(self.SLIST[0],legacy=False,comp=comp,verbose=0)
+                particle_indx = np.arange(0,Oa.nbodies,1)
             else:
                 # limit to the maximum number desired
                 particle_indx = np.arange(0,particle_indx,1)
@@ -138,35 +157,29 @@ class ApsFinding():
             # assume an array has been passed and accept: could check
             pass
 
-        # particle index needs to be sorted, confirm here
+        # sort the particle indices
         particle_indx = particle_indx[particle_indx.argsort()]
 
-        self.slist = filelist
+        # how many orbits are we doing?
+        total_orbits = len(particle_indx)
 
         #
         # stamps the output file with the current time. do we like this?
         #
         tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
-           
-        f = open(out_directory+'apshold'+tstamp+'.dat','wb+')
 
-        ApsFinding.parse_list(self)
-        # returns
+        # create a new file using the particle number, runtag, and time
+        f = open(out_directory+'RadialAps_N{}_r{}_T{}.dat'.format(total_orbits,runtag,tstamp),'wb+')
 
-        # how many orbits are we doing?
-        total_orbits = len(particle_indx)
-        
         #
         # print descriptor string
         #
         desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(total_orbits)+', threedee='+str(threedee)+', using '+filelist
         np.array([desc],dtype='S200').tofile(f)
 
-        
-        
         aps_dictionary = dict() # make blank dictionary for the aps
         for i in range(0,total_orbits): aps_dictionary[i] = []
-            
+
 
         for i in range(1,len(self.SLIST)-1):
 
@@ -178,19 +191,24 @@ class ApsFinding():
 
                 tval = Ob.time
                 dt   = Oc.time - Ob.time # dumps must be evenly spaced! (though this is not a requirement later)
-            
 
                 # get the indices correct here
                 # create the map from each saved file, based on index
-                # should only do this step if index is passed, otherwise it might be expensive?
-                _1, p1indx, _2  = np.intersect1d(Oa.data['index'], particle_indx, return_indices=True)
-                _1, p2indx, _2  = np.intersect1d(Ob.data['index'], particle_indx, return_indices=True)
-                _1, p3indx, _2  = np.intersect1d(Oc.data['index'], particle_indx, return_indices=True)
+                # should only do this step if index is passed, otherwise it might be expensive
+                if changingindx:
+                    _1, p1indx, _2  = np.intersect1d(Oa.data['id'], particle_indx, return_indices=True)
+                    _1, p2indx, _2  = np.intersect1d(Ob.data['id'], particle_indx, return_indices=True)
+                    _1, p3indx, _2  = np.intersect1d(Oc.data['id'], particle_indx, return_indices=True)
 
-                X1 = Oa.data['x'][p1indx];Y1 = Oa.data['y'][p1indx];Z1 = Oa.data['z'][p1indx];I1 = Oa.data['index'][p1indx]
-                X2 = Ob.data['x'][p2indx];Y2 = Ob.data['y'][p2indx];Z2 = Ob.data['z'][p2indx];I2 = Ob.data['index'][p2indx]
-                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['index'][p3indx]
-            
+                    X1 = Oa.data['x'][p1indx];Y1 = Oa.data['y'][p1indx];Z1 = Oa.data['z'][p1indx];I1 = Oa.data['id'][p1indx]
+                    X2 = Ob.data['x'][p2indx];Y2 = Ob.data['y'][p2indx];Z2 = Ob.data['z'][p2indx];I2 = Ob.data['id'][p2indx]
+                    X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['id'][p3indx]
+
+                else:
+                    X1 = Oa.data['x'];Y1 = Oa.data['y'];Z1 = Oa.data['z'];I1 = Oa.data['id']
+                    X2 = Ob.data['x'];Y2 = Ob.data['y'];Z2 = Ob.data['z'];I2 = Ob.data['id']
+                    X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
+
                 # compute radial positions
                 if threedee:
                     R1 = np.sqrt(X1*X1 + Y1*Y1 + Z1*Z1)
@@ -220,17 +238,20 @@ class ApsFinding():
                 Oc = particle.Input(self.SLIST[i+1],legacy=False,comp=comp,verbose=self.verbose)
 
                 tval = Oc.time - dt
-                
-                _1, p3indx, _2 = np.intersect1d(Oc.data['index'], particle_indx, return_indices=True)
-                
-                X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['index'][p3indx]
+
+                if changingindx:
+                    _1, p3indx, _2 = np.intersect1d(Oc.data['id'], particle_indx, return_indices=True)
+
+                    X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['id'][p3indx]
+
+                else:
+                    X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
 
                 if threedee:
                     R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
                 else:
                     R3 = np.sqrt(X3*X3 + Y3*Y3)
 
-                
 
             # R1 might be the shortest, if particles are added, so only compare up to the length of r1
             # indices are always sorted owing to intersect1d, so we can simply truncate
@@ -239,64 +260,66 @@ class ApsFinding():
             # apocentre condition: there could be more careful checking here
             #      for 'false apocentres'
             #      or for z apocentres, or 3d, etc.
-            aps      = np.logical_and( R2[:r1length] > R1, R2[:r1length] > R3[:r1length] ) 
+            aps      = np.logical_and( R2[:r1length] > R1, R2[:r1length] > R3[:r1length] )
 
-            # keep track of idices
-            IN = np.array([i for i in range(0,len(R2))])
+            # tag orbits with an internal id for looping
+            #IN = np.array([i for i in range(0,len(R2))])
 
             x          = X2[:r1length][aps]
             y          = Y2[:r1length][aps]
             z          = Z2[:r1length][aps]
-            ival       = I2[:r1length][aps]
-            index_tags = IN[:r1length][aps]
+            id         = I2[:r1length][aps]
+            #orderid    = IN[:r1length][aps]
 
             if self.verbose > 0:
                     print('Current time: {4.3f}'.format(tval),end='\r', flush=True)
-                
 
             # under this convention, the user needs to keep track of the particle index that was input
-            for j in range(0,len(index_tags)):
-                aps_dictionary[index_tags[j]].append([tval,x[j],y[j],z[j]])
+            #for j in range(0,len(index_tags)):
+            #    aps_dictionary[orderid[j]].append([tval,x[j],y[j],z[j]])
 
+            # under this convention, the id of the orbit is preserved and used as the dictionary key
+            for j in range(0,len(index_tags)):
+                aps_dictionary[id[j]].append([tval,x[j],y[j],z[j]])
 
 
         self.napsides = np.zeros([total_orbits,2])
 
-
+        # print a header with the number of orbits
         np.array([total_orbits],dtype='i').tofile(f)
 
         orbits_with_apocentre = 0
-        
+
         for j in range(0,total_orbits):
 
-            orbit_aps_array = np.array(aps_dictionary[j])
+            orbit_aps_array = np.array(aps_dictionary[particle_indx[j]])
 
             # print the index to the file
             np.array([particle_indx[j]],dtype='i').tofile(f)
+
+            # if there are valid turning points:
             if (len(orbit_aps_array) > 0):
 
                 orbits_with_apocentre += 1
                 naps = len(orbit_aps_array[:,0])  # this might be better as shape
 
                 np.array([naps],dtype='i').tofile(f)
-                
 
                 self.napsides[j,0] = naps
                 self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
 
                 np.array( orbit_aps_array.reshape(-1,),dtype='f').tofile(f)
 
+            # no valid turning points: put in a blank
             else:
-                #np.array([0],dtype='i').tofile(f)
-                    
-                # guard against zero length
 
+                # guard against zero length
                 np.array([1],dtype='i').tofile(f)
 
                 # indices start at 1
                 np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
-                    
-                        
+
+
         f.close()
 
         print('trapping.ApsFinding.determine_r_aps: found {} orbits (out of {}) with valid apocentres.'.format(orbits_with_apocentre,total_orbits))
@@ -325,20 +348,19 @@ class ApsFinding():
 
         self.aps = dict()
 
-        indx_array = []
+        self.id_array = np.zeros(self.norb,dtype='i')
 
         for i in range(self.norb):
 
-            [indx] = np.fromfile(f,dtype='i',count=1)
-            indx_array.append(indx)
-            
+            [self.id_array[i]] = np.fromfile(f,dtype='i',count=1)
+
             [naps] = np.fromfile(f,dtype='i',count=1)
 
-            
+
             if naps > 0:
-    
+
                 aps_array = np.fromfile(f,dtype='f',count=4*naps)
-                
+
                 self.aps[i] = aps_array.reshape([naps,4])
 
 
@@ -347,23 +369,23 @@ class ApsFinding():
         ApsDict = ApsFinding.convert_to_dict(self)
         ApsDict['desc']  = self.desc
         ApsDict['norb']  = self.norb
-        ApsDict['index'] = np.array(indx_array)
+        ApsDict['index'] = np.array(self.id_array)
 
         return ApsDict
 
 
     def convert_to_dict(self):
-            
+
         # remake Aps File as a dictionary
         ApsDict = dict()
-        
-        for indx in range(0,self.norb):
-            ApsDict[indx] = self.aps[indx]
+
+        for i in range(0,self.norb):
+            ApsDict[self.id_array[i]] = self.aps[i]
 
         return ApsDict
 
-        
-    
+
+
 
 class ComputeTrapping:
     '''
@@ -419,34 +441,34 @@ def evaluate_clusters_polar_legacy(K,maxima=False,rank=False,perc=0.):
     '''
     evaluate_clusters_polar
         calculate statistics for clusters in polar coordinates
-        
+
     inputs
     -------------
     K             : number of clusters
     maxima        : (boolean, False) if True, use the maximum value from the clusters
     rank
     perc
-    
-    
+
+
     returns
     -------------
     theta_n
     clustermean
     clusterstd_r
     clusterstd_t
-    
-    
-    
+
+
+
     '''
-    
+
     # how many clusters?
     k = K.K
 
     if (rank) & (perc==0.):
         print('evaluate_clusters_polar: Perc must be >0.')
         return np.nan,np.nan,np.nan,np.nan
-    
-    
+
+
     # compute radii and theta values from clusters
     rad_clusters = np.array([np.sum(np.array(K.clusters[i])*np.array(K.clusters[i]),axis=1)**0.5 for i in range(0,k)])
 
@@ -454,7 +476,7 @@ def evaluate_clusters_polar_legacy(K,maxima=False,rank=False,perc=0.):
     # (legacy) or without (modern) folding
 
     legacy = True
-    
+
     if legacy:
         the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
     else:
@@ -462,17 +484,17 @@ def evaluate_clusters_polar_legacy(K,maxima=False,rank=False,perc=0.):
 
     if maxima:
         # use maxima
-        
+
         clustermean = np.max([np.mean(rad_clusters[i]) for i in range(0,k)])
 
         if legacy:
             theta_n = np.max([np.abs(np.arctan(       K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
         else:
             theta_n = np.max([       np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-    
+
         if rank:
             # use rank ordered
-        
+
             organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
             organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
 
@@ -491,12 +513,12 @@ def evaluate_clusters_polar_legacy(K,maxima=False,rank=False,perc=0.):
 
 
     else:
-        
+
         # not maxima
-        
+
         if rank:
             # use rank ordered
-        
+
             organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
             organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
 
@@ -512,7 +534,7 @@ def evaluate_clusters_polar_legacy(K,maxima=False,rank=False,perc=0.):
                 clusterstd_t = np.mean([np.abs(np.max(the_clusters[i])-np.min(the_clusters[i])) for i in range(0,k)])
 
 
-            
+
         clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
 
         # compute the mean of the cluster centers
@@ -529,49 +551,49 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
     '''
     evaluate_clusters_polar
         calculate statistics for clusters in polar coordinates
-        
+
     inputs
     -------------
     K
     maxima
     rank
     perc
-    
-    
+
+
     returns
     -------------
     theta_n
     clustermean
     clusterstd_r
     clusterstd_t
-    
-    
-    
+
+
+
     '''
-    
+
     # how many clusters?
     k = K.K
 
     if (rank) & (perc==0.):
         print('evaluate_clusters_polar: Perc must be >0.')
         return np.nan,np.nan,np.nan,np.nan
-    
-    
+
+
     # compute radii and theta values from clusters
     rad_clusters = np.array([np.sum(np.array(K.clusters[i])*np.array(K.clusters[i]),axis=1)**0.5 for i in range(0,k)])
     the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
 
     if maxima:
         # use maxima
-        
+
         clustermean = np.max([np.mean(rad_clusters[i]) for i in range(0,k)])
 
         #theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
         theta_n = np.max([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-    
+
         if rank:
             # use rank ordered
-        
+
             organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
             organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
 
@@ -581,14 +603,14 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
         else:
             clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(0,k)])
             clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(0,k)])
-            
+
     else:
-        
+
         # not maxima
-        
+
         if rank:
             # use rank ordered
-        
+
             organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
             organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
 
@@ -598,7 +620,7 @@ def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
         else:
             clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(0,k)])
             clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
-            
+
         clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
         #theta_n = np.mean([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
         theta_n = np.mean([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
@@ -644,25 +666,25 @@ def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
     K.find_centers()
 
     # add an evaluation for if a cluster ends up with only X members, here hard coded to 2
-    
-        
+
+
     # find the standard deviation of clusters
 
     # first, check to make sure no single-point clusters were detected
     # set rejection threshold
     min_cluster_size = 1
 
-    
+
     try:
 
-        clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])    
-    
+        clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+
         # eliminate
         while np.min(clustersize) <= min_cluster_size:
             w = np.where(clustersize > min_cluster_size)[0]
             new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
                         np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
-    
+
             K = kmeans.KMeans(k,X=new_aps)
             K.find_centers()
             clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
@@ -678,17 +700,17 @@ def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
         K.init_centers()
         K.find_centers(method='++')
         kmeans_plus_flag = 1
-        
+
         try:
 
             clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
-            
+
 
             while np.min(clustersize) <= min_cluster_size:
                 w = np.where(clustersize > min_cluster_size)[0]
                 new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
                         np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
-    
+
                 K = kmeans.KPlusPlus(k,X=new_aps)
                 K.init_centers()
                 K.find_centers(method='++')
@@ -702,7 +724,7 @@ def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
 
         # failure mode for advanced kmeans
         except:
-            
+
             #
             # would like a more intelligent way to diagnose
             #if indx >= 0:
@@ -713,8 +735,8 @@ def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
             theta_n = np.nan
             kmeans_plus_flag = 2
 
-    
-    
+
+
     return theta_n,clustermean,clusterstd_r,clusterstd_t,kmeans_plus_flag
 
 
@@ -755,37 +777,37 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
     kmeans_plus_flag = 0
     K = kmeans.KMeans(k,X=ApsArray)
     K.find_centers()
-    
+
     # find the standard deviation of clusters
     try:
-        
+
         # these may be better served as maxima
         if ~maxima:
 
             if ~mad:
                 clusterstd_x = np.mean([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
                 clusterstd_y = np.mean([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
-            
+
             else:
                 # median absolute deviation implementation to check
                 clusterstd_x = np.mean([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[0]\
                                             for i in range(0,k)])
                 clusterstd_y = np.mean([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[1]\
                                             for i in range(0,k)])
-            
+
             clustermean = np.mean([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
         else:
             if ~mad:
                 clusterstd_x = np.max([np.std(np.array(K.clusters[i]),axis=0)[0] for i in range(0,k)])
                 clusterstd_y = np.max([np.std(np.array(K.clusters[i]),axis=0)[1] for i in range(0,k)])
-            
+
             else:
                 clusterstd_x = np.max([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[0]\
                                             for i in range(0,k)])
                 clusterstd_y = np.max([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[1]\
                                             for i in range(0,k)])
-            
+
             clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
         # it may also be interesting to record this in a different format. e.g. for orbits that we don't expect to be aligned with the bar exactly
@@ -798,7 +820,7 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
         K.init_centers()
         K.find_centers(method='++')
         kmeans_plus_flag = 1
-        
+
         try:
 
             if ~maxima:
@@ -826,14 +848,14 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
                                             for i in range(0,k)])
                     clusterstd_y = np.max([np.median(np.abs(np.array(K.clusters[i]) - np.median(np.array(K.clusters[i]),axis=0)),axis=0)[1]\
                                             for i in range(0,k)])
-                
+
                 clustermean = np.max([(K.mu[i][0]**2. + K.mu[i][1]**2.)**0.5 for i in range(0,k)])
 
             theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
 
         # failure mode for advanced kmeans
         except:
-            
+
             #
             # would like a more intelligent way to diagnose
             #if indx >= 0:
@@ -844,8 +866,8 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
             theta_n = np.nan
             kmeans_plus_flag = 2
 
-    
-    
+
+
     return theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag
 
 
@@ -857,7 +879,7 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
 def transform_aps(ApsArray,BarInstance):
     '''
     transform_aps : simple transformation for the aps array, offloaded for clarity.
-    
+
     inputs
     ------------------
     ApsArray        : the array of apsides
@@ -885,7 +907,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
                           k=2,\
                           verbose=1,
                               polar=False,\
-                              rank=False,perc=0.): 
+                              rank=False,perc=0.):
     '''
     do_single_kmeans_step: analyze a desired time in the trapping dictionary
 
@@ -912,7 +934,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
     sigma_y
 
     note--all are set to np.nan if unclassifiable for some reason
-                          
+
     '''
     norb = TrappingInstanceDict['norb']
 
@@ -930,7 +952,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
 
     t1 = time.time()
 
-    
+
     for indx in range(0,norb):
         if ((indx % (norb/100)) == 0) & (verbose > 0):  utils.print_progress(indx,norb,'trapping.do_single_kmeans_step')
         #
@@ -944,7 +966,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
             x_position[indx] = np.nan
             sigma_x[indx] = np.nan
             sigma_y[indx] = np.nan
-            
+
             continue
 
 
@@ -961,7 +983,7 @@ def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
             x_position[indx] = np.nan
             sigma_x[indx] = np.nan
             sigma_y[indx] = np.nan
-            
+
             continue
 
 
@@ -1038,32 +1060,32 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
 
     returns
     -----------
-    trapping_array           : array, [n_families,n_orbits,n_steps]  
+    trapping_array           : array, [n_families,n_orbits,n_steps]
                                 n_families = number of keys in criteria
                                 n_orbits   = number of keys in TrappingInstanceDict
                                 n_steps    = number of elements in BarInstance.time
                                binary table, with 1 when trapped, 0 when not.
 
-    
+
     notes
     -----------
     criteria is a dictionary with the following format:
         criteria[0] = [(0.,0.5),(33.,251.0),(0.0,0.0008),(0.0,0.005),(0.,1.)] # x1 orbits
-                 ^        ^         ^             ^           ^         ^ 
-                 |        |         |             |           |         | 
-                 |     limits on:   |             |           |         | 
+                 ^        ^         ^             ^           ^         ^
+                 |        |         |             |           |         |
+                 |     limits on:   |             |           |         |
             family     theta_n    r_freq   sigma-parallel     |    cluster-center
             number                                    sigma-perpendicular
 
 
-    
-    
+
+
     the Nyquist frequency is calculated based on the minimum spacing of the bar model and is always applied.
        this provides a measure of uncertainty; orbits with unresolved frequencies cannot be classified.
-    
-    
+
+
     '''
-    
+
     norb = TrappingInstanceDict['norb']
     nfamilies = len(criteria.keys())
     if nfamilies == 0:
@@ -1079,77 +1101,77 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
 
     # reformat and reconsider me for good printing
     #if (verbose > 0): print 'trapping.do_kmeans_dict: opening angle=%4.3f, OmegaR=%3.2f, sigma_x limit=%4.3f, Aps Buffer=%i' %(opening_angle,rfreq_limit,sigmax_limit,sbuffer)
-      
+
     for indx in range(0,norb):
-        
+
         #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
-        if (((indx % (norb/20)) == 0) & (verbose > 0)):  
+        if (((indx % (norb/20)) == 0) & (verbose > 0)):
             #
             print(float(indx)/float(norb),'...',end='')
             #utils.print_progress(indx,norb,'trapping.do_kmeans_dict')
 
         # extract times
         time_sequence = np.array(TrappingInstanceDict[indx])[:,0]
-        
+
         # guard against total aps range being too small (very important speedup for halo!)
         if time_sequence.size < sbuffer:
 
             # skip to next orbit
             continue
-        
+
         # transform to bar frame
         X = transform_aps(TrappingInstanceDict[indx],BarInstance)
-        
+
         # initialize the list of closest apsides for each timestep with an apse
         orbit_dist = []
 
         # loop through the apsides
         for midpoint in range(0,len(X)):
-            
+
             relative_aps_time = time_sequence - time_sequence[midpoint]
 
             # find the closest aps (not necessarily time-symmetric)
-            closest_aps = (abs(relative_aps_time)).argsort()[0:sbuffer] 
-            
-            
+            closest_aps = (abs(relative_aps_time)).argsort()[0:sbuffer]
+
+
             # guard against aps with too large of a timespan (some number of bar periods, preferably)
             if relative_aps_time[closest_aps[-1]] > t_thresh:
-                
+
                 # set values to always be 1
                 #   would this be better as np.nan?
-                # 
+                #
                 orbit_dist.append([0.0,1.0,1.0,1.0,1.0])
                 orbit_dist.append([np.max(BarInstance.time),1.0,1.0,1.0,1.0])
 
                 # skip to next orbit
                 continue
-            
+
             # compute the clustering
             if polar:
                 theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans_polar(X[closest_aps],indx,k=k,\
                                                                                                           maxima=maxima,rank=rank,perc=perc)
 
             else:
-                
+
                 theta_n,clustermean,clusterstd_x,clusterstd_y,kmeans_plus_flag = process_kmeans(X[closest_aps],indx,k=k,maxima=maxima,mad=mad)
-            
+
             # check time boundaries
             if midpoint==0: # first step
-                
+
                 orbit_dist.append([0.0,theta_n,clusterstd_x,clusterstd_y,clustermean])
-            
+
             # default action
             orbit_dist.append([time_sequence[midpoint],theta_n,clusterstd_x,clusterstd_y,clustermean])
-            
-            
+
+
             if midpoint==(len(X)-1): # last step
                 orbit_dist.append([np.max(BarInstance.time),theta_n,clusterstd_x,clusterstd_y,clustermean])
 
-        
+
         DD = np.array(orbit_dist) # 0:time, 1:theta_n, 2:sigma_x, 3:sigma_y, 4:<x>
-        
+
         #nDD = abs(np.ediff1d(DD[:,1],to_begin=1.0))
-        
+
         # radial frequency computation (spacing between aps!)
         tDD = 1./(abs(np.ediff1d(DD[:,0],to_begin=100.0))+1.e-8)
 
@@ -1163,7 +1185,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         frequency_func = interpolate.interp1d(DD[:,0],tDD,kind='nearest',fill_value=1.0)       #2
         #
         sigmax_func = interpolate.interp1d(DD[:,0],abs(DD[:,2]),kind='nearest',fill_value=1.0) #3
-        
+
         sigmay_func = interpolate.interp1d(DD[:,0],abs(DD[:,3]),kind='nearest',fill_value=1.0) #4
 
         xmean_func = interpolate.interp1d(DD[:,0],abs(DD[:,4]),kind='nearest',fill_value=1.0) #5
@@ -1171,10 +1193,10 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
         #
         # apply trapping rules
         #
-        
+
         # set up nyquist frequency limit
         nyquist = 1./(4.*(BarInstance.time[1]-BarInstance.time[0]))
-        
+
 
         # hard-code in the metrics that we use. this should be modified to accept various inputs.
         metric = [theta_func(BarInstance.time),\
@@ -1182,21 +1204,21 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
                  sigmax_func(BarInstance.time),\
                  sigmay_func(BarInstance.time),
                 xmean_func(BarInstance.time)]
-        
-        
+
+
         for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
             # how does this get covered from missing criteria?
             #    currently cannot miss criteria
             #
             #    also, how can we add flexibility here?
-            
+
             trapped = np.where( (metric[0] >= criteria[family][0][0]) & (metric[0] < criteria[family][0][1])\
                       & (metric[1] >= criteria[family][1][0]) & (metric[1] < criteria[family][1][1])\
                       & (metric[2] >= criteria[family][2][0]) & (metric[2] < criteria[family][2][1])\
                       & (metric[3] >= criteria[family][3][0]) & (metric[3] < criteria[family][3][1])\
                       & (metric[4] >= criteria[family][4][0]) & (metric[4] < criteria[family][4][1]))[0]
-    
+
             trapping_array[nfam,indx,trapped] = np.ones(len(trapped))
 
     # flag for time elapsed
@@ -1249,26 +1271,26 @@ def redistribute_aps(TrappingInstanceDict,divisions,verbose=0):
     first_partition = TrappingInstanceDict['norb'] - average_part*(divisions-1)
 
     if verbose: print('Each processor has {0:d} particles.'.format(average_part))
-        
+
     low_particle = 0
 
     # construct the separate processor dictionaries
     for i in range(0,divisions):
         end_particle = low_particle+average_part
-        
+
         if i==0:
             end_particle = low_particle+first_partition
 
         for j in range(low_particle,end_particle):
             (DividedTrappingInstanceDict[i])[j-low_particle] = TrappingInstanceDict[j]
-             
+
         low_particle = end_particle
-        
+
         if (i>0):
             DividedTrappingInstanceDict[i]['norb'] = average_part
         else:
             DividedTrappingInstanceDict[i]['norb'] = first_partition
-            
+
     return DividedTrappingInstanceDict
 
 
@@ -1292,7 +1314,7 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                                polar=False,rank=False,perc=0.):
     '''
     multi_compute_trapping
-        multiprocessing-enabled kmeans calculator. 
+        multiprocessing-enabled kmeans calculator.
 
     inputs
     ---------------
@@ -1308,7 +1330,7 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
     polar
     rank
     perc
-    
+
 
     returns
     ---------------
@@ -1317,14 +1339,14 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
 
 
     '''
-                   
+
     pool = Pool(nprocs)
     a_args = [DividedTrappingInstanceDict[i] for i in range(0,nprocs)]
     second_arg = BarInstance
     third_arg = sbuffer
     fourth_arg = t_thresh
     fifth_arg = criteria
-    
+
     sixth_arg = [0 for i in range(0,nprocs)]
     sixth_arg[0] = verbose
 
@@ -1349,7 +1371,7 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                                                        itertools.repeat(tenth_arg),\
                                                        itertools.repeat(eleventh_arg),\
                                                        itertools.repeat(twelvth_arg)))
-        
+
     except:
         # this is the python2 version
         a_vals = pool.map(do_kmeans_dict_star, itertools.izip(a_args,\
@@ -1364,11 +1386,11 @@ def multi_compute_trapping(DividedTrappingInstanceDict,nprocs,BarInstance,\
                                                        itertools.repeat(tenth_arg),\
                                                        itertools.repeat(eleventh_arg),\
                                                        itertools.repeat(twelvth_arg)))
-    
+
     # clean up to exit
     pool.close()
     pool.join()
-    
+
     return a_vals
 
 
@@ -1401,7 +1423,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     polar
     rank
     perc
-    
+
 
     returns
     ---------------
@@ -1416,10 +1438,10 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
 
     # divide the aps dictionary up for processors
     DividedTrappingInstanceDict = redistribute_aps(TrappingInstanceDict,nprocs)
-    
+
     if (verbose > 0):
         print('Beginning kmeans, using {0:d} processors.'.format(nprocs))
-    
+
     t1 = time.time()
     freeze_support()
 
@@ -1433,7 +1455,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
                    mad=mad,\
                    k=k,\
                    polar=polar,rank=rank,perc=perc)
-                   
+
     print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
 
     # go through the dictionary of trapping criteria and re-make the arrays
@@ -1442,7 +1464,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
         trapped[nfam] = re_form_trapping_arrays(trapping_arrays,nfam)
-    
+
 
     return trapped
 
@@ -1465,7 +1487,7 @@ def re_form_trapping_arrays(array,array_number):
 
 
     '''
-    
+
     # the arrays are structured as [processor][x1/x2][norb][ntime]
 
     #  compute the total number of orbits across all processors
@@ -1473,26 +1495,24 @@ def re_form_trapping_arrays(array,array_number):
 
     for processor in range(0,len(array)): norb_master += array[processor].shape[1]
 
-    
+
     #
     # now initialize new blank array?
     #    note that it is initialized as 'i2' to save as much memory as possible
-    # 
+    #
     net_array = np.zeros([int(norb_master),int(array[0].shape[2])],dtype='i2')
 
     # loop over processors to populate final array
     start_index = 0
     for processor in range(0,len(array)):
-        
+
         end_index = start_index + array[processor].shape[1]
-        
+
         net_array[start_index:end_index] = array[processor][array_number]
-        
+
         start_index = end_index
-        
+
     return net_array
 
 
 #warnings.filterwarnings("ignore",category =RuntimeWarning)
-
-
