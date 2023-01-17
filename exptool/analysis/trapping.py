@@ -169,7 +169,8 @@ class ApsFinding():
         tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
 
         # create a new file using the particle number, runtag, and time
-        f = open(out_directory+'RadialAps_N{}_r{}_T{}.dat'.format(total_orbits,runtag,tstamp),'wb+')
+        outputfile = out_directory+'RadialAps_N{}_r{}_T{}.dat'.format(total_orbits,runtag,tstamp)
+        f = open(outputfile,'wb+')
 
         #
         # print descriptor string
@@ -324,10 +325,10 @@ class ApsFinding():
 
         print('trapping.ApsFinding.determine_r_aps: found {} orbits (out of {}) with valid apocentres.'.format(orbits_with_apocentre,total_orbits))
 
-        print('trapping.ApsFinding.determine_r_aps: savefile is '+out_directory+'apshold'+tstamp+'.dat')
+        print('trapping.ApsFinding.determine_r_aps: savefile is {}'.format(outputfile))
 
         if (return_aps):
-            ApsDict = ApsFinding.read_aps_file(self,out_directory+'apshold'+tstamp+'.dat')
+            ApsDict = ApsFinding.read_aps_file(self,outputfile)
             return ApsDict
 
 

@@ -28,31 +28,25 @@ for i in range(000,2000):
 
 
 
-                                                           
+
 '''
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-
-
-
-from exptool.utils import kde_3d
-from exptool.utils import utils
-
-
+# standard imports
 import numpy as np
+from numpy.linalg import eig, inv
 
-#from matplotlib import _cntr as cntr
-
-
+# for tracing contours
 from skimage.measure import find_contours
 
-
-
-
-from numpy.linalg import eig, inv
-import matplotlib.pyplot as plt
+# for fitting ellipse curves
 from scipy.optimize import curve_fit
 
+# exptool imports
+from ..utils import kde_3d
+from ..utils import utils
+
+# plotting imports
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 
@@ -74,7 +68,7 @@ class Ellipse():
         gell =  ( (xcomp + ycomp) )**(-1./c)
         return gell
 
-    
+
     @staticmethod
     def fixed_ellipse(th,a,b):
         '''
@@ -82,8 +76,8 @@ class Ellipse():
 
 
         '''
-        xcomp = (( abs(np.cos(th))**2.0) / a**2.0 ) 
-        ycomp = (( abs(np.sin(th))**2.0) / b**2.0 ) 
+        xcomp = (( abs(np.cos(th))**2.0) / a**2.0 )
+        ycomp = (( abs(np.sin(th))**2.0) / b**2.0 )
         gell =  ( (xcomp + ycomp) )**(-1./2.0)
         return gell
 
@@ -93,10 +87,8 @@ class Ellipse():
         '''
         inside_ellipse
         determine whether a set of points is inside of an ellipse
-    
+
         # only tests in first quadrant for power safety
-
-
 
         '''
         rX,rY = X*np.cos(rot)-Y*np.sin(rot),-X*np.sin(rot)-Y*np.cos(rot)
@@ -107,8 +99,6 @@ class Ellipse():
         ellipse_array = np.zeros(len(X))
         ellipse_array[yes_ellipse] = 1
         return ellipse_array
-
-
 
 
 
@@ -124,14 +114,14 @@ class genEllipse:
     def fitEllipse(self,PSPInput,
                        theta_resolution=200,resolution=256,rmax=0.1,loggy=False,generalize=True,weights=None,ncbins=50,contourlevels=[None],SN=1.,verbose=0):
         # here, I have made the input a PSP call...but this could be generalized better.
-        
+
         #
         # get a guess of second-order parameters (center, angle) from SOEllipse
         #
         E = EllipseFinder()
 
         kde_weights = None
-        
+
         if weights=='normalized':
             kde_weights = PSPInput.mass/np.median(PSPInput.mass)
 
@@ -155,12 +145,12 @@ class genEllipse:
         miny,maxy = np.min(wcols),np.max(wcols)
 
         E.posarr,E.xarr, E.yarr = tmp_posarr[minx:maxx,miny:maxy],tmp_xarr[minx:maxx,miny:maxy],tmp_yarr[minx:maxx,miny:maxy]
-        
+
         if loggy:
             pos_vals = E.posarr.reshape(-1,)
             eps = np.min( pos_vals[np.where(pos_vals > 0.)[0]])
             E.posarr = np.log10(E.posarr + eps)
-        
+
         E.add_ellipse_field(check=0,cbins=ncbins,convals=contourlevels)
 
         # not always going to get 50, looks for non-degenerate ellipses
@@ -183,7 +173,7 @@ class genEllipse:
         #
         k = 0
         indx_atmp = 0.
-        
+
         for j in range(0,ncbins):
 
 
@@ -214,7 +204,7 @@ class genEllipse:
             # calculate the errors on the parameters
             perr = np.sqrt(np.diag(pcov))
 
-            
+
             # could put in a block for avals that fit too small
             atmp = np.max([popt[0],popt[1]])
             btmp = np.min([popt[0],popt[1]])
@@ -231,7 +221,7 @@ class genEllipse:
                 # new guard for S/N
                 #
                 if (atmp/aetmp > SN) & (btmp/betmp > SN):
-                    
+
                     indx_atmp = atmp
                     self.R[k]  = rind
                     self.TH[k] = thind
@@ -266,7 +256,7 @@ class genEllipse:
         self.CEN = self.CEN[0:k]
         self.ANG = self.ANG[0:k]
         self.clevels = self.clevels[0:k]
-            
+
         #self.PH = np.arctan(-self.B/self.A)
 
         #
@@ -279,8 +269,8 @@ class genEllipse:
         self.CONY = E.CONY
         self.FULLX = E.FULLX
         self.FULLY = E.FULLY
-        
-        
+
+
     def plot_contours(self,ellipses=True,fignum=None):
         '''
         plot_contours
@@ -296,7 +286,7 @@ class genEllipse:
             defined = (self.xarr[0] == self.xarr[1])
         except:
             print('ellipse_tools: genEllipse.fitEllipse() must be called prior to genEllipse.plot_contours().')
-            
+
         plt.contourf(self.xarr,self.yarr,self.posarr,36,cmap=cm.gnuplot)
 
         plt.colorbar()
@@ -311,7 +301,7 @@ class genEllipse:
         '''
         plot_ellipse_diagnostics
             plot the ellipticity versus major axis (left) and phase angle versus major axis (right)
-            
+
 
         '''
         if fignum:
@@ -324,7 +314,7 @@ class genEllipse:
         ax1.scatter(self.A,1.-self.B/self.A,color='black',s=10.)
         ax1.set_xlabel('Semi-major axis')
         ax1.set_ylabel('Ellipticity')
-        
+
         ax2.scatter(self.A,self.ANG,color='black',s=10.)
 
 
@@ -391,7 +381,7 @@ def max_ellip(A,B):
     e = (1.-B/A)
     return A[ np.where(np.max(e)==e)[0]]
 
-        
+
 def ellip_change(A,B,change=0.1):
     e = (1.-B/A)
     ellip_index = np.where(np.max(e)==e)[0]
@@ -429,7 +419,7 @@ class SOEllipse(object):
     advantages: fast
 
     disadvantages: does not have flexibility
-    
+
     '''
     @staticmethod
     def fitEllipse(x,y):
@@ -445,7 +435,7 @@ class SOEllipse(object):
         E, V =  eig(np.dot(inv(S), C))
         n = np.argmax(np.abs(E))
         a = V[:,n]
-        
+
         return a
 
     @staticmethod
@@ -454,13 +444,13 @@ class SOEllipse(object):
         num = b*b-a*c
         x0=(c*d-b*f)/num
         y0=(a*f-b*d)/num
-            
+
         return np.array([x0,y0])
 
     @staticmethod
     def ellipse_angle_of_rotation( a ):
         b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
-        
+
         return 0.5*np.arctan(2*b/(a-c))
 
     @staticmethod
@@ -471,7 +461,7 @@ class SOEllipse(object):
         down2=(b*b-a*c)*( (a-c)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
         res1=np.sqrt(up/down1)
         res2=np.sqrt(up/down2)
-        
+
         return np.array([res1, res2])
 
 
@@ -487,7 +477,7 @@ class EllipseFinder():
     def __init__(self,help=False):
 
         if help: EllipseFinder.print_usage()
-            
+
         return None
 
     def print_usage(self):
@@ -505,16 +495,16 @@ class EllipseFinder():
 
         EllipseFinder.generate_flat_field(IO_obj.xpos,IO_obj.ypos,IO_obj.zpos,IO_obj.mass,xres=xres,xbins=xbins,normamass=normamass,numdens=numdens,logvals=logvals)
 
-        
 
-       
+
+
     def generate_flat_field(self,xpos,ypos,zpos,mass,zcut=0.1,xres=30,xbins=[0],normamass=False,numdens=False,logvals=False):
 
         # ToDo : add support for zpos to make slices.
 
         if xbins[0] == 0:
             print('ellipse_tools.EllipseFinder.generate_flat_field: xbins is not user specified. using default...')
-            
+
             self.xbins = np.linspace(-np.max(xpos),np.max(xpos),xres)
 
         else:
@@ -527,12 +517,12 @@ class EllipseFinder():
         else:
             massuse = mass
 
-        
+
         self.xarr,self.yarr,self.posarr = utils.quick_contour(self.xbins,self.xbins,xpos,ypos,massuse)
 
         if numdens:
             xt,yt,pt = utils.quick_contour(self.xbins,self.xbins,xpos,ypos,np.ones(len(xpos)))
-        
+
         if logvals:
             self.posarr = np.log10(self.posarr+np.min(massuse))
 
@@ -543,7 +533,7 @@ class EllipseFinder():
 
         if xbins[0] == 0:
             print('ellipse_tools.EllipseFinder.generate_flat_field: xbins is not user specified. using default...')
-            
+
             self.xbins = np.linspace(-np.max(xpos),np.max(xpos),xres)
 
         else:
@@ -551,7 +541,7 @@ class EllipseFinder():
             self.xbins = xbins
             xres = len(self.xbins)
 
-        
+
         if normamass:
             massuse = mass/np.median(mass)
         else:
@@ -559,11 +549,11 @@ class EllipseFinder():
 
 
         if numdens: massuse = None
-        
+
 
         extent = np.max(xbins)
         tt = kde_3d.fast_kde(xpos,ypos,zpos, gridsize=(xres+2,xres+2,xres+2), extents=[-extent,extent,-extent,extent,-0.05,0.05], nocorrelation=False, weights=massuse)
-        
+
         self.posarr = np.sum(tt[1:(xres+1),1:(xres+1),1:(xres+1)],axis=0)
 
 
@@ -575,7 +565,7 @@ class EllipseFinder():
         self.xarr,self.yarr = np.meshgrid(self.xbins,self.xbins)
 
 
-        
+
     def determine_contour_levels(self,cbins=50,vertices=30):
         '''
         determine_contour_levels
@@ -591,7 +581,7 @@ class EllipseFinder():
         returns
         -------
         self.clevels : array of surface density values to fit ellipses
-        
+
         '''
 
         # use matplotlib's marching squares contour finder for this. to be improved with a better algorithm later...
@@ -605,21 +595,21 @@ class EllipseFinder():
 
         stepsize = (startval-endval)/1000.
 
-        # iterate down and up to find where contours exist       
+        # iterate down and up to find where contours exist
         conlevels = np.zeros(1001)
 
         indval = startval
         j = 0
-        
+
         while (indval > endval):
             res = c.trace(indval)
             if (len(res) > 0):             # does the contour level exist?
                 if (len(res[0])>vertices):       # only accept those with greater than 30 vertices
                     conlevels[j] = indval
                     j += 1
-                    
+
             indval -= stepsize
-            
+
 
         cvals = conlevels[0:j]            # truncate list to number of valid contours
 
@@ -632,11 +622,11 @@ class EllipseFinder():
         # define the contour levels
         self.clevels = np.array([ (startval - stepsize*x) for x in range(0,cbins)])
 
-        
-                        
+
+
     def add_ellipse_field(self,xarr=None,yarr=None,posarr=None,check=0,cbins=50,convals=[None]):
 
-        
+
         try:
             y = self.xarr[0,0]
         except:
@@ -670,22 +660,22 @@ class EllipseFinder():
         else:
             self.clevels = convals
             # this has to be carefully done in order to make sure it matches log call, unless I change to better density determination??
-        
+
         # ^^ generated self.clevels
 
         # instantiate the contour class object
         #c = cntr.Cntr(self.xarr,self.yarr,self.posarr)
 
-        
+
         indx_aval = 0.
-        
+
         for contour_indx,contour_value in enumerate(self.clevels):
 
             #res = c.trace(contour_value,nchunk=4)                                     # trace the individual contours
             res = find_contours(self.posarr,contour_value)
-            
+
             if (len(res)>0):                                      # guard against non-existent contours
-                
+
                 if (len(res[0])>10):                              # guard against singular matrices
 
                     # construct arrays for particular contour level
@@ -704,9 +694,9 @@ class EllipseFinder():
                     ell = SOEllipse().fitEllipse(XCON,YCON)
                     phi = SOEllipse().ellipse_angle_of_rotation(ell)
                     center = SOEllipse().ellipse_center(ell)
-                    
+
                     if (center[0]**2.+center[1]**2.)**0.5 < 0.007: # guard against bad center detections (upgrade to binsize fraction??)
-                        axes = SOEllipse().ellipse_axis_length(ell)              
+                        axes = SOEllipse().ellipse_axis_length(ell)
                         a, b = axes
 
                         if indx_aval < np.max([a,b]):
@@ -714,23 +704,23 @@ class EllipseFinder():
                             #print indx_aval
 
                             # print to screen?
-                            
+
                             r = np.linspace(-0.02,0.02,100)
                             R = np.arange(0,2*np.pi, 0.01)
                             xx = center[0] + a*np.cos(R)*np.cos(phi) - b*np.sin(R)*np.sin(phi)
                             yy = center[1] + a*np.cos(R)*np.sin(phi) + b*np.sin(R)*np.cos(phi)
                             xxtot.append(xx)
                             yytot.append(yy)
-                            
+
                             if check==1:
                                 plt.plot(xx,yy,color='black')
-                            
+
                             avals.append(np.max([a,b]))               # force major axis
                             bvals.append(np.min([a,b]))               # force minor axis
                             levout.append(contour_value)
                             phitally.append(phi)
                             centera.append([center[0],center[1]])
-                        
+
             else:
                 # if no fit:
                 avals.append(0.0)
@@ -744,7 +734,7 @@ class EllipseFinder():
         #
         # want to resample values so that avals is increasing.
         #
-            
+
         self.AVALS    = np.array(avals)      # the major axis values
         self.BVALS    = np.array(bvals)      # the minor axis values
         self.LEVOUT   = np.array(levout)     # the contour levels of the output array
@@ -754,14 +744,14 @@ class EllipseFinder():
         self.FULLX    = np.array(fullx)      # full x positions for ellipses
         self.FULLY    = np.array(fully)      # full y positions for ellipses
         self.CENTER   = np.array(centera)    # positions of the fitted ellipse centers
-        
+
         #return AVALS,BVALS,PHITALLY,LEVOUT,np.array(xxtot),np.array(yytot)
 
 
 
 '''
     def add_single_ellipse(self,xarr,yarr,posarr,level,frac=True):
-        
+
         c = cntr.Cntr(xarr,yarr,posarr)
         aval = 0.
         bval = 0.
@@ -783,7 +773,7 @@ class EllipseFinder():
                     phi = ellipse_angle_of_rotation(ell)
                     center = ellipse_center(ell)
                     if (center[0]**2.+center[1]**2.)**0.5 < 0.007: # guard against bad center detections (upgrade to binsize fraction??)
-                        axes = ellipse_axis_length(ell)              
+                        axes = ellipse_axis_length(ell)
                         a, b = axes
                         r = np.linspace(-0.02,0.02,100)
                         R = np.arange(0,2*np.pi, 0.01)
@@ -883,7 +873,7 @@ def find_axial_ratios(POINTS,MASSES,tol=0.005):
 
 
 
-def select_particles(R,XPOS,YPOS,ZPOS,MASS,rlim):    
+def select_particles(R,XPOS,YPOS,ZPOS,MASS,rlim):
     rgood = np.where(R<rlim)[0]
     POINTS = np.array([XPOS[rgood],YPOS[rgood],ZPOS[rgood]]).T
     MASSES = MASS[rgood]
@@ -945,5 +935,5 @@ for i in range(0,24):
     plt.plot(r_to_check,SS[:,i],color=cm.gnuplot(i/23.,1.))
 
 
-    
+
 '''

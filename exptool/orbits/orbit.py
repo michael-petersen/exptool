@@ -138,14 +138,17 @@ class Orbits(dict):
         #O = psp_io.Input(infile_template+'%05i' %time_array[0])
         O = particle.Input(infile_template+'{0:05d}'.format(time_array[0]))
 
-        id_comp = np.where(np.array(list(O.header.keys())) == comp)[0] # I, Carrie Filion, Edited This
-        #np.where(np.array(O.comp_titles) == comp)[0]
-        ####I Carrie Filion added this line
-        id_comp = list(O.header)[id_comp[0]]
-        # make the holding array
+        # make the holding arrays
+        self['id'] = np.zeros( [time_array.size,orbvals.size])
+        self['m']  = np.zeros( [time_array.size,orbvals.size])
+        self['x']  = np.zeros( [time_array.size,orbvals.size])
+        self['y']  = np.zeros( [time_array.size,orbvals.size])
+        self['z']  = np.zeros( [time_array.size,orbvals.size])
+        self['vx'] = np.zeros( [time_array.size,orbvals.size])
+        self['vy'] = np.zeros( [time_array.size,orbvals.size])
+        self['vz'] = np.zeros( [time_array.size,orbvals.size])
+        self['p']  = np.zeros( [time_array.size,orbvals.size])
 
-        #out_arr = np.zeros( [time_array.size,8,orbvals.size]) # 8 is only valid if no extra parameters in the psp file (update later)
-        out_arr = np.zeros( [time_array.size,10,orbvals.size]) # I, Carrie Filion, edited this line
         times = []
         bad_times = []
         prev_time = -1.
@@ -155,9 +158,13 @@ class Orbits(dict):
 
             if (verbose > 0) & (val < np.max(time_array)): utils.print_progress(val,np.max(time_array),'orbit.map_orbit')
 
-            infile = infile_template+'%05i' %val
+            infile = infile_template+'{0:05d}'.format(val)
 
-            O = particle.Input(infile, comp='star') #need to give comp - not sure if we want to hard-code in that this is always for stars?
+            O = particle.Input(infile, comp=comp) #need to give comp - not sure if we want to hard-code in that this is always for stars?
+
+            # this is the EXP template for files with indexing.
+            dtype = [('id', '<i8'), ('m', '<f4'), ('x', '<f4'), ('y', '<f4'), ('z', '<f4'), ('vx', '<f4'), ('vy', '<f4'), ('vz', '<f4'), ('p', '<f4')]
+
             # sift through times to make sure always increasing
             if (indx > 0):
 
@@ -171,49 +178,40 @@ class Orbits(dict):
 
                 else:
                     times.append(O.time)
-                    tmp = np.memmap(infile,dtype='f',shape=(10,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I Carrie Filion edited this
+                    tmp = np.memmap(infile,dtype=dtype,shape=(1,norb),offset=int(O.header[comp]['data_start']),mode='r',order='F')
 
-                    #tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I Carrie Filion edited this
-                    #np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.comp_pos_data[id_comp]),mode='r',order='f')
-                    out_arr[indx] = tmp[:,orbvals]
+                    self['id'][indx] = tmp['id'][0]
+                    self['m'][indx]  = tmp['m'][0]
+                    self['x'][indx]  = tmp['x'][0]
+                    self['y'][indx]  = tmp['y'][0]
+                    self['z'][indx]  = tmp['z'][0]
+                    self['vx'][indx] = tmp['vx'][0]
+                    self['vy'][indx] = tmp['vy'][0]
+                    self['vz'][indx] = tmp['vz'][0]
+                    self['p'][indx]  = tmp['p'][0]
 
             else:
                 times.append(O.time)
-                tmp = np.memmap(infile,dtype='f',shape=(10,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I, Carrie Filion, Edited this
-                #tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.header[id_comp]['data_start']),mode='r',order='F') # I, Carrie Filion, Edited this
-                #tmp = np.memmap(infile,dtype='f',shape=(8,norb),offset=int(O.comp_pos_data[id_comp]),mode='r',order='f')
-                out_arr[indx] = tmp[:,orbvals]
+                tmp = np.memmap(infile,dtype=dtype,shape=(1,norb),offset=int(O.header[comp]['data_start']),mode='r',order='F')
+
+                self['id'][indx] = tmp['id'][0]
+                self['m'][indx]  = tmp['m'][0]
+                self['x'][indx]  = tmp['x'][0]
+                self['y'][indx]  = tmp['y'][0]
+                self['z'][indx]  = tmp['z'][0]
+                self['vx'][indx] = tmp['vx'][0]
+                self['vy'][indx] = tmp['vy'][0]
+                self['vz'][indx] = tmp['vz'][0]
+                self['p'][indx]  = tmp['p'][0]
 
             prev_time = O.time
 
         times = np.array(times)
 
-        out_arr = out_arr[0:times.size,:,:]
-
         #
-        # populate the dictionary
-        #self['T'] = times
-        #self['M'] = out_arr[0,0,:]
-        #self['X'] = out_arr[:,1,:]
-        #self['Y'] = out_arr[:,2,:]
-        #self['Z'] = out_arr[:,3,:]
-        #self['VX'] = out_arr[:,4,:]
-        #self['VY'] = out_arr[:,5,:]
-        #self['VZ'] = out_arr[:,6,:]
-        #self['P'] = out_arr[:,7,:]
-        #index, m, x, y, z, vx, vy, vz, potE
-        #time is 0, mass is 2
-        #everything filling the self dictonary is edits from Carrie Filion
+        # populate the time dictionary
         self['T'] = times
-        self['M'] = out_arr[0,2,:]
-        self['X'] = out_arr[:,3,:]
-        self['Y'] = out_arr[:,4,:]
-        self['Z'] = out_arr[:,5,:]
-        self['VX'] = out_arr[:,6,:]
-        self['VY'] = out_arr[:,7,:]
-        self['VZ'] = out_arr[:,8,:]
-        self['P'] = out_arr[:,9,:]
-        #end of edits
+
 
     def compute_quantities(self):
         '''
