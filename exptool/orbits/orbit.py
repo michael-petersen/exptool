@@ -38,46 +38,22 @@ import matplotlib as mpl
 # Quick Start Demo:
 
 # which exp-numbered files to read in
-tarr = np.arange(0,12,1,dtype='int')
+tarr = np.arange(0,100,1,dtype='int')
 
 # read in from files and return a dictionary
-Orbits = orbit.map_orbits('/path/to/outfile.dat','/simulation/directory','runtag',tarr,comp='dark',dictionary=True, norb=10)
-
-
-# Orbits is a dictionary with several quantities (see initialize_orbit_dictionary below)
+O = orbit.Orbits()
+O.map_orbits('.','runtag',tarr,comp='disc',dictionary=True, norb=10,verbose=1)
 
 '''
-
-def initialize_orbit_dictionary():
-    '''
-    make the dictionary that handles orbits
-    '''
-
-    OrbitDictionary = {}
-    OrbitDictionary['T'] = None
-    OrbitDictionary['X'] = None
-    OrbitDictionary['Y'] = None
-    OrbitDictionary['Z'] = None
-    OrbitDictionary['VX'] = None
-    OrbitDictionary['VY'] = None
-    OrbitDictionary['VZ'] = None
-    OrbitDictionary['P'] = None
-    OrbitDictionary['M'] = None
-
-    return OrbitDictionary
-
-
 
 
 class Orbits(dict):
 
     def __init__(self):#,simulation_directory,runtag):
 
-        # check to see if an outfile already exists
+        # check to see if an outfile already exists?
 
         pass
-
-
 
     def map_orbits(self,simulation_directory,runtag,time_array,norb=1,comp='star',verbose=0,fileprefix='OUT',**kwargs):
         '''
@@ -128,7 +104,11 @@ class Orbits(dict):
         # check to see if an orbit list has been set
         if 'orblist' in kwargs:
             orbvals = kwargs['orblist'] # this needs to be passed as an integer array
+
+            # right now, we need to pull the maximum orbit number in order to make sure we get all requested orbits
+            # a natural improvement would be developing a memmap mask
             norb = np.max(orbvals)+1
+
             print('orbit.map_orbit: N_orbits accepted {} orbits'.format(len(orbvals)))
         else:
             orbvals = np.arange(0,norb,1,dtype='i')
@@ -139,7 +119,7 @@ class Orbits(dict):
         O = particle.Input(infile_template+'{0:05d}'.format(time_array[0]))
 
         # make the holding arrays
-        self['id'] = np.zeros( [time_array.size,orbvals.size])
+        self['id'] = np.zeros( [time_array.size,orbvals.size],dtype='i8')
         self['m']  = np.zeros( [time_array.size,orbvals.size])
         self['x']  = np.zeros( [time_array.size,orbvals.size])
         self['y']  = np.zeros( [time_array.size,orbvals.size])
@@ -154,6 +134,7 @@ class Orbits(dict):
         prev_time = -1.
 
         # start the loop over files
+
         for indx,val in enumerate(time_array):
 
             if (verbose > 0) & (val < np.max(time_array)): utils.print_progress(val,np.max(time_array),'orbit.map_orbit')
@@ -166,6 +147,7 @@ class Orbits(dict):
             dtype = [('id', '<i8'), ('m', '<f4'), ('x', '<f4'), ('y', '<f4'), ('z', '<f4'), ('vx', '<f4'), ('vy', '<f4'), ('vz', '<f4'), ('p', '<f4')]
 
             # sift through times to make sure always increasing
+            # this is a block for old restart simulations: it would probably be better to take an input list of all valid simulation output files
             if (indx > 0):
 
                 # check if time is increasing
@@ -334,6 +316,10 @@ class Orbits(dict):
 #
 
 def write_obj_skeleton(outfile,Orbit,lo=0,hi=10000,prefac=100.):
+    """
+    output in a format for Blender to read (.obj)
+
+    """
 
     if hi > Orbit['T'].shape[0]:
 
@@ -358,205 +344,6 @@ def write_obj_skeleton(outfile,Orbit,lo=0,hi=10000,prefac=100.):
     f.close()
 
 
-
-
-#######################################################################################
-# Calculating frequencies
-
-
-def find_fundamental_frequency_map(OrbitInstance,time='T',pos='X',vel='VX',hanning=True,window=[0,10000],order=4):
-    '''
-
-
-    outputs
-    -----------------
-    returns first three frequencies, labeled as O+pos+[1,2,3]
-
-    '''
-    #
-    lo = window[0]
-    hi = window[1]
-
-    if hi > OrbitInstance[time].shape[-1]:
-        hi = OrbitInstance[time].shape[-1]
-
-    freq = np.fft.fftfreq(OrbitInstance[time][lo:hi].shape[-1],d=(OrbitInstance[time][1]-OrbitInstance[time][0]))
-
-    #
-    norb = OrbitInstance[pos].shape[1]
-
-    OrbitInstance['O'+pos+'1'] = np.zeros(norb)
-    OrbitInstance['O'+pos+'2'] = np.zeros(norb)
-    OrbitInstance['O'+pos+'3'] = np.zeros(norb)
-
-    for orbn in range(0,norb):
-        ft = OrbitInstance[pos][lo:hi,orbn] + 1.j * OrbitInstance[vel][lo:hi,orbn]
-        if hanning:
-            spec = np.fft.fft( ft * np.hanning(len(ft)))
-        else:
-            spec = np.fft.fft( ft )
-
-        omg,val = organize_frequencies(freq,spec,order=order)
-
-        OrbitInstance['O'+pos+'1'][orbn] = omg[0]
-        OrbitInstance['O'+pos+'2'][orbn] = omg[1]
-        OrbitInstance['O'+pos+'3'][orbn] = omg[2]
-
-    return OrbitInstance
-
-
-
-
-
-def find_fundamental_frequency(OrbitInstance,time='T',pos='X',vel='VX',hanning=True,window=[0,10000],retall=False,order=3):
-    lo = window[0]
-    hi = window[1]
-    if hi > OrbitInstance[time].shape[-1]:
-        hi = OrbitInstance[time].shape[-1]
-    freq = np.fft.fftfreq(OrbitInstance[time][lo:hi].shape[-1],d=(OrbitInstance[time][1]-OrbitInstance[time][0]))
-    ft = OrbitInstance[pos][lo:hi] + 1.j * OrbitInstance[vel][lo:hi]
-    if hanning:
-        spec = np.fft.fft( ft * np.hanning(len(ft)))
-    else:
-        spec = np.fft.fft( ft )
-
-    omg,val = organize_frequencies(freq,spec,order=order)
-
-    OrbitInstance['O'+pos+'1'] = omg[0]
-    OrbitInstance['O'+pos+'2'] = omg[1]
-    OrbitInstance['O'+pos+'3'] = omg[2]
-
-    if retall:
-        return OrbitInstance,freq,spec
-    else:
-        return OrbitInstance
-
-
-
-def organize_frequencies(freq,fftarr,order=4):
-    '''
-    organize_frequencies
-    -----------------------------
-
-    inputs
-    --------------------
-
-
-
-
-    outputs
-    --------------------
-
-
-
-    '''
-
-    # find maxima in the frequency spectrum
-    vals = utils.argrelextrema(np.abs(fftarr.real),np.greater,order=order)[0]
-
-    # only select from positive side (not smart, should be absolute?)
-    g = np.where(freq[vals] > 0.)[0]
-
-    # get corresponding frequencies
-    gomegas = freq[vals[g]]
-
-    # get corresponding power
-    gvals = np.abs(fftarr.real)[vals[g]]
-
-    # sort by power
-    freq_order = (-1.*gvals).argsort()
-
-
-    return gomegas[freq_order],gvals[freq_order]
-
-
-
-
-
-
-def find_orbit_frequencies(T,R,PHI,Z,window=[0,10000]):
-    '''
-    calculate the peak of the orbit frequency plot
-
-    much testing/theoretical work to be done here (perhaps see the seminal papers?)
-
-    what do we want the windowing to look like?
-
-    '''
-
-    if window[1] == 10000:
-        window[1] = R.shape[0]
-
-    # get frequency values
-    freq = np.fft.fftfreq(T[window[0]:window[1]].shape[-1],d=(T[1]-T[0]))
-
-    sp_r = np.fft.fft(  R[window[0]:window[1]])
-    sp_t = np.fft.fft(PHI[window[0]:window[1]])
-    sp_z = np.fft.fft(  Z[window[0]:window[1]])
-
-    # why does sp_r have a zero frequency peak??
-    sp_r[0] = 0.0
-
-    OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5))])
-    OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5))])
-    OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5))])
-
-
-    return OmegaR,OmegaT,OmegaZ
-
-
-
-
-
-
-
-def find_orbit_map_frequencies(OrbitInstance,window=[0,10000]):
-    '''
-    calculate the peak of the orbit frequency plot
-
-    much testing/theoretical work to be done here (perhaps see the seminal papers?)
-
-    what do we want the windowing to look like?
-
-    '''
-
-    try:
-        x = OrbitInstance['Rp']
-    except:
-        print('orbit.find_orbit_frequencies: must have polar_coordinates. calculating...')
-        OrbitInstance.polar_coordinates()
-
-    if window[1] == 10000:
-        window[1] = OrbitInstance['Phi'].shape[0] - 1
-
-    # get frequency values
-    freq = np.fft.fftfreq(OrbitInstance['T'][window[0]:window[1]].shape[-1],d=(OrbitInstance['T'][1]-OrbitInstance['T'][0]))
-
-    sp_r = np.fft.fft(OrbitInstance['Rp'][window[0]:window[1]],axis=0)
-    sp_t = np.fft.fft(OrbitInstance['Phi'][window[0]:window[1]],axis=0)
-    sp_z = np.fft.fft(OrbitInstance['Z'][window[0]:window[1]],axis=0)
-
-    # why does sp_r have a zero frequency peak??
-    try:
-        sp_r[0,:] = np.zeros(OrbitInstance['Phi'].shape[1])
-        sp_z[0,:] = np.zeros(OrbitInstance['Phi'].shape[1])
-
-    except:
-        sp_r[0] = 0.
-        sp_z[0] = 0.
-
-    OmegaR = abs(freq[np.argmax(((sp_r.real**2.+sp_r.imag**2.)**0.5),axis=0)])
-    OmegaT = abs(freq[np.argmax(((sp_t.real**2.+sp_t.imag**2.)**0.5),axis=0)])
-    OmegaZ = abs(freq[np.argmax(((sp_z.real**2.+sp_z.imag**2.)**0.5),axis=0)])
-
-    # check the frequencies; restrict to obits with multiple rotation periods
-    #minfreq = 4./(np.max(OrbitInstance['T'][window[0]:window[1]]) - np.min(OrbitInstance['T'][window[0]:window[1]]))
-    #OmegaR[np.where(OmegaR <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaR <= minfreq)[0]).size)
-    #OmegaT[np.where(OmegaT <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaT <= minfreq)[0]).size)
-    #OmegaZ[np.where(OmegaZ <= minfreq)[0]] = np.nan*np.ones((np.where(OmegaZ <= minfreq)[0]).size)
-
-
-    return OmegaR,OmegaT,OmegaZ
 
 
 

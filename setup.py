@@ -1,5 +1,3 @@
-
-
 #https://docs.python.org/2/distutils/setupscript.html
 
 from setuptools import setup
@@ -31,16 +29,18 @@ ext_modules.append(accumulate_c)
 
 
 setup(name='exptool',
-      version='0.3.1',
+      version='0.3.2',
       description='exp analysis in Python',
       author='Michael Petersen',
-      author_email='michael.petersen@roe.ac.uk,petersen@iap.fr',
+      author_email='michael.petersen@roe.ac.uk',
       license='New BSD',
       #long_description=long_description,
       url='https://github.com/michael-petersen/exptool',
       package_dir = {'exptool/': ''},
       packages=['exptool','exptool/analysis','exptool/basis',
-                'exptool/io','exptool/orbits','exptool/utils','exptool/observables','exptool/models','exptool/tests'],
+                'exptool/io','exptool/orbits','exptool/utils',
+                'exptool/observables','exptool/models','exptool/tests',
+                'exptool/perturbation'],
       package_data={'': ['README.md','LICENSE'],'exptool/tests':['*.dat'],'exptool/tests/data':['*.dat']},
       include_package_data=True,
       install_requires=['numpy>=1.7','scipy','matplotlib'],

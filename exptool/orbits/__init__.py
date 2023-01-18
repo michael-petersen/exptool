@@ -2,6 +2,4 @@
 
 # this is from EXPtool
 
-__all__ = ['orbit']
-
-
+__all__ = ['orbit','frequencies']
