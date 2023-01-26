@@ -3,6 +3,8 @@
 ellipse_tools.py: part of exptool
           basic ellipse fitting tools
 
+# NOTE: this has been superseded by the dedicated 'elliptical' package:
+https://github.com/michael-petersen/elliptical
 
 # basic use: do ellipse fits to find the bar position angle
 
