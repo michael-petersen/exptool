@@ -186,9 +186,12 @@ class ApsFinding():
 
             if i==1:
                 # open three files to compare
-                Oa = particle.Input(self.SLIST[i-1],legacy=False,comp=comp,verbose=0)
-                Ob = particle.Input(self.SLIST[i],legacy=False,comp=comp,verbose=self.verbose)
-                Oc = particle.Input(self.SLIST[i+1],legacy=False,comp=comp,verbose=0)
+                Oa = particle.Input(self.SLIST[i-1],comp=comp,verbose=0)
+                Ob = particle.Input(self.SLIST[i],comp=comp,verbose=self.verbose)
+                Oc = particle.Input(self.SLIST[i+1],comp=comp,verbose=0)
+                #Oa = particle.Input(self.SLIST[i-1],legacy=False,comp=comp,verbose=0)
+                #Ob = particle.Input(self.SLIST[i],legacy=False,comp=comp,verbose=self.verbose)
+                #Oc = particle.Input(self.SLIST[i+1],legacy=False,comp=comp,verbose=0)
 
                 tval = Ob.time
                 dt   = Oc.time - Ob.time # dumps must be evenly spaced! (though this is not a requirement later)

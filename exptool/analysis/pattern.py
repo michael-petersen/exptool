@@ -521,7 +521,8 @@ def find_barangle(time,BarInstance,interpolate=True):
     sord = 0 # should this be a variable?
     #
     if (interpolate):
-        bar_func = UnivariateSpline(BarInstance.time,-BarInstance.pos,s=sord)
+        not_nan = np.where(np.isnan(BarInstance.pos)==False)
+        bar_func = UnivariateSpline(BarInstance.time[not_nan],-BarInstance.pos[not_nan],s=sord)
     #
     try:
         indx_barpos = np.zeros([len(time)])
@@ -575,3 +576,80 @@ def find_barpattern(intime,BarInstance,smth_order=2):
         barpattern = BarInstance.deriv[best_time]
 
     return barpattern
+
+
+'''Not sure if this is the best place for this - wrote code to make a barfile using fourier
+analysis to find m=2 phase angle + then pattern speed based on this angle. This is to replace
+the EOF info if the EOF info is weird. Output file formats should be identical'''
+class fourier_barfiles():
+    def parse_list(self):
+        
+        f = open(self.slist)
+        s_list = []
+        for line in f:
+            d = [q for q in line.split()]
+            s_list.append(d[0])
+
+        self.SLIST = np.array(s_list)
+
+
+    def bar_fourier_compute(self,posx,posy,maxr=0.5, minr=.001):
+
+        #
+        # use x and y positions tom compute the m=2 power, and find phase angle
+        #
+        w = np.where( ((posx*posx + posy*posy)**0.5 < maxr) & 
+                    ((posx*posx + posy*posy)**0.5 > minr) )[0]
+
+        aval = np.sum( np.cos( 2.*np.arctan2(posy[w],posx[w]) ) )
+        bval = np.sum( np.sin( 2.*np.arctan2(posy[w],posx[w]) ) )
+
+        return np.arctan2(bval,aval)/2.
+
+    def bar_speed(self, filelist, comp='star'):
+        self.slist = filelist
+        fourier_barfiles.parse_list(self)
+        pos = particle.Input(self.SLIST[0],comp=comp,verbose=0)
+        pos_p1 = particle.Input(self.SLIST[1],comp=comp,verbose=0)
+        first_bar_angle = self.bar_fourier_compute(pos.data['x'], pos.data['y'])
+        #get time step
+        timestep = pos_p1.time - pos.time
+        tt = np.array([])
+        pp = np.array([])
+        rot = np.array([])
+        for i in range(0,len(self.SLIST)):
+            #loop through snapshot files in simulation, open file
+            pos = particle.Input(self.SLIST[i],comp=comp,verbose=0)
+            #compute bar angle
+            bar_angle = self.bar_fourier_compute(pos.data['x'], pos.data['y'])
+            #if first time step, old bar angle = current bar angle
+            if i == 0:
+                old_bar_angle = first_bar_angle
+            pattern_speed = (old_bar_angle-bar_angle)/(timestep)
+            #bar_angle > old_bar_angle, if difference is near 180, flip it (took this bit from rachel)
+            if abs(old_bar_angle-bar_angle)>=(np.pi*3/4):
+                pattern_speed = (old_bar_angle - (bar_angle + np.pi))/(timestep)
+            pp = np.append(pp, bar_angle)
+            rot = np.append(rot, pattern_speed)
+            tt = np.append(tt, pos.time)
+            #use this bar angle as 'old' angle for next step
+            old_bar_angle = bar_angle
+        self.pos = pp
+        self.deriv = rot
+        self.time = tt
+        return {'time':tt,'pos':pp, 'deriv':rot}
+            
+    def print_bar(self,simulation_directory,simulation_name):
+
+        #
+        # print the barfile to file
+        #
+
+
+        f = open(simulation_directory+simulation_name+'fourier_barpos.dat','w')
+        for i in range(0,len(self.SLIST)):
+            print(self.time[i],self.pos[i],self.deriv[i],end="\n",file=f)
+
+        f.close()
+
+        return None
