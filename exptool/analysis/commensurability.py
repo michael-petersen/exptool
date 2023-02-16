@@ -188,6 +188,8 @@ def plot_orbit_areas(Aarr, Rarr, Varr, cmap='magma', savestring=''):
 
 # read in orbit integrations
 
+'''
+moving this to utils.integrate, where the grids are actually run
 # follows file format of integrator output
 def read_integrations(infile):
     f = open(infile,'r')
@@ -211,7 +213,7 @@ def read_integrations(infile):
     #
     f.close()
     return D
-
+'''
 
 
 
