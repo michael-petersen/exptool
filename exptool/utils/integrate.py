@@ -18,12 +18,12 @@ TODO:
 
 '''
 
-# compatibility imports
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import sys
+
+# can these be removed?
 sys.path.append('/home/filion/martinsims/exptools/exptool/exptool/orbits')
 sys.path.append('/home/filion/martinsims/exptools/exptool/exptool/potential')
+
 # exptool imports
 from ..orbits import orbit
 from ..basis import potential
@@ -32,8 +32,6 @@ from ..io import particle
 # standard imports
 import numpy as np
 import time
-
-#verbose = True
 
 
 def transform(xarray,yarray,thetas):
