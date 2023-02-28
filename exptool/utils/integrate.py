@@ -288,7 +288,7 @@ import multiprocessing
 
 
 def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
-                   verbose=0,nprocs=-1):
+                   verbose=0,nprocs=-1,threedee=False, zs=None, vzs=None):
     '''
     do_integrate_multi:
        multiprocessor integration of orbits
@@ -306,15 +306,27 @@ def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,
     t1 = time.time()
     freeze_support()
     #
-    out_arrays = multi_compute_integration(subrads,nprocs,vels,F,\
+    
+    if threedee == True:
+        if (zs is None) or (vzs is None):
+            print('ERROR: 3D orbit specified, but no z or vz values passed!')
+        else:
+            out_arrays = multi_compute_integration_3D(subrads,nprocs,vels,F,\
+                   nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
+                    zs, vzs,
+                   verbose=verbose)
+            orbit_array = re_form_orbit_arrays_3D(out_arrays)
+    else:
+        out_arrays = multi_compute_integration(subrads,nprocs,vels,F,\
                    nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
                    verbose=verbose)
+        orbit_array = re_form_orbit_arrays(out_arrays)
     #
     # out_arrays have [rads.size,vels.size,4,nint]
     #
     print('Total integration calculation took {0:3.2f} seconds, or {1:3.2f} seconds per orbit.'.format(time.time()-t1,(time.time()-t1)/float(rads.size*vels.size)))
     #
-    orbit_array = re_form_orbit_arrays(out_arrays)
+    
     #
     #print_orbit_array(outfile,orbit_array)
     #
@@ -365,21 +377,27 @@ def integrate_grid_star(a_b):
     return integrate_grid(*a_b)
 
 
+def integrate_grid_star_3D(a_b):
+    """Convert `f([1,2])` to `f(1,2)` call."""
+    return integrate_grid_3D(*a_b)
+    
 
 
+
+'''
 def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,verbose):
-    '''
+    
 
 
-    treat dt as the maximum value as a guard
+    #treat dt as the maximum value as a guard
 
-    0: TX
-    1: TY
-    2: VX
-    3: VY
-    4: T
+    #0: TX
+    #1: TY
+    #2: VX
+    #3: VY
+    #4: T
 
-    '''
+
     #
     Oarray = np.zeros([rads.size,vels.size,5,nint])
     #
@@ -405,7 +423,7 @@ def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_m
     #
     #
     return Oarray
-
+'''
 
 
 #
@@ -440,7 +458,7 @@ def redistribute_arrays(rads,divisions):
 
 def re_form_orbit_arrays(array):
     #
-    print(array) #I, carrie filion edited this
+    print(array)
     norb_master = 0
     for processor in range(0,len(array)): norb_master += array[processor].shape[0]
     #
@@ -449,7 +467,28 @@ def re_form_orbit_arrays(array):
     net_array = np.zeros([norb_master,array[0].shape[1],array[0].shape[2],array[0].shape[3]],dtype='f4')
     #
     start_index = 0
-    for processor in range(0,len(array)): #I, Carrie Filion, Edited this!
+    for processor in range(0,len(array)): 
+        #
+        end_index = start_index + array[processor].shape[0]
+        #
+        net_array[start_index:end_index] = array[processor]
+        start_index = end_index
+    #
+
+    return net_array
+
+def re_form_orbit_arrays_3D(array):
+    #
+    norb_master = 0
+    for processor in range(0,len(array)): norb_master += array[processor].shape[0]
+    #
+    #
+    # now initialize new blank array
+    net_array = np.zeros([norb_master,array[0].shape[1],array[0].shape[2],array[0].shape[3],\
+        array[0].shape[4],array[0].shape[5]],dtype='f4')
+    #
+    start_index = 0
+    for processor in range(0,len(array)): 
         #
         end_index = start_index + array[processor].shape[0]
         #
@@ -460,46 +499,64 @@ def re_form_orbit_arrays(array):
 
 
 
-'''
-def print_orbit_array(f,OrbitArray):
 
-    for rad in range(0,OrbitArray.shape[0]):
-        for vel in range(0,OrbitArray.shape[1]):
-
-            # find non-zero values
-            try:
-                nsteps = np.where(OrbitArray[rad,vel,4] == 0.)[0][1]
-            except:
-                nsteps = OrbitArray.shape[3]
-
-            # set up the header
-            print(nsteps,OrbitArray[rad,vel,0,0],OrbitArray[rad,vel,3,0],OrbitArray[rad,vel,4,1],end='',file=f) # this prints X0, VY0, dt
-
-            # print the x positions
-            for x in range(0,nsteps): print(OrbitArray[rad,vel,0,x],end='',file=f)
-
-            # print the y positions
-            for x in range(0,nsteps): print(OrbitArray[rad,vel,1,x],end='',file=f)
-
-            # force end of line
-            print('',file=f)
-'''
 def print_orbit_array(f,OrbitArray):
     for rad in range(0,OrbitArray.shape[0]):
         for vel in range(0,OrbitArray.shape[1]):
             # find non-zero values
-            try:
-                nsteps = np.where(OrbitArray[rad,vel,4] == 0.)[0][1]
-            except:
-                nsteps = OrbitArray.shape[3]
+            nsteps = OrbitArray.shape[-1]
             #
-            print(nsteps,OrbitArray[rad,vel,0,0],OrbitArray[rad,vel,3,0],OrbitArray[rad,vel,4,1],end=' ',file=f)
+            print(nsteps,OrbitArray[rad,vel,0,0], #R_0
+                        OrbitArray[rad,vel,5,0], #V_0
+                        OrbitArray[rad,vel,-1,1], #dT
+                        end=' ',file=f)
             for x in range(0,nsteps):
-                print(OrbitArray[rad,vel,0,x],end=' ',file=f)
+                print(OrbitArray[rad,vel,0,x],end=' ',file=f) #x
             for x in range(0,nsteps):
-                print(OrbitArray[rad,vel,1,x],end=' ',file=f)
+                print(OrbitArray[rad,vel,1,x],end=' ',file=f) #y
+            for x in range(0,nsteps):
+                print(OrbitArray[rad,vel,2,x],end=' ',file=f) #tx
+            for x in range(0,nsteps):
+                print(OrbitArray[rad,vel,3,x],end=' ',file=f) #ty
+            for x in range(0,nsteps):
+                print(OrbitArray[rad,vel,4,x],end=' ',file=f) #vx
+            for x in range(0,nsteps):
+                print(OrbitArray[rad,vel,5,x],end=' ',file=f) #vy
             print('',file=f) # end the line
 
+
+
+def print_orbit_array_3D(f,OrbitArray):
+    for rad in range(0,OrbitArray.shape[0]):
+        for vel in range(0,OrbitArray.shape[1]):
+            for z in range(0,OrbitArray.shape[2]):
+                for vz in range(0,OrbitArray.shape[3]):
+                    # find non-zero values
+                    nsteps = OrbitArray.shape[-1]
+                    #
+                    print(nsteps,OrbitArray[rad,vel,z, vz, 0,0], #R_0
+                                OrbitArray[rad,vel,z, vz,6,0], #V_0
+                                OrbitArray[rad,vel,z, vz,2,0],#Z_0
+                                OrbitArray[rad,vel,z, vz,7,0],#VZ_0
+                                OrbitArray[rad,vel,z, vz,-1,1],#dT
+                                end=' ',file=f)
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,0,x],end=' ',file=f) #x
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,1,x],end=' ',file=f) #y
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,2,x],end=' ',file=f) #z
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,3,x],end=' ',file=f) #tx
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,4,x],end=' ',file=f) #ty
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,5,x],end=' ',file=f) #vx
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,6,x],end=' ',file=f) #vy
+                    for x in range(0,nsteps):
+                        print(OrbitArray[rad,vel,z, vz,7,x],end=' ',file=f) #vz
+                    print('',file=f) # end the line
 
 def run_time(simulation_directory,simulation_name,\
                  eof_file,sph_file,model_file,\
@@ -574,7 +631,8 @@ def run_time_mod(simulation_directory,simulation_name,\
                  rads,vels,\
                  nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
                  verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=False,
-                 save_field=True, field_file_name='',field_file=None, bar_file='',fileprefix='OUT'):
+                 save_field=True, field_file_name='',field_file=None, bar_file='',fileprefix='OUT',
+                 threedee=False, zs = None, vzs = None):
     '''
     run_time
           execute all necessary steps to run an integration grid
@@ -657,15 +715,225 @@ def run_time_mod(simulation_directory,simulation_name,\
 
     rotfreq = -1.*abs(patt/(2.*np.pi))
 
-    OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
+    if threedee == False:
+        OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
+        if orbitfile != '':
+            f = open(orbitfile,'w')
 
+        else:
+            print('Saving 2D orbit')
+            f = open(simulation_directory+'omap_'+str(intime)+'.txt','w')
 
-    if orbitfile != '':
-        f = open(orbitfile,'w')
+        print_orbit_array(f,OrbitArray)
 
+        f.close()
     else:
-        f = open(simulation_directory+'omap_'+str(intime)+'.txt','w')
+        if (zs is None) or (vzs is None):
+            print('ERROR: 3D orbit specified, but no z or vz values passed!')
+        else:
+            OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,\
+                    verbose=verbose,nprocs=nprocs, threedee=threedee, zs=zs, vzs=vzs)
 
-    print_orbit_array(f,OrbitArray)
 
+        if orbitfile != '':
+            f = open(orbitfile,'w')
+
+        else:
+            print('Saving 3D orbit')
+            f = open(simulation_directory+'omap_3D_'+str(intime)+'.txt','w')
+
+        print_orbit_array_3D(f,OrbitArray)
+
+        f.close()
+
+def integrate_grid_3D(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max, zs, vzs, verbose):
+    '''    
+    if threedee:
+        0: X
+        1: Y
+        2: Z
+        3: TX
+        4: TY
+        5: VX
+        6: VY
+        7: VZ
+        8: T
+        '''
+    if (zs is None) or (vzs is None):
+        print('ERROR: 3D orbit specified, but no z or vz values passed!')
+    else:
+        Oarray = np.zeros([rads.size, vels.size, zs.size, vzs.size, 9, nint])
+        #
+        for irad,rad in enumerate(rads):
+            #print 'Radius is ',rad
+            #
+            for ivel,vel in enumerate(vels):
+                for iz, z in enumerate(zs):
+                    for ivz, vz in enumerate(vzs):
+                        start_pos = [rad,0.,z]
+                        start_vel = [0.,vel,vz]
+                        #
+                        dtime = np.max([compute_timestep(F,start_pos,start_vel,dyn_res=dyn_res,verbose=False),dt])
+
+                        Orbit = leapfrog_integrate(F,nint,dtime,start_pos,start_vel,rotfreq=rotfreq,no_odd=no_odd,halo_l=halo_l,disk_m=disk_m,verbose=verbose,ap_max=ap_max)
+                        #print_orbit(f,O)
+                        #
+                        # bring orbits up to uniform length
+                        Oarray[irad,ivel, iz, ivz, 0] = np.concatenate((Orbit['X'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,1] = np.concatenate((Orbit['Y'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,2] = np.concatenate((Orbit['Z'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel, iz, ivz, 3] = np.concatenate((Orbit['TX'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,4] = np.concatenate((Orbit['TY'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,5] = np.concatenate((Orbit['VX'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,6] = np.concatenate((Orbit['VY'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,7] = np.concatenate((Orbit['VZ'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,8] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))
+    return Oarray
+
+def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,verbose):
+    '''
+    treat dt as the maximum value as a guard
+        0: X
+        1: Y
+        2: TX
+        3: TY
+        4: VX
+        5: VY
+        6: T
+
+    '''
+
+
+    Oarray = np.zeros([rads.size,vels.size,7,nint])
+    #
+    for irad,rad in enumerate(rads):
+        #print 'Radius is ',rad
+        #
+        for ivel,vel in enumerate(vels):
+            start_pos = [rad,0.,0.]
+            start_vel = [0.,vel,0.]
+            #
+            dtime = np.max([compute_timestep(F,start_pos,start_vel,dyn_res=dyn_res,verbose=False),dt])
+
+            Orbit = leapfrog_integrate(F,nint,dtime,start_pos,start_vel,rotfreq=rotfreq,no_odd=no_odd,halo_l=halo_l,disk_m=disk_m,verbose=verbose,ap_max=ap_max)
+            #print_orbit(f,O)
+            #
+            # bring orbits up to uniform length
+            Oarray[irad,ivel,0] = np.concatenate((Orbit['X'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,1] = np.concatenate((Orbit['Y'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,2] = np.concatenate((Orbit['TX'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,3] = np.concatenate((Orbit['TY'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,4] = np.concatenate((Orbit['VX'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,5] = np.concatenate((Orbit['VY'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,6] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))        
+    return Oarray
+
+def multi_compute_integration_3D(subrads,nprocs,vels,F,\
+                   nint,dt,rotfreq,no_odd,halo_l,disk_m,\
+                   dyn_res,ap_max,\
+                   zs, vzs,
+                   verbose=5):
+    #
+    pool = Pool(nprocs)
+    #
+    a_args = [subrads[i] for i in range(0,nprocs)]
+    second_arg = vels
+    third_arg = F
+    fourth_arg = nint
+    fifth_arg = dt
+    sixth_arg = rotfreq
+    seventh_arg = no_odd
+    eighth_arg = halo_l
+    ninth_arg = disk_m
+    tenth_arg = dyn_res
+    eleventh_arg = ap_max
+    twelvth_arg = zs
+    thirteenth_arg = vzs
+    #
+    #integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m)
+    #
+    fourteenth_arg = [0 for i in range(0,nprocs)]
+    fourteenth_arg[0] = verbose
+    #
+    out_vals = pool.map(integrate_grid_star_3D, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+                        itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
+                        itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
+                        itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
+                            itertools.repeat(thirteenth_arg), fourteenth_arg))
+    #
+    # clean up to exit
+    pool.close()
+    pool.join()
+    return out_vals
+
+# follows file format of integrator output
+def read_integrations(infile):
+    f = open(infile,'r')
+    D = {}
+    D['R_0'] = {}
+    D['V_0'] = {}
+    D['dT'] = {}
+    D['X'] = {}
+    D['Y'] = {}
+    D['TX'] = {}
+    D['TY'] = {}
+    D['VX'] = {}
+    D['VY'] = {}
+    #
+    linenum = 0
+    for line in f:
+        d = [float(q) for q in line.split()]
+        npoints = int(d[0])
+        D['R_0'][linenum] = d[1]
+        D['V_0'][linenum] = d[2]
+        D['dT'][linenum] = d[3]
+        D['X'][linenum] = d[4:npoints+4]
+        D['Y'][linenum] = d[npoints+4:(2*npoints)+4]
+        D['TX'][linenum] = d[(2*npoints)+4:(3*npoints)+4]
+        D['TY'][linenum] = d[(3*npoints)+4:(4*npoints)+4]
+        D['VX'][linenum] = d[(4*npoints)+4:(5*npoints)+4]
+        D['VY'][linenum] = d[(5*npoints)+4:(6*npoints)+4]
+        linenum += 1
+    #
     f.close()
+    return D
+
+def read_integrations_3D(infile):
+    f = open(infile,'r')
+    D = {}
+    D['R_0'] = {}
+    D['V_0'] = {}
+    D['Z_0'] = {}
+    D['VZ_0'] = {}
+    D['dT'] = {}
+    D['X'] = {}
+    D['Y'] = {}
+    D['Z'] = {}
+    D['TX'] = {}
+    D['TY'] = {}
+    D['VX'] = {}
+    D['VY'] = {}
+    D['VZ'] = {}
+    #
+    linenum = 0
+    for line in f:
+        d = [float(q) for q in line.split()]
+        npoints = int(d[0])
+        D['R_0'][linenum] = d[1]
+        D['V_0'][linenum] = d[2]
+        D['Z_0'][linenum] = d[3]
+        D['VZ_0'][linenum] = d[4]
+        D['dT'][linenum] = d[5]
+        D['X'][linenum] = d[6:npoints+6]
+        D['Y'][linenum] = d[npoints+6:(2*npoints)+6]
+        D['Z'][linenum] = d[(2*npoints)+6:(3*npoints)+6]
+        D['TX'][linenum] = d[(3*npoints)+6:(4*npoints)+6]
+        D['TY'][linenum] = d[(4*npoints)+6:(5*npoints)+6]
+        D['VX'][linenum] = d[(5*npoints)+6:(6*npoints)+6]
+        D['VY'][linenum] = d[(6*npoints)+6:(7*npoints)+6]
+        D['VZ'][linenum] = d[(7*npoints)+6:(8*npoints)+6]
+        linenum += 1
+    #
+    f.close()
+    return D
+
