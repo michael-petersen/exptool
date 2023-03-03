@@ -13,7 +13,7 @@ def return_gaia_Ag():
                      [-0.8734370902348850,-0.4448296299600112,-0.1980763734312015],
                      [-0.4838350155487132,+0.7469822444972189,+0.4559837761750669]])
 
-    
+
 
 def return_gaia_Agprime():
     """return the matrix in eq 3.61, key to transform from ICRS to galactic coordinates"""
@@ -70,17 +70,17 @@ def rotate_velocities(a,d,mua,mud):
     """eq 3.68, """
     mu = return_muicrs(a,d,mua,mud)
     mugal = np.dot(return_gaia_Agprime(),mu) # eq. 3.68
-    
+
     # solve for positions
     ricrs = return_ricrs(a,d)
     rgal = np.dot(return_gaia_Agprime(),ricrs)
 
     # implement eq 3.63
     ell,b = np.arctan2(rgal[1],rgal[0]),np.arctan2(rgal[2],np.sqrt(rgal[0]*rgal[0]+rgal[1]*rgal[1]))
-    
+
     p = return_pgal(ell,b)
     q = return_qgal(ell,b)
-    
+
     mul = np.sum(p*mugal,axis=0)
     mub = np.sum(q*mugal,axis=0)
     #print(mul,mub)
@@ -106,7 +106,7 @@ def rotate_errors(a,d,pmra_e,pmdec_e,pmcorr):
 
     pqgal = np.stack((pgal, qgal), axis=-1)
     pqicrs = np.stack((picrs, qicrs), axis=-1)
-    
+
     cov = np.array([[pmra_e*pmra_e,pmra_e*pmdec_e*pmcorr],[pmra_e*pmdec_e*pmcorr,pmdec_e*pmdec_e]])
 
     if hasattr(a,'size'):
@@ -115,17 +115,17 @@ def rotate_errors(a,d,pmra_e,pmdec_e,pmcorr):
 
         cov_to = np.einsum('nba,nac->nbc', G,
                            np.einsum('ijn,nki->njk', cov, G))
-        
+
     else:
         G = np.einsum('ab,ac->bc', pqgal,
                       np.einsum('ji,ik->jk', return_gaia_Agprime(), pqicrs))
 
         cov_to = np.einsum('ba,ac->bc', G,
                            np.einsum('ij,ki->jk', cov, G))
-    
+
     return cov_to
 
-    
+
 
 def rotate_positions(a,d,dist):
     """eq 3.68, but built for speed"""
@@ -133,18 +133,16 @@ def rotate_positions(a,d,dist):
     if a.size>1:
         ricrs = return_ricrs(a,d)
         rgal = np.dot(return_gaia_Agprime(),ricrs)
-        cpos = dist*rgal        
+        cpos = dist*rgal
     else:
         ricrs = return_ricrs(a,d)
         rgal = np.dot(return_gaia_Agprime(),ricrs)
-        cpos = np.dot(dist,rgal)        
+        cpos = np.dot(dist,rgal)
     return cpos
 
 def rotate_galactic(a,d):
     """eq 3.68, """
-    mu = return_muicrs(a,d,mua,mud)
-    mugal = np.dot(return_gaia_Agprime(),mu) # eq. 3.68
-    
+
     # solve for positions
     ricrs = return_ricrs(a,d)
     rgal = np.dot(return_gaia_Agprime(),ricrs)
@@ -174,14 +172,14 @@ def rotate_velocities_observed(l,b,mul,mub):
     """eq 3.68, """
     mu = return_mugal(l,b,mul,mub)
     muicrs = np.dot(return_gaia_Ag(),mu) # eq. 3.68
-    
+
     rgal = return_rgal(l,b)
     ricrs = np.dot(return_gaia_Ag(),rgal)
     a,d = np.arctan2(ricrs[1],ricrs[0]),np.arctan2(ricrs[2],np.sqrt(ricrs[0]*ricrs[0]+ricrs[1]*ricrs[1]))
-    
+
     p = return_picrs(a,d)
     q = return_qicrs(a,d)
-    
+
     mua = np.sum(p*muicrs,axis=0)
     mud = np.sum(q*muicrs,axis=0)
     #print(mul,mub)
