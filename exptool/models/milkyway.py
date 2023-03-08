@@ -83,7 +83,7 @@ class MilkyWayPotential14():
     def __init__(self,
                  halo_scale=16.,halo_mass=0.682e12,halo_rvir=245.,
                  disc_scale=3.0,disc_height=0.280,disc_mass=6.8e10,
-                 bulge_scale=,bulge_mass,bulge_cutoff,
+                 bulge_scale=1.0,bulge_mass=1.0,bulge_cutoff=1.0,
                  G=0.0000043009125):
         """
 
