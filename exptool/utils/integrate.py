@@ -290,7 +290,7 @@ import multiprocessing
 
 
 def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
-                   verbose=0,nprocs=-1,threedee=False, zs=None, vzs=None):
+                   verbose=0,nprocs=-1,threedee=False, zs=None, vzs=None, launch='x'):
     '''
     do_integrate_multi:
        multiprocessor integration of orbits
@@ -316,12 +316,12 @@ def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,
             out_arrays = multi_compute_integration_3D(subrads,nprocs,vels,F,\
                    nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
                     zs, vzs,
-                   verbose=verbose)
+                   verbose=verbose, launch=launch)
             orbit_array = re_form_orbit_arrays_3D(out_arrays)
     else:
         out_arrays = multi_compute_integration(subrads,nprocs,vels,F,\
                    nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,\
-                   verbose=verbose)
+                   verbose=verbose, launch=launch)
         orbit_array = re_form_orbit_arrays(out_arrays)
     #
     # out_arrays have [rads.size,vels.size,4,nint]
@@ -340,7 +340,7 @@ def do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,
 def multi_compute_integration(subrads,nprocs,vels,F,\
                    nint,dt,rotfreq,no_odd,halo_l,disk_m,\
                    dyn_res,ap_max,\
-                   verbose=5):
+                   launch, verbose=5):
     #
     pool = Pool(nprocs)
     #
@@ -361,7 +361,11 @@ def multi_compute_integration(subrads,nprocs,vels,F,\
     twelvth_arg = [0 for i in range(0,nprocs)]
     twelvth_arg[0] = verbose
     #
-    out_vals = pool.map(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
+    if launch == 'x':
+        out_vals = pool.map(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
+    elif launch=='y':
+        out_vals = pool.map(integrate_grid_star_launchy, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg))
+
     #pool.imap(integrate_grid_star, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),twelvth_arg),5)
     #
     # clean up to exit
@@ -378,11 +382,17 @@ def integrate_grid_star(a_b):
     """Convert `f([1,2])` to `f(1,2)` call."""
     return integrate_grid(*a_b)
 
+def integrate_grid_star_launchy(a_b):
+    """Convert `f([1,2])` to `f(1,2)` call."""
+    return integrate_grid_launchy(*a_b)
 
 def integrate_grid_star_3D(a_b):
     """Convert `f([1,2])` to `f(1,2)` call."""
     return integrate_grid_3D(*a_b)
-    
+
+def integrate_grid_star_3D_launchy(a_b):
+    """Convert `f([1,2])` to `f(1,2)` call."""
+    return integrate_grid_3D_launchy(*a_b)   
 
 
 
@@ -565,7 +575,7 @@ def run_time(simulation_directory,simulation_name,\
                  intime,\
                  rads,vels,\
                  nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
-                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=True,fileprefix='OUT'):
+                 verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=True,fileprefix='OUT', launch='x'):
     '''
     run_time
           execute all necessary steps to run an integration grid
@@ -613,7 +623,7 @@ def run_time(simulation_directory,simulation_name,\
 
     rotfreq = -1.*abs(patt/(2.*np.pi))
 
-    OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
+    OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs, launch=launch)
 
 
     if orbitfile != '':
@@ -634,7 +644,7 @@ def run_time_mod(simulation_directory,simulation_name,\
                  nint,dt,no_odd,halo_l,max_m,dyn_res,ap_max,\
                  verbose,nprocs=-1,omegap=-1.,orbitfile='',transform=False,
                  save_field=True, field_file_name='',field_file=None, bar_file='',fileprefix='OUT',
-                 threedee=False, zs = None, vzs = None):
+                 threedee=False, zs = None, vzs = None, launch='x'):
     '''
     run_time
           execute all necessary steps to run an integration grid
@@ -718,7 +728,8 @@ def run_time_mod(simulation_directory,simulation_name,\
     rotfreq = -1.*abs(patt/(2.*np.pi))
 
     if threedee == False:
-        OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs)
+        print('launching from ', launch, ' axis')
+        OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,verbose=verbose,nprocs=nprocs, launch=launch)
         if orbitfile != '':
             f = open(orbitfile,'w')
 
@@ -734,7 +745,7 @@ def run_time_mod(simulation_directory,simulation_name,\
             print('ERROR: 3D orbit specified, but no z or vz values passed!')
         else:
             OrbitArray = do_integrate_multi(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,max_m,dyn_res,ap_max,\
-                    verbose=verbose,nprocs=nprocs, threedee=threedee, zs=zs, vzs=vzs)
+                    verbose=verbose,nprocs=nprocs, threedee=threedee, zs=zs, vzs=vzs, launch=launch)
 
 
         if orbitfile != '':
@@ -792,6 +803,50 @@ def integrate_grid_3D(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,a
                         Oarray[irad,ivel,iz, ivz,8] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))
     return Oarray
 
+def integrate_grid_3D_launchy(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max, zs, vzs, verbose):
+    '''    
+    if threedee:
+        0: X
+        1: Y
+        2: Z
+        3: TX
+        4: TY
+        5: VX
+        6: VY
+        7: VZ
+        8: T
+        '''
+    if (zs is None) or (vzs is None):
+        print('ERROR: 3D orbit specified, but no z or vz values passed!')
+    else:
+        Oarray = np.zeros([rads.size, vels.size, zs.size, vzs.size, 9, nint])
+        #
+        for irad,rad in enumerate(rads):
+            #print 'Radius is ',rad
+            #
+            for ivel,vel in enumerate(vels):
+                for iz, z in enumerate(zs):
+                    for ivz, vz in enumerate(vzs):
+                        start_pos = [0.,rad,z] #launching from y-axis
+                        start_vel = [0.,vel,vz]
+                        #
+                        dtime = np.max([compute_timestep(F,start_pos,start_vel,dyn_res=dyn_res,verbose=False),dt])
+
+                        Orbit = leapfrog_integrate(F,nint,dtime,start_pos,start_vel,rotfreq=rotfreq,no_odd=no_odd,halo_l=halo_l,disk_m=disk_m,verbose=verbose,ap_max=ap_max)
+                        #print_orbit(f,O)
+                        #
+                        # bring orbits up to uniform length
+                        Oarray[irad,ivel, iz, ivz, 0] = np.concatenate((Orbit['X'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,1] = np.concatenate((Orbit['Y'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,2] = np.concatenate((Orbit['Z'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel, iz, ivz, 3] = np.concatenate((Orbit['TX'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,4] = np.concatenate((Orbit['TY'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,5] = np.concatenate((Orbit['VX'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,6] = np.concatenate((Orbit['VY'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,7] = np.concatenate((Orbit['VZ'],np.zeros(nint-Orbit['T'].size)))
+                        Oarray[irad,ivel,iz, ivz,8] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))
+    return Oarray
+
 def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,verbose):
     '''
     treat dt as the maximum value as a guard
@@ -830,10 +885,48 @@ def integrate_grid(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_m
             Oarray[irad,ivel,6] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))        
     return Oarray
 
+def integrate_grid_launchy(rads,vels,F,nint,dt,rotfreq,no_odd,halo_l,disk_m,dyn_res,ap_max,verbose):
+    '''
+    treat dt as the maximum value as a guard
+        0: X
+        1: Y
+        2: TX
+        3: TY
+        4: VX
+        5: VY
+        6: T
+
+    '''
+
+
+    Oarray = np.zeros([rads.size,vels.size,7,nint])
+    #
+    for irad,rad in enumerate(rads):
+        #print 'Radius is ',rad
+        #
+        for ivel,vel in enumerate(vels):
+            start_pos = [0.,rad,0.] #launching from y-axis
+            start_vel = [0.,vel,0.]
+            #
+            dtime = np.max([compute_timestep(F,start_pos,start_vel,dyn_res=dyn_res,verbose=False),dt])
+
+            Orbit = leapfrog_integrate(F,nint,dtime,start_pos,start_vel,rotfreq=rotfreq,no_odd=no_odd,halo_l=halo_l,disk_m=disk_m,verbose=verbose,ap_max=ap_max)
+            #print_orbit(f,O)
+            #
+            # bring orbits up to uniform length
+            Oarray[irad,ivel,0] = np.concatenate((Orbit['X'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,1] = np.concatenate((Orbit['Y'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,2] = np.concatenate((Orbit['TX'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,3] = np.concatenate((Orbit['TY'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,4] = np.concatenate((Orbit['VX'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,5] = np.concatenate((Orbit['VY'],np.zeros(nint-Orbit['T'].size)))
+            Oarray[irad,ivel,6] = np.concatenate((Orbit['T'],np.zeros(nint-Orbit['T'].size)))        
+    return Oarray
+
 def multi_compute_integration_3D(subrads,nprocs,vels,F,\
                    nint,dt,rotfreq,no_odd,halo_l,disk_m,\
                    dyn_res,ap_max,\
-                   zs, vzs,
+                   zs, vzs,launch,
                    verbose=5):
     #
     pool = Pool(nprocs)
@@ -857,7 +950,14 @@ def multi_compute_integration_3D(subrads,nprocs,vels,F,\
     fourteenth_arg = [0 for i in range(0,nprocs)]
     fourteenth_arg[0] = verbose
     #
-    out_vals = pool.map(integrate_grid_star_3D, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+    if launch=='x':
+        out_vals = pool.map(integrate_grid_star_3D, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
+                        itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
+                        itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
+                        itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
+                            itertools.repeat(thirteenth_arg), fourteenth_arg))
+    elif launch=='y':
+        out_vals = pool.map(integrate_grid_star_3D_launchy, zip(a_args, itertools.repeat(second_arg),itertools.repeat(third_arg),\
                         itertools.repeat(fourth_arg),itertools.repeat(fifth_arg),itertools.repeat(sixth_arg),\
                         itertools.repeat(seventh_arg),itertools.repeat(eighth_arg),itertools.repeat(ninth_arg),\
                         itertools.repeat(tenth_arg),itertools.repeat(eleventh_arg),itertools.repeat(twelvth_arg),\
