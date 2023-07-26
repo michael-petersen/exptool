@@ -22,6 +22,7 @@ except ImportError:
     raise ImportError("You will need to 'pip install pyyaml' to use this reader.")
 
 
+print('exptool.io.outcoef.py: WARNING, this method is deprecated, unless using old file formats.')
 
 class EOF_Object(object):
     """# make an eof object to carry around interesting bits of data"""

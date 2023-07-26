@@ -311,40 +311,26 @@ class Orbits(dict):
 
 
 
-#
-# visualizer tool 1
-#
-
-def write_obj_skeleton(outfile,Orbit,lo=0,hi=10000,prefac=100.):
+def write_obj_skeleton(outfile, Orbit, lo=0, hi=10000, prefac=100.):
     """
     output in a format for Blender to read (.obj)
 
     """
-
     if hi > Orbit['T'].shape[0]:
-
         hi = Orbit['T'].shape[0]
 
     npts = hi - lo
 
-    f = open(outfile,'w')
+    with open(outfile, 'w') as f:
+        f.write('o ORBIT1\n')
+        for indx in range(0, npts):
+            f.write('v {} {} {}\n'.format(prefac*Orbit['TX'][lo+indx], prefac*Orbit['TY'][lo+indx], prefac*Orbit['Z'][lo+indx]))
 
-    print >>f,'o ORBIT1'
+        for indx in range(1, npts):
+            f.write('l {} {}\n'.format(indx, indx+1))
 
-    for indx in range(0,npts):
-        print >>f,'v ',prefac*Orbit['TX'][lo+indx],prefac*Orbit['TY'][lo+indx],prefac*Orbit['Z'][lo+indx]
-
-
-    for indx in range(1,npts):
-        print >>f,'l ',indx,indx+1
-
-    # this connects the last point to the first
-    print >>f,'l ',npts,1
-
-    f.close()
-
-
-
+        # this connects the last point to the first
+        f.write('l {} {}\n'.format(npts, 1))
 
 
 

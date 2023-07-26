@@ -84,6 +84,8 @@ class Input():
         # expose the header
         self.header = I.header
 
+        self.filename = I.filename
+        self.time     = I.time
 
         # what is the ideal legacy error handling?
         if I.comp==None:
@@ -105,9 +107,7 @@ class Input():
         else:
             self.data = I.data
 
-        self.filename = I.filename
         self.comp     = I.comp
-        self.time     = I.time
 
 
 
