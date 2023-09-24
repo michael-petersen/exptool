@@ -11,6 +11,20 @@ points = icosphere.points
 # Use the points as needed
 print(points)
 
+
+# Create a 3D plot to visualize the evenly spaced points on the sphere
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=2)
+
+# Set equal aspect ratio to show a perfect sphere
+ax.set_box_aspect([1, 1, 1])
+
+# Show the plot
+plt.title('Evenly Spaced Points on a Sphere')
+plt.show()
+
+
 """
 
 import numpy as np
@@ -70,6 +84,10 @@ class Icosphere:
 
         # Convert points to a NumPy array
         self.points = np.array(self.points)
+
+        # verify that no anomalous points have been found
+        radii = np.linalg.norm(self.points,axis=1)
+        self.points = self.points[radii<=1.0]
 
     def _normalize(self, v):
         """Normalize a vector to have unit length."""
