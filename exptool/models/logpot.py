@@ -16,6 +16,7 @@ logpot (part of exptool.models)
 
 
 '''
+import numpy as np
 
 class LogPot():
     '''
