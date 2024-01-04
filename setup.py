@@ -43,7 +43,7 @@ setup(name='exptool',
                 'exptool/perturbation'],
       package_data={'': ['README.md','LICENSE'],'exptool/tests':['*.dat'],'exptool/tests/data':['*.dat']},
       include_package_data=True,
-      install_requires=['numpy>=1.7','scipy','matplotlib'],
+      install_requires=['numpy>=1.7','pyyaml'],
       ext_modules=ext_modules,
       classifiers = ["Programming Language :: Python", "Intended Audience :: Science/Research"]
       )
