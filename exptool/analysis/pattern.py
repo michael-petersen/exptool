@@ -159,118 +159,117 @@ class BarFromCoefficients:
         return None
 
 
-class BarTransform():
-    '''
-    BarTransform : class to do the work to calculate the bar position and transform particles
 
-    on it's own, BarTransform will reset the particles to be in the bar frame (planar transformation)
+class BarTransform:
+    """
+    BarTransform: A class to calculate the bar position and transform particles into the bar frame.
 
-    inputs
-    -----------------------
-    ParticleInstanceIn                 : the input PSP instance
-    bar_angle                          : (default=None) the known bar angle
-    rel_bar_angle                      : (default=0.) the desired rotation angle relative to the bar major axis, counterclockwise (known or computed)
-    minr                               : (default=0.) the MINIMUM radius of particles to use to compute the bar angle
-    maxr                               : (default=1.) the MAXIMUM radius of particles to use in compute the bar angle
+    On its own, BarTransform will reset the particles to be in the bar frame (planar transformation).
 
-    outputs
-    -----------------------
-    None
-        (ParticleInstanceIn will be modified to be in the planar bar transformation)
+    Parameters
+    ----------
+    ParticleInstanceIn : object
+        The input particle instance.
+    bar_angle : float, optional
+        The known bar angle. If None, it will be computed (default is None).
+    rel_bar_angle : float, optional
+        The desired rotation angle relative to the bar major axis, counterclockwise (default is 0.).
+    minr : float, optional
+        The minimum radius of particles to use to compute the bar angle (default is 0.).
+    maxr : float, optional
+        The maximum radius of particles to use to compute the bar angle (default is 1.).
 
+    Attributes
+    ----------
+    ParticleInstanceIn : object
+        The input particle instance.
+    bar_angle : float
+        The computed or provided bar angle.
+    data : dict
+        Dictionary containing the transformed particle data.
+    time : float
+        The time of the particle instance.
+    filename : str
+        The filename of the particle instance.
+    comp : str
+        The component of the particle instance.
 
-    helper routines
-    -----------------------
-    calculate_transform_and_return     : overwrite the input PSP instance to have the raw positions be transformed
-    bar_fourier_compute                : use m=2 fourier to transform to the bar frame
+    Methods
+    -------
+    calculate_transform_and_return()
+        Modify the input particle instance to be in the bar frame.
+    bar_fourier_compute(posx, posy, minr=0., maxr=1.)
+        Use m=2 Fourier analysis to compute the bar angle.
+    """
 
-    '''
-
-    def __init__(self,ParticleInstanceIn,bar_angle=None,rel_bar_angle=0.,minr=0.,maxr=1.):
-
-        '''
-        see documentation above
-
-        '''
-
+    def __init__(self, ParticleInstanceIn, bar_angle=None, rel_bar_angle=0., minr=0., maxr=1.):
         self.ParticleInstanceIn = ParticleInstanceIn
-
         self.bar_angle = bar_angle
-
         self.data = dict()
 
-        if self.bar_angle == None:
-            self.bar_angle = -1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.data['x'],self.ParticleInstanceIn.data['y'],maxr=maxr)
+        if self.bar_angle is None:
+            self.bar_angle = -1. * self.bar_fourier_compute(self.ParticleInstanceIn.data['x'], self.ParticleInstanceIn.data['y'], minr=minr, maxr=maxr)
 
-            #-1.*BarTransform.bar_fourier_compute(self,self.ParticleInstanceIn.xpos,self.ParticleInstanceIn.ypos,maxr=maxr)
-
-        # do an arbitary rotation of the particles relative to the bar?
+        # Apply relative bar angle rotation
         self.bar_angle += rel_bar_angle
 
+        # Perform the transformation
         self.calculate_transform_and_return()
 
-
     def calculate_transform_and_return(self):
-        '''
-        calculate_transform_and_return
-             do the modification of the input PSP instance to be in the bar frame.
+        """
+        Modify the input particle instance to be in the bar frame.
+        """
+        # Transform positions
+        transformed_x = self.ParticleInstanceIn.data['x'] * np.cos(self.bar_angle) - self.ParticleInstanceIn.data['y'] * np.sin(self.bar_angle)
+        transformed_y = self.ParticleInstanceIn.data['x'] * np.sin(self.bar_angle) + self.ParticleInstanceIn.data['y'] * np.cos(self.bar_angle)
 
-        inputs
-        ----------------------------
-        self (BarTransform)
+        # Transform velocities
+        transformed_vx = self.ParticleInstanceIn.data['vx'] * np.cos(self.bar_angle) - self.ParticleInstanceIn.data['vy'] * np.sin(self.bar_angle)
+        transformed_vy = self.ParticleInstanceIn.data['vx'] * np.sin(self.bar_angle) + self.ParticleInstanceIn.data['vy'] * np.cos(self.bar_angle)
 
-
-        '''
-
-
-        transformed_x = self.ParticleInstanceIn.data['x']*np.cos(self.bar_angle) - self.ParticleInstanceIn.data['y']*np.sin(self.bar_angle)
-        #self.ParticleInstanceIn.xpos*np.cos(self.bar_angle) - self.ParticleInstanceIn.ypos*np.sin(self.bar_angle)
-        transformed_y = self.ParticleInstanceIn.data['x']*np.sin(self.bar_angle) + self.ParticleInstanceIn.data['y']*np.cos(self.bar_angle)
-        #self.ParticleInstanceIn.xpos*np.sin(self.bar_angle) + self.ParticleInstanceIn.ypos*np.cos(self.bar_angle)
-
-        transformed_vx = self.ParticleInstanceIn.data['vx']*np.cos(self.bar_angle) - self.ParticleInstanceIn.data['vy']*np.sin(self.bar_angle)
-        #self.ParticleInstanceIn.xvel*np.cos(self.bar_angle) - self.ParticleInstanceIn.yvel*np.sin(self.bar_angle)
-        transformed_vy = self.ParticleInstanceIn.data['vx']*np.sin(self.bar_angle) + self.ParticleInstanceIn.data['vy']*np.cos(self.bar_angle)
-        #self.ParticleInstanceIn.xvel*np.sin(self.bar_angle) + self.ParticleInstanceIn.yvel*np.cos(self.bar_angle)
-
-
+        # Update the data dictionary
         self.data['x'] = transformed_x
         self.data['y'] = transformed_y
         self.data['z'] = np.copy(self.ParticleInstanceIn.data['z'])
-        #np.copy(self.ParticleInstanceIn.zpos) # interesting. needs to be a copy for later operations to work!
-
         self.data['vx'] = transformed_vx
         self.data['vy'] = transformed_vy
         self.data['vz'] = np.copy(self.ParticleInstanceIn.data['vz'])
-        #np.copy(self.ParticleInstanceIn.zvel)
-
         self.data['m'] = self.ParticleInstanceIn.data['m']
-        #self.ParticleInstanceIn.mass
         self.data['potE'] = self.ParticleInstanceIn.data['potE']
-        #self.ParticleInstanceIn.pote
 
+        # Update metadata
         self.time = self.ParticleInstanceIn.time
         self.filename = self.ParticleInstanceIn.filename
         self.comp = self.ParticleInstanceIn.comp
 
+    def bar_fourier_compute(self, posx, posy, minr=0., maxr=1.):
+        """
+        Use x and y positions to compute the m=2 Fourier phase angle.
 
-    def bar_fourier_compute(self,posx,posy,minr=0.,maxr=1.):
-        '''
+        Parameters
+        ----------
+        posx : array-like
+            x positions of particles.
+        posy : array-like
+            y positions of particles.
+        minr : float, optional
+            Minimum radius to consider (default is 0.).
+        maxr : float, optional
+            Maximum radius to consider (default is 1.).
 
-        use x and y positions to compute the m=2 power, and find phase angle
+        Returns
+        -------
+        float
+            The m=2 phase angle.
+        """
+        radius = np.sqrt(posx**2 + posy**2)
+        w = np.where((radius > minr) & (radius < maxr))[0]
 
-        TODO:
-            generalize to transform to any azimuthal order?
+        aval = np.sum(np.cos(2. * np.arctan2(posy[w], posx[w])))
+        bval = np.sum(np.sin(2. * np.arctan2(posy[w], posx[w])))
 
-        '''
-        w = np.where( ( (posx*posx + posy*posy)**0.5 > minr ) & ((posx*posx + posy*posy)**0.5 < maxr ))[0]
-
-        aval = np.sum( np.cos( 2.*np.arctan2(posy[w],posx[w]) ) )
-        bval = np.sum( np.sin( 2.*np.arctan2(posy[w],posx[w]) ) )
-
-        return np.arctan2(bval,aval)/2.
-
-
+        return np.arctan2(bval, aval) / 2.
 
 
 
@@ -566,40 +565,6 @@ class BarDetermine():
 
 
 
-
-
-
-def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
-    '''
-    #
-    # simple fourier method to calculate where the particles are in relation to the bar
-    #
-    '''
-    R = (ParticleInstance.data['x']*ParticleInstance.data['x'] + ParticleInstance.data['y']*ParticleInstance.data['y'])**0.5
-    #(ParticleInstance.xpos*ParticleInstance.xpos + ParticleInstance.ypos*ParticleInstance.ypos)**0.5
-    TH = np.arctan2(ParticleInstance.data['y'],ParticleInstance.data['x'])
-    #np.arctan2(ParticleInstance.ypos,ParticleInstance.xpos)
-    loR = np.where( R < rcut)[0]
-    A2 = np.sum(ParticleInstance.mass[loR] * np.cos(2.*TH[loR]))
-    B2 = np.sum(ParticleInstance.mass[loR] * np.sin(2.*TH[loR]))
-    bar_angle = 0.5*np.arctan2(B2,A2)
-
-    if (verbose):
-        print('Position angle is {0:4.3f} . . .'.format(bar_angle))
-
-    #
-    # two steps:
-    #   1. rotate theta so that the bar is aligned at 0,2pi
-    #   2. fold onto 0,pi to compute the lag
-    #
-    tTH = (TH - bar_angle + np.pi/2.) % np.pi  # compute lag with bar at pi/2
-    #
-    # verification plot
-    #plt.scatter( R[0:10000]*np.cos(tTH[0:10000]-np.pi/2.),R[0:10000]*np.sin(tTH[0:10000]-np.pi/2.),color='black',s=0.5)
-    return tTH - np.pi/2. # retransform to bar at 0
-
-
-
 def find_barangle(time, BarInstance, interpolate=True):
     """
     Use a bar instance to match the output time to a bar position.
@@ -642,7 +607,7 @@ def find_barangle(time, BarInstance, interpolate=True):
                 indx_barpos[indx] = bar_func(timeval)
             else:
                 indx_barpos[indx] = -BarInstance.pos[np.abs(timeval - BarInstance.time).argmin()]
-    except TypeError:  # Catching a specific exception type is better practice
+    except TypeError: 
         if interpolate:
             indx_barpos = bar_func(time)
         else:
@@ -695,81 +660,144 @@ def find_barpattern(intime, BarInstance, smth_order=2):
     return barpattern
 
 
-'''Not sure if this is the best place for this - wrote code to make a barfile using fourier
-analysis to find m=2 phase angle + then pattern speed based on this angle. This is to replace
-the EOF info if the EOF info is weird. Output file formats should be identical'''
-class BarFromFourier():
+class BarFromFourier:
+    """
+    Class to compute the bar pattern speed and phase angle using Fourier analysis.
+    
+    This class replaces the EOF information if it appears to be incorrect. The output file
+    formats are designed to be identical to those generated using EOF information.
 
-    def __init__(self,inputfiles):
+    Parameters
+    ----------
+    inputfiles : str
+        Path to a file containing a list of input files to be processed.
+
+    Attributes
+    ----------
+    slist : str
+        Path to the input files list.
+    SLIST : array-like
+        List of input files parsed from the file.
+    pos : array-like
+        Array of bar positions.
+    deriv : array-like
+        Array of bar pattern speeds (derivatives).
+    time : array-like
+        Array of time steps corresponding to the bar positions and speeds.
+    """
+
+    def __init__(self, inputfiles):
+        self.slist = inputfiles
 
     def parse_list(self):
-        
-        f = open(self.slist)
-        s_list = []
-        for line in f:
-            d = [q for q in line.split()]
-            s_list.append(d[0])
+        """
+        Parse the list of input files from the provided file path.
 
+        This method reads the file specified in `self.slist` and stores the list
+        of input files in the attribute `self.SLIST`.
+        """
+        with open(self.slist, 'r') as f:
+            s_list = [line.split()[0] for line in f]
         self.SLIST = np.array(s_list)
 
+    def bar_fourier_compute(self, posx, posy, maxr=0.5, minr=0.001):
+        """
+        Compute the m=2 Fourier phase angle from particle positions.
 
-    def bar_fourier_compute(self,posx,posy,maxr=0.5, minr=.001):
+        Parameters
+        ----------
+        posx : array-like
+            x positions of particles.
+        posy : array-like
+            y positions of particles.
+        maxr : float, optional
+            Maximum radius to consider (default is 0.5).
+        minr : float, optional
+            Minimum radius to consider (default is 0.001).
 
-        #
-        # use x and y positions tom compute the m=2 power, and find phase angle
-        #
-        w = np.where( ((posx*posx + posy*posy)**0.5 < maxr) & 
-                    ((posx*posx + posy*posy)**0.5 > minr) )[0]
+        Returns
+        -------
+        float
+            The m=2 phase angle.
+        """
+        # Select particles within the specified radius range
+        radius = np.sqrt(posx**2 + posy**2)
+        w = np.where((radius < maxr) & (radius > minr))[0]
 
-        aval = np.sum( np.cos( 2.*np.arctan2(posy[w],posx[w]) ) )
-        bval = np.sum( np.sin( 2.*np.arctan2(posy[w],posx[w]) ) )
+        # Compute m=2 Fourier components
+        aval = np.sum(np.cos(2. * np.arctan2(posy[w], posx[w])))
+        bval = np.sum(np.sin(2. * np.arctan2(posy[w], posx[w])))
 
-        return np.arctan2(bval,aval)/2.
+        return np.arctan2(bval, aval) / 2.
 
     def bar_speed(self, filelist, comp='star'):
+        """
+        Compute the bar pattern speed from the list of input files.
+
+        Parameters
+        ----------
+        filelist : array-like
+            List of input files to process.
+        comp : str, optional
+            Component to analyze (default is 'star').
+
+        Returns
+        -------
+        dict
+            Dictionary containing arrays of time steps, bar positions, and bar pattern speeds.
+        """
         self.slist = filelist
-        fourier_barfiles.parse_list(self)
-        pos = particle.Input(self.SLIST[0],comp=comp,verbose=0)
-        pos_p1 = particle.Input(self.SLIST[1],comp=comp,verbose=0)
+        self.parse_list()
+        
+        pos = particle.Input(self.SLIST[0], comp=comp, verbose=0)
+        pos_p1 = particle.Input(self.SLIST[1], comp=comp, verbose=0)
         first_bar_angle = self.bar_fourier_compute(pos.data['x'], pos.data['y'])
-        #get time step
+        
+        # Calculate the timestep
         timestep = pos_p1.time - pos.time
         tt = np.array([])
         pp = np.array([])
         rot = np.array([])
-        for i in range(0,len(self.SLIST)):
-            #loop through snapshot files in simulation, open file
-            pos = particle.Input(self.SLIST[i],comp=comp,verbose=0)
-            #compute bar angle
+        
+        for i in range(len(self.SLIST)):
+            pos = particle.Input(self.SLIST[i], comp=comp, verbose=0)
             bar_angle = self.bar_fourier_compute(pos.data['x'], pos.data['y'])
-            #if first time step, old bar angle = current bar angle
+            
             if i == 0:
                 old_bar_angle = first_bar_angle
-            pattern_speed = (old_bar_angle-bar_angle)/(timestep)
-            #bar_angle > old_bar_angle, if difference is near 180, flip it (took this bit from rachel)
-            if abs(old_bar_angle-bar_angle)>=(np.pi*3/4):
-                pattern_speed = (old_bar_angle - (bar_angle + np.pi))/(timestep)
+            
+            pattern_speed = (old_bar_angle - bar_angle) / timestep
+            
+            if abs(old_bar_angle - bar_angle) >= (np.pi * 3 / 4):
+                pattern_speed = (old_bar_angle - (bar_angle + np.pi)) / timestep
+            
             pp = np.append(pp, bar_angle)
             rot = np.append(rot, pattern_speed)
             tt = np.append(tt, pos.time)
-            #use this bar angle as 'old' angle for next step
+            
             old_bar_angle = bar_angle
+        
         self.pos = pp
         self.deriv = rot
         self.time = tt
-        return {'time':tt,'pos':pp, 'deriv':rot}
-            
-    def print_bar(self,simulation_directory,simulation_name):
+        
+        return {'time': tt, 'pos': pp, 'deriv': rot}
 
-        #
-        # print the barfile to file
-        #
+    def print_bar(self, simulation_directory, simulation_name):
+        """
+        Print the bar positions and pattern speeds to a file.
 
-
-        f = open(simulation_directory+simulation_name+'fourier_barpos.dat','w')
-        for i in range(0,len(self.SLIST)):
-            print(self.time[i],self.pos[i],self.deriv[i],end="\n",file=f)
-
-        f.close()
-
+        Parameters
+        ----------
+        simulation_directory : str
+            Directory where the output file will be saved.
+        simulation_name : str
+            Base name for the output file.
+        """
+        output_file = simulation_directory + simulation_name + 'fourier_barpos.dat'
+        
+        with open(output_file, 'w') as f:
+            for i in range(len(self.SLIST)):
+                print(self.time[i], self.pos[i], self.deriv[i], file=f)
+        
         return None
