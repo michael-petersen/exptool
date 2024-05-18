@@ -173,8 +173,8 @@ class ApsFinding():
         #
         # stamps the output file with the current time. do we like this?
         #
-        #tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
-        tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H')
+        tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
+        #tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H')
 
         # create a new file using the particle number, runtag, and time
         outputfile = out_directory+'RadialAps_N{}_r{}_T{}.dat'.format(total_orbits,runtag,tstamp)
@@ -287,7 +287,7 @@ class ApsFinding():
             #orderid    = IN[:r1length][aps]
 
             if self.verbose > 0:
-                    print('exptool.ApsFinding.trapping._determin_r_aps: Current time: {4.3f}'.format(tval),end='\r', flush=True)
+                    print('exptool.ApsFinding.trapping._determin_r_aps: Current time: {0:4.3f}'.format(tval),end='\r', flush=True)
 
             # the id of the orbit is preserved and used as the dictionary key
             for j in range(0,len(id)):
