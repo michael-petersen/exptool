@@ -112,7 +112,7 @@ class ApsFinding():
         ApsFinding.parse_list(self)
 
 
-    def parse_list(self):
+    def _parse_list(self):
         """
         parse files from the input list
 
@@ -131,7 +131,7 @@ class ApsFinding():
         self.SLIST = np.array(s_list)
 
         if self.verbose >= 1:
-            print('ApsFinding.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
+            print('exptool.trapping.ApsFinding.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
 
 
     def determine_r_aps(self,filelist,comp,particle_indx=-1,runtag='',out_directory='',threedee=False,return_aps=False,changingindx=False):
@@ -144,7 +144,7 @@ class ApsFinding():
 
         # take the inputs and identify all files that we will loop through
         self.slist = filelist
-        ApsFinding.parse_list(self)
+        ApsFinding._parse_list(self)
         # now we have self.SLIST, the parsed list of files we will analyse
 
         # first, check type of particle_index
@@ -159,7 +159,7 @@ class ApsFinding():
 
         # assume an array has been passed
         elif isinstance(particle_indx,np.ndarray):
-            pass
+            changingindx = True
 
         else:
             raise ValueError("exptool.ApsFinding.trapping._determin_r_aps: particle_indx must be an integer or an array.")
@@ -220,9 +220,9 @@ class ApsFinding():
                     X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['id'][p3indx]
 
                 else:
-                    X1 = Oa.data['x'][particle_indx];Y1 = Oa.data['y'][particle_indx];Z1 = Oa.data['z'][particle_indx];I1 = Oa.data['id'][particle_indx]
-                    X2 = Ob.data['x'][particle_indx];Y2 = Ob.data['y'][particle_indx];Z2 = Ob.data['z'][particle_indx];I2 = Ob.data['id'][particle_indx]
-                    X3 = Oc.data['x'][particle_indx];Y3 = Oc.data['y'][particle_indx];Z3 = Oc.data['z'][particle_indx];I3 = Oc.data['id'][particle_indx]
+                    X1 = Oa.data['x'];Y1 = Oa.data['y'];Z1 = Oa.data['z'];I1 = Oa.data['id']
+                    X2 = Ob.data['x'];Y2 = Ob.data['y'];Z2 = Ob.data['z'];I2 = Ob.data['id']
+                    X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
 
 
                 # compute radial positions
@@ -260,7 +260,7 @@ class ApsFinding():
                     X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['id'][p3indx]
 
                 else:
-                    X3 = Oc.data['x'][particle_indx];Y3 = Oc.data['y'][particle_indx];Z3 = Oc.data['z'][particle_indx];I3 = Oc.data['id'][particle_indx]
+                    X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
 
                 if threedee:
                     R3 = np.linalg.norm([X3,Y3,Z3],axis=0)
@@ -289,11 +289,7 @@ class ApsFinding():
             if self.verbose > 0:
                     print('exptool.ApsFinding.trapping._determin_r_aps: Current time: {4.3f}'.format(tval),end='\r', flush=True)
 
-            # under this convention, the user needs to keep track of the particle index that was input
-            #for j in range(0,len(index_tags)):
-            #    aps_dictionary[orderid[j]].append([tval,x[j],y[j],z[j]])
-
-            # under this convention, the id of the orbit is preserved and used as the dictionary key
+            # the id of the orbit is preserved and used as the dictionary key
             for j in range(0,len(id)):
                 aps_dictionary[id[j]].append([tval,x[j],y[j],z[j]])
 
@@ -310,21 +306,13 @@ class ApsFinding():
 
             orbit_aps_array = np.array(aps_dictionary[particle_indx[j]])
 
-            # print the index to the file
-            np.array([particle_indx[j]],dtype='i').tofile(f)
-
             # if there are valid turning points:
             if (len(orbit_aps_array) > 0):
 
                 orbits_with_apocentre += 1
-                naps = len(orbit_aps_array[:,0])  # this might be better as shape
 
-                #np.array([naps],dtype='i').tofile(f)
-
-                #self.napsides[j,0] = naps
-                #self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
-
-                #np.array( orbit_aps_array.reshape(-1,),dtype='f').tofile(f)
+                # count the number of turning points
+                naps = len(orbit_aps_array[:,0])  
 
                 # create a dataset with the index of the particle as the tag
                 dataset = f.create_dataset(str(particle_indx[j]), data=orbit_aps_array)
