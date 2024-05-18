@@ -101,7 +101,7 @@ class BarFromCoefficients:
         number_of_rotations = np.zeros_like(self.barposition)
         
         # which way are we rotating
-        primarydirection = np.nanmedian(np.ediff1d(B.barposition))
+        primarydirection = np.nanmedian(np.ediff1d(self.barposition))
         
         # start from the beginning and keep track of number of rotations
         for i in range(1, len(self.barposition)):
