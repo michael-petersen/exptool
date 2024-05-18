@@ -50,6 +50,9 @@ import datetime
 import os
 from scipy import interpolate
 
+# io import 
+import h5py
+
 # multiprocessing imports
 import itertools
 from multiprocessing import Pool, freeze_support
@@ -153,9 +156,13 @@ class ApsFinding():
             else:
                 # limit to the maximum number desired
                 particle_indx = np.arange(0,particle_indx,1)
-        else:
-            # assume an array has been passed and accept: could check
+
+        # assume an array has been passed
+        elif isinstance(particle_indx,np.ndarray):
             pass
+
+        else:
+            raise ValueError("exptool.ApsFinding.trapping._determin_r_aps: particle_indx must be an integer or an array.")
 
         # sort the particle indices
         particle_indx = particle_indx[particle_indx.argsort()]
@@ -166,17 +173,18 @@ class ApsFinding():
         #
         # stamps the output file with the current time. do we like this?
         #
-        tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
+        #tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
+        tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H')
 
         # create a new file using the particle number, runtag, and time
         outputfile = out_directory+'RadialAps_N{}_r{}_T{}.dat'.format(total_orbits,runtag,tstamp)
-        f = open(outputfile,'wb+')
+        f = h5py.File(outputfile,"w")
 
-        #
-        # print descriptor string
-        #
+        # createdescriptor string
         desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(total_orbits)+', threedee='+str(threedee)+', using '+filelist
-        np.array([desc],dtype='S200').tofile(f)
+        
+        # Write the descriptor string as an attribute
+        f.attrs['description'] = desc
 
         aps_dictionary = dict() # make blank dictionary for the aps
         for i in range(0,total_orbits): aps_dictionary[i] = []
@@ -220,9 +228,9 @@ class ApsFinding():
                     R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
 
                 else:
-                    R1 = np.sqrt(X1*X1 + Y1*Y1)
-                    R2 = np.sqrt(X2*X2 + Y2*Y2)
-                    R3 = np.sqrt(X3*X3 + Y3*Y3)
+                    R1 = np.linalg.norm([X1,Y1],axis=0)
+                    R2 = np.linalg.norm([X2,Y2],axis=0)
+                    R3 = np.linalg.norm([X3,Y3],axis=0)
 
             else: # i!=1
 
@@ -254,7 +262,7 @@ class ApsFinding():
                 if threedee:
                     R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
                 else:
-                    R3 = np.sqrt(X3*X3 + Y3*Y3)
+                    R3 = np.linalg.norm([X3,Y3],axis=0)
 
 
             # R1 might be the shortest, if particles are added, so only compare up to the length of r1
@@ -276,7 +284,7 @@ class ApsFinding():
             #orderid    = IN[:r1length][aps]
 
             if self.verbose > 0:
-                    print('Current time: {4.3f}'.format(tval),end='\r', flush=True)
+                    print('exptool.ApsFinding.trapping._determin_r_aps: Current time: {4.3f}'.format(tval),end='\r', flush=True)
 
             # under this convention, the user needs to keep track of the particle index that was input
             #for j in range(0,len(index_tags)):
@@ -286,14 +294,15 @@ class ApsFinding():
             for j in range(0,len(index_tags)):
                 aps_dictionary[id[j]].append([tval,x[j],y[j],z[j]])
 
-
+        # create a tracker for the number of aps per orbit
         self.napsides = np.zeros([total_orbits,2])
 
         # print a header with the number of orbits
-        np.array([total_orbits],dtype='i').tofile(f)
+        f.attrs['total_orbits'] = total_orbits
 
         orbits_with_apocentre = 0
 
+        # go back through all the orbits and write to file
         for j in range(0,total_orbits):
 
             orbit_aps_array = np.array(aps_dictionary[particle_indx[j]])
@@ -307,28 +316,41 @@ class ApsFinding():
                 orbits_with_apocentre += 1
                 naps = len(orbit_aps_array[:,0])  # this might be better as shape
 
-                np.array([naps],dtype='i').tofile(f)
+                #np.array([naps],dtype='i').tofile(f)
 
-                self.napsides[j,0] = naps
-                self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
+                #self.napsides[j,0] = naps
+                #self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
 
-                np.array( orbit_aps_array.reshape(-1,),dtype='f').tofile(f)
+                #np.array( orbit_aps_array.reshape(-1,),dtype='f').tofile(f)
+
+                # create a dataset with the index of the particle as the tag
+                dataset = f.create_dataset(str(particle_indx[j]), data=orbit_aps_array)
+
+                # create attributes for the dataset
+                dataset.attrs['naps'] = naps
+
 
             # no valid turning points: put in a blank
             else:
 
+                # create a dataset with the index of the particle as the tag
+                dataset = f.create_dataset(str(particle_indx[j]), data=np.array([-1.]))
+
+                # create attributes for the dataset
+                dataset.attrs['naps'] = 0
+
                 # guard against zero length
-                np.array([1],dtype='i').tofile(f)
+                #np.array([1],dtype='i').tofile(f)
 
                 # indices start at 1
-                np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
+                #np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
 
 
         f.close()
 
-        print('trapping.ApsFinding.determine_r_aps: found {} orbits (out of {}) with valid apocentres.'.format(orbits_with_apocentre,total_orbits))
+        print('exptool.trapping.ApsFinding.determine_r_aps: found {} orbits (out of {}) with valid apocentres.'.format(orbits_with_apocentre,total_orbits))
 
-        print('trapping.ApsFinding.determine_r_aps: savefile is {}'.format(outputfile))
+        print('exptool.trapping.ApsFinding.determine_r_aps: savefile is {}'.format(outputfile))
 
         if (return_aps):
             ApsDict = ApsFinding.read_aps_file(self,outputfile)
