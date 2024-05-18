@@ -5,6 +5,7 @@ MSP  8 Dec 2016 Original commit. To be merged with neutrapping.
 MSP 23 Dec 2017 Break out bar finding algorithms to the more general pattern.py
 MSP  1 Mar 2019 Work on homogenizing docstrings and general commenting
 MSP 27 Oct 2021 Enable flexible particle number handling
+MSP 18 May 2024 Create HDF5 input/ouput
 
 
 CLASSES:
@@ -287,7 +288,7 @@ class ApsFinding():
             #orderid    = IN[:r1length][aps]
 
             if self.verbose > 0:
-                    print('exptool.ApsFinding.trapping._determin_r_aps: Current time: {0:4.3f}'.format(tval),end='\r', flush=True)
+                    print('exptool.ApsFinding.trapping._determine_r_aps: Current time: {0:4.3f}'.format(tval),end='\r', flush=True)
 
             # the id of the orbit is preserved and used as the dictionary key
             for j in range(0,len(id)):
@@ -1106,9 +1107,8 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     norb = TrappingInstanceDict['norb']
     nfamilies = len(criteria.keys())
     if nfamilies == 0:
-        print('trapping.do_kmeans_dict: no families defined?')
-        #break
-        return
+        return ValueError('exptool.trapping.do_kmeans_dict: no families defined?')
+
 
     # set up final array
     trapping_array = np.zeros([nfamilies,norb,len(BarInstance.time)],dtype='i1')

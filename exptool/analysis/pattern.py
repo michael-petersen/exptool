@@ -1,19 +1,11 @@
-
-#  08-29-16: added maximum radius capabilities to bar_fourier_compute
-
-#  10-25-16: some redundancies noticed (bar_fourier_compute) and should be unified
-
 '''
-
 
 pattern.py (part of exptool)
      tools to find patterns in the global simulation outputs
 
 
-
-
-
-
+MSP 29 Aug 2016 Added maximum radius capabilities to bar_fourier_compute
+MSP 25 Oct 2016 Some redundancies noticed (bar_fourier_compute) and should be unified
 
 
 BarTransform
@@ -37,10 +29,6 @@ BarInstance.read_bar(bar_file)
 '''
 
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-
-
 # general imports
 import time
 import numpy as np
@@ -51,14 +39,124 @@ from scipy.interpolate import UnivariateSpline
 
 
 # exptool imports
-from exptool.io import particle
-from exptool.utils import kmeans
-from exptool.utils import utils
+from ..io import particle
+from ..utils import kmeans
+from ..utils import utils
 
 
+class BarFromCoefficients:
+    """
+    Class to calculate and analyze the bar position from Fourier coefficients.
+    
+    Parameters
+    ----------
+    times : array-like
+        Array of time values.
+    coefs : array-like
+        Array of complex Fourier coefficients.
+    unwrap_threshold : float, optional
+        Threshold for unwrapping the bar position phase (default is -1.).
+    smooth : bool, optional
+        Whether to smooth the unwrapped position (default is False).
+    reverse : bool, optional
+        Whether to reverse the unwrapping direction (default is False).
+    adjust : float, optional
+        Adjustment value used in unwrapping (default is np.pi).
+    verbose : int, optional
+        Verbosity level (default is 0).
+    smth_derivative : int, optional
+        Smoothing factor for the polynomial derivative calculation (default is 0).
+    spline_derivative : int, optional
+        Smoothing factor for the spline derivative calculation (default is 0).
+    """
+    def __init__(self, times, coefs, unwrap_threshold=-1., smooth=False, reverse=False, adjust=np.pi, verbose=0, smth_derivative=0, spline_derivative=0):
+        self.verbose = verbose
+        self.time = times
+        self.cos = np.real(coefs)
+        self.sin = np.imag(coefs)
+        self.barposition = np.arctan2(self.sin, self.cos)
+        # compute the unwrapped position
+        self._unwrap_position(unwrap_threshold, smooth, reverse, adjust)
+        # compute the derivative
+        self._frequency_and_derivative(smth_derivative,spline_derivative)
+    
+    def _unwrap_position(self, unwrap_threshold, smooth, reverse, adjust):
+        """
+        Unwrap the bar position to avoid discontinuities.
 
+        Parameters
+        ----------
+        unwrap_threshold : float
+            Threshold for phase unwrapping.
+        smooth : bool
+            Whether to smooth the unwrapped position.
+        reverse : bool
+            Whether to reverse the unwrapping direction.
+        adjust : float
+            Adjustment value used in unwrapping.
+        """
+        running_number_of_rotations = 0
+        number_of_rotations = np.zeros_like(self.barposition)
+        # start from zero
+        for i in range(1, len(self.barposition)):
+            if reverse:
+                if (self.barposition[i] - self.barposition[i-1]) > -1. * unwrap_threshold:
+                    running_number_of_rotations -= 1
+            else:
+                if (self.barposition[i] - self.barposition[i-1]) < unwrap_threshold:
+                    running_number_of_rotations += 1
+            number_of_rotations[i] = running_number_of_rotations
+        if reverse:
+            unwrapped_barposition = self.barposition + number_of_rotations * adjust
+        else:
+            unwrapped_barposition = self.barposition - number_of_rotations * adjust
+        self.pos = unwrapped_barposition
+    
+    def _frequency_and_derivative(self, smth_derivative,spline_derivative):
+        """
+        Calculate the frequency and derivative of the unwrapped bar position.
 
+        Parameters
+        ----------
+        spline_derivative : int
+            Smoothing factor for the spline derivative calculation.
+        """
+        # make a numerical derivative estimate
+        self.deriv = np.zeros_like(self.pos)
+        for i in range(1, len(self.pos) - 1):
+            self.deriv[i] = (self.pos[i+1] - self.pos[i-1]) / (2 * (self.time[i] - self.time[i-1]))
+        
+        if (smth_derivative):
+            smth_params = np.polyfit(self.time, self.deriv, smth_derivative)
+            pos_func = np.poly1d(smth_params)
+            self.deriv = pos_func(self.time)
 
+        # hard set as a cubic spline,
+        # number is a smoothing factor between knots, see scipy.UnivariateSpline
+        #
+        # recommended: 7 for dt=0.002 spacing
+        if spline_derivative:
+            spl = UnivariateSpline(self.time, self.pos, k=3, s=spline_derivative)
+            self.deriv = (spl.derivative())(self.time)
+            self.dderiv = np.zeros_like(self.deriv)
+            #
+            # can also do a second deriv
+            for indx, timeval in enumerate(self.time):
+                self.dderiv[indx] = spl.derivatives(timeval)[2]
+    
+    def print_bar(self, outfile):
+        """
+        Print the bar position, its derivative, and time to a file.
+
+        Parameters
+        ----------
+        outfile : str
+            Path to the output file.
+        """
+        with open(outfile, 'w') as f:
+            for i in range(len(self.time)):
+                print(self.time[i], self.pos[i], self.deriv[i], file=f)
+        return None
 
 
 class BarTransform():
@@ -502,77 +600,96 @@ def compute_bar_lag(ParticleInstance,rcut=0.01,verbose=0):
 
 
 
+def find_barangle(time, BarInstance, interpolate=True):
+    """
+    Use a bar instance to match the output time to a bar position.
 
+    Parameters
+    ----------
+    time : array-like
+        Array of time values at which to find the bar position.
+    BarInstance : object
+        An instance of a class (such as `BarFromCoefficients`) that contains
+        bar positions and corresponding times.
+    interpolate : bool, optional
+        Whether to interpolate the bar position using a spline. If False,
+        the function finds the closest available bar position (default is True).
 
-def find_barangle(time,BarInstance,interpolate=True):
-    '''
-    #
-    # use a bar instance to match the output time to a bar position
-    #
-    #    can take arrays!
-    #
-    #    but feels like it only goes one direction?
-    #
-    '''
-    # place in a guard against nan values
-    BarInstance.pos[BarInstance.pos == np.nan] = 0.
+    Returns
+    -------
+    indx_barpos : array-like
+        Array of bar positions corresponding to the input time values.
 
+    Notes
+    -----
+    This function can take arrays as input. It currently handles only one
+    direction of bar position matching and places a guard against NaN values
+    in the bar positions.
+    """
+    # Place a guard against NaN values
+    BarInstance.pos[np.isnan(BarInstance.pos)] = 0.
 
-    sord = 0 # should this be a variable?
-    #
-    if (interpolate):
-        not_nan = np.where(np.isnan(BarInstance.pos)==False)
-        bar_func = UnivariateSpline(BarInstance.time[not_nan],-BarInstance.pos[not_nan],s=sord)
-    #
+    sord = 0  # Should this be a variable?
+
+    if interpolate:
+        not_nan = np.where(np.isnan(BarInstance.pos) == False)
+        bar_func = UnivariateSpline(BarInstance.time[not_nan], -BarInstance.pos[not_nan], s=sord)
+
     try:
         indx_barpos = np.zeros([len(time)])
-        for indx,timeval in enumerate(time):
-        #
-            if (interpolate):
+        for indx, timeval in enumerate(time):
+            if interpolate:
                 indx_barpos[indx] = bar_func(timeval)
-            #
-            #
             else:
-                indx_barpos[indx] = -BarInstance.pos[ abs(timeval-BarInstance.time).argmin()]
-        #
-    except:
-        if (interpolate):
+                indx_barpos[indx] = -BarInstance.pos[np.abs(timeval - BarInstance.time).argmin()]
+    except TypeError:  # Catching a specific exception type is better practice
+        if interpolate:
             indx_barpos = bar_func(time)
-    #
         else:
-            indx_barpos = -BarInstance.pos[ abs(time-BarInstance.time).argmin()]
-    #
+            indx_barpos = -BarInstance.pos[np.abs(time - BarInstance.time).argmin()]
+
     return indx_barpos
 
+def find_barpattern(intime, BarInstance, smth_order=2):
+    """
+    Use a bar instance to match the output time to a bar pattern speed.
 
+    Parameters
+    ----------
+    intime : array-like
+        Array of time values at which to find the bar pattern speed.
+    BarInstance : object
+        An instance of a class (such as `BarFromCoefficients`) that contains
+        bar positions, times, and their derivatives.
+    smth_order : int, optional
+        Smoothing factor for the derivative calculation (default is 2).
 
-def find_barpattern(intime,BarInstance,smth_order=2):
-    '''
-    #
-    # use a bar instance to match the output time to a bar pattern speed
-    #
-    #    simple differencing--may want to be careful with this.
-    #    needs a guard for the end points
-    #
-    '''
+    Returns
+    -------
+    barpattern : array-like
+        Array of bar pattern speeds corresponding to the input time values.
+    """
 
-    # grab the derivative at whatever smoothing order
-    BarInstance.frequency_and_derivative(smth_order=smth_order)
+    # Compute the derivative of the bar position at the specified smoothing order
+    BarInstance._frequency_and_derivative(spline_derivative=smth_order)
 
     try:
-
+        # Initialize an array to hold the bar pattern speeds
         barpattern = np.zeros([len(intime)])
 
-        for indx,timeval in enumerate(intime):
+        # Loop over each time value in the input array
+        for indx, timeval in enumerate(intime):
+            # Find the index of the closest time in BarInstance.time
+            best_time = abs(timeval - BarInstance.time).argmin()
 
-            best_time = abs(timeval-BarInstance.time).argmin()
-
+            # Get the derivative (bar pattern speed) at the closest time
             barpattern[indx] = BarInstance.deriv[best_time]
 
     except:
+        # Handle the case where intime is a single value
+        best_time = abs(intime - BarInstance.time).argmin()
 
-        best_time = abs(intime-BarInstance.time).argmin()
-
+        # Get the derivative (bar pattern speed) at the closest time
         barpattern = BarInstance.deriv[best_time]
 
     return barpattern
@@ -581,7 +698,10 @@ def find_barpattern(intime,BarInstance,smth_order=2):
 '''Not sure if this is the best place for this - wrote code to make a barfile using fourier
 analysis to find m=2 phase angle + then pattern speed based on this angle. This is to replace
 the EOF info if the EOF info is weird. Output file formats should be identical'''
-class fourier_barfiles():
+class BarFromFourier():
+
+    def __init__(self,inputfiles):
+
     def parse_list(self):
         
         f = open(self.slist)
