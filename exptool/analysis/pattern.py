@@ -16,8 +16,10 @@ TODO:
 -Filtering algorithms for bar determination (e.g. look at better time-series algorithms)
 -Need a partial pattern calculator for bars that grow and
 disappear. Perhaps also in eof.py?
+-Filter bad values from the pattern speed of the bar somehow
+-Combine multiple coefficient series for a better estimate
 
-BASIC USAGE:
+BASIC USAGE Examples:
 
 # to transform a PSP output to have the bar on the X axis
 PSPTransform = pattern.BarTransform(PSPInput)
@@ -69,7 +71,7 @@ class BarFromCoefficients:
     spline_derivative : int, optional
         Smoothing factor for the spline derivative calculation (default is 0).
     """
-    def __init__(self, times, coefs, unwrap_threshold=-1., smooth=False, reverse=False, adjust=np.pi, verbose=0, smth_derivative=0, spline_derivative=0):
+    def __init__(self, times, coefs, unwrap_threshold=-np.pi/2., smooth=False, reverse=False, adjust=2*np.pi, verbose=0, smth_derivative=0, spline_derivative=0):
         self.verbose = verbose
         self.time = times
         self.cos = np.real(coefs)
@@ -97,19 +99,25 @@ class BarFromCoefficients:
         """
         running_number_of_rotations = 0
         number_of_rotations = np.zeros_like(self.barposition)
-        # start from zero
+        
+        # which way are we rotating
+        primarydirection = np.nanmedian(np.ediff1d(B.barposition))
+        
+        # start from the beginning and keep track of number of rotations
         for i in range(1, len(self.barposition)):
-            if reverse:
-                if (self.barposition[i] - self.barposition[i-1]) > -1. * unwrap_threshold:
-                    running_number_of_rotations -= 1
-            else:
+            if (primarydirection > 0):
                 if (self.barposition[i] - self.barposition[i-1]) < unwrap_threshold:
                     running_number_of_rotations += 1
+            else:
+                if (self.barposition[i] - self.barposition[i-1]) > -1. * unwrap_threshold:
+                    running_number_of_rotations += 1
             number_of_rotations[i] = running_number_of_rotations
-        if reverse:
+            
+        # now straighten out the zeros
+        if (primarydirection > 0):
             unwrapped_barposition = self.barposition + number_of_rotations * adjust
         else:
-            unwrapped_barposition = self.barposition - number_of_rotations * adjust
+            unwrapped_barposition = - self.barposition + number_of_rotations * adjust
         self.pos = unwrapped_barposition
     
     def _frequency_and_derivative(self, smth_derivative,spline_derivative):
@@ -157,6 +165,7 @@ class BarFromCoefficients:
             for i in range(len(self.time)):
                 print(self.time[i], self.pos[i], self.deriv[i], file=f)
         return None
+
 
 
 
