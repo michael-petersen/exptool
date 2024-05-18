@@ -151,8 +151,8 @@ class ApsFinding():
         if isinstance(particle_indx,int):
             if particle_indx < 0:
                 # if particle_indx < 0, make the comparison index all particles
-                Oa = particle.Input(self.SLIST[0],legacy=False,comp=comp,verbose=0)
-                particle_indx = np.arange(0,Oa.nbodies,1)
+                Oa = particle.Input(self.SLIST[0],comp=comp,verbose=0)
+                particle_indx = np.arange(0,Oa.data['id'].size,1)
             else:
                 # limit to the maximum number desired
                 particle_indx = np.arange(0,particle_indx,1)
@@ -186,10 +186,13 @@ class ApsFinding():
         # Write the descriptor string as an attribute
         f.attrs['description'] = desc
 
-        aps_dictionary = dict() # make blank dictionary for the aps
-        for i in range(0,total_orbits): aps_dictionary[i] = []
+        # make blank dictionary for the aps
+        aps_dictionary = dict() 
 
+        # make a blank array for each orbit
+        for i in particle_indx: aps_dictionary[i] = []
 
+        # loop through files
         for i in range(1,len(self.SLIST)-1):
 
             if i==1:
@@ -217,16 +220,16 @@ class ApsFinding():
                     X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['id'][p3indx]
 
                 else:
-                    X1 = Oa.data['x'];Y1 = Oa.data['y'];Z1 = Oa.data['z'];I1 = Oa.data['id']
-                    X2 = Ob.data['x'];Y2 = Ob.data['y'];Z2 = Ob.data['z'];I2 = Ob.data['id']
-                    X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
+                    X1 = Oa.data['x'][particle_indx];Y1 = Oa.data['y'][particle_indx];Z1 = Oa.data['z'][particle_indx];I1 = Oa.data['id'][particle_indx]
+                    X2 = Ob.data['x'][particle_indx];Y2 = Ob.data['y'][particle_indx];Z2 = Ob.data['z'][particle_indx];I2 = Ob.data['id'][particle_indx]
+                    X3 = Oc.data['x'][particle_indx];Y3 = Oc.data['y'][particle_indx];Z3 = Oc.data['z'][particle_indx];I3 = Oc.data['id'][particle_indx]
+
 
                 # compute radial positions
                 if threedee:
-                    R1 = np.sqrt(X1*X1 + Y1*Y1 + Z1*Z1)
-                    R2 = np.sqrt(X2*X2 + Y2*Y2 + Z2*Z2)
-                    R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
-
+                    R1 = np.linalg.norm([X1,Y1,Z1],axis=0)
+                    R2 = np.linalg.norm([X2,Y2,Z2],axis=0)
+                    R3 = np.linalg.norm([X3,Y3,Z3],axis=0)
                 else:
                     R1 = np.linalg.norm([X1,Y1],axis=0)
                     R2 = np.linalg.norm([X2,Y2],axis=0)
@@ -257,10 +260,10 @@ class ApsFinding():
                     X3 = Oc.data['x'][p3indx];Y3 = Oc.data['y'][p3indx];Z3 = Oc.data['z'][p3indx];I3 = Oc.data['id'][p3indx]
 
                 else:
-                    X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
+                    X3 = Oc.data['x'][particle_indx];Y3 = Oc.data['y'][particle_indx];Z3 = Oc.data['z'][particle_indx];I3 = Oc.data['id'][particle_indx]
 
                 if threedee:
-                    R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
+                    R3 = np.linalg.norm([X3,Y3,Z3],axis=0)
                 else:
                     R3 = np.linalg.norm([X3,Y3],axis=0)
 
