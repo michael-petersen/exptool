@@ -291,7 +291,7 @@ class ApsFinding():
             #    aps_dictionary[orderid[j]].append([tval,x[j],y[j],z[j]])
 
             # under this convention, the id of the orbit is preserved and used as the dictionary key
-            for j in range(0,len(index_tags)):
+            for j in range(0,len(id)):
                 aps_dictionary[id[j]].append([tval,x[j],y[j],z[j]])
 
         # create a tracker for the number of aps per orbit
