@@ -178,7 +178,7 @@ class ApsFinding():
         #tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H')
 
         # create a new file using the particle number, runtag, and time
-        outputfile = out_directory+'RadialAps_N{}_r{}_T{}.dat'.format(total_orbits,runtag,tstamp)
+        outputfile = out_directory+'RadialAps_N{}_r{}_T{}.h5'.format(total_orbits,runtag,tstamp)
         f = h5py.File(outputfile,"w")
 
         # createdescriptor string
@@ -440,324 +440,272 @@ def read_trapping_file(t_file,tdtype='i1'):
 
 
 
-def reduce_aps_dictionary(TrappingInstance,norb):
-    '''
-    sometimes you just don't need all those apsides
-    '''
+def reduce_aps_dictionary(TrappingInstance, norb):
+    """
+    Reduces the apsides data in a trapping instance to only include a specified number of orbits.
+
+    This function takes a trapping instance dictionary and reduces it to include only the
+    specified number of orbits (`norb`). It retains the description and the first `norb`
+    orbits' data.
+
+    Parameters
+    ----------
+    TrappingInstance : dict
+        A dictionary containing the trapping instance data with multiple orbits.
+    norb : int
+        The number of orbits to include in the reduced dictionary.
+
+    Returns
+    -------
+    TrappingInstanceOut : dict
+        A reduced dictionary containing only the specified number of orbits
+        from the original trapping instance.
+
+    Examples
+    --------
+    >>> trapping_instance = {
+            'desc': 'Sample trapping instance',
+            0: {'apside_1': [1, 2], 'apside_2': [3, 4]},
+            1: {'apside_1': [5, 6], 'apside_2': [7, 8]},
+            2: {'apside_1': [9, 10], 'apside_2': [11, 12]}
+        }
+    >>> reduced_instance = reduce_aps_dictionary(trapping_instance, 2)
+    >>> print(reduced_instance)
+    {'norb': 2, 'desc': 'Sample trapping instance', 0: {'apside_1': [1, 2], 'apside_2': [3, 4]}, 1: {'apside_1': [5, 6], 'apside_2': [7, 8]}}
+    """
+    # Initialize the output dictionary
     TrappingInstanceOut = {}
+
+    # Add the number of orbits to the output dictionary
     TrappingInstanceOut['norb'] = norb
+
+    # Add the description to the output dictionary
     TrappingInstanceOut['desc'] = TrappingInstance['desc']
 
-    for i in range(0,norb):
+    # Loop through the specified number of orbits and add them to the output dictionary
+    for i in range(norb):
         TrappingInstanceOut[i] = TrappingInstance[i]
 
     return TrappingInstanceOut
 
 
-
-def evaluate_clusters_polar_legacy(K,maxima=False,rank=False,perc=0.):
-    '''
-    evaluate_clusters_polar
-        calculate statistics for clusters in polar coordinates
-
-    inputs
-    -------------
-    K             : number of clusters
-    maxima        : (boolean, False) if True, use the maximum value from the clusters
-    rank
-    perc
-
-
-    returns
-    -------------
-    theta_n
-    clustermean
-    clusterstd_r
-    clusterstd_t
-
-
-
-    '''
+def beane_criteria(K):
+    """Implement the criteria from Beane et al. (2024)
+    
+    works best for polar classifications"""
 
     # how many clusters?
     k = K.K
 
-    if (rank) & (perc==0.):
-        print('evaluate_clusters_polar: Perc must be >0.')
-        return np.nan,np.nan,np.nan,np.nan
+    # Compute radii and theta values from clusters
+    rad_clusters = np.array([np.linalg.norm(K.clusters[i], axis=1) for i in range(k)])
+    the_clusters = np.array([np.arctan2(np.abs(K.clusters[i][:, 1]), np.abs(K.clusters[i][:, 0])) for i in range(k)])
+
+    # implement equation A1: the maximum angle from the bar for the clusters
+    thetadiff = np.max([np.arctan2(np.abs(K.mu[i][1]), np.abs(K.mu[i][0])) for i in range(k)])
+
+    # if thetadiff < pi/8, consider the particle trapped
+
+    # implement equation A2:
+    clusterstd = np.sum([np.std(rad_clusters[i]) for i in range(k)])
+    clustermean = np.sum([np.mean(rad_clusters[i]) for i in range(k)])
+    tightness = clusterstd/clustermean
+
+    # if tightness is < 0.22, consider the particle trapped
+
+    return thetadiff,tightness
 
 
-    # compute radii and theta values from clusters
-    rad_clusters = np.array([np.sum(np.array(K.clusters[i])*np.array(K.clusters[i]),axis=1)**0.5 for i in range(0,k)])
+def evaluate_clusters_polar(K, maxima=False, rank=False, perc=0.):
+    """
+    Calculate statistics for clusters in polar coordinates.
 
-    # for computing the theta values, can decide on a version with
-    # (legacy) or without (modern) folding
+    This function evaluates the clustering results in polar coordinates (r, theta).
+    It computes various statistics such as mean, standard deviation, and optionally
+    ranks and percentiles.
 
-    legacy = True
+    Parameters
+    ----------
+    K : KMeans
+        An instance of a K-means clustering result.
+    maxima : bool, optional
+        If True, calculate maximum quantities. If False, calculate average quantities.
+        Default is False.
+    rank : bool, optional
+        If True, use rank-ordered statistics. Default is False.
+    perc : float, optional
+        Percentage threshold for rank ordering. Default is 0.
 
-    if legacy:
-        the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
-    else:
-        the_clusters = np.array([np.arctan(      (np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
+    Returns
+    -------
+    theta_n : float
+        Angle measure in the context of the clusters.
+    clustermean : float
+        The mean value of the clusters.
+    clusterstd_r : float
+        The standard deviation of the clusters in the radial direction.
+    clusterstd_t : float
+        The standard deviation of the clusters in the angular direction.
 
-    if maxima:
-        # use maxima
+    Notes
+    -----
+    This function computes the radii and theta values from the clusters, then calculates
+    either the maximum or average statistics based on the `maxima` parameter. It also
+    handles rank-ordered statistics if `rank` is True and `perc` is greater than 0.
 
-        clustermean = np.max([np.mean(rad_clusters[i]) for i in range(0,k)])
-
-        if legacy:
-            theta_n = np.max([np.abs(np.arctan(       K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        else:
-            theta_n = np.max([       np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-
-        if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-
-            # I think this needs an absolute value
-            clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
-        else:
-            clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(0,k)])
-
-            if legacy:
-                clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(0,k)])
-            else:
-                clusterstd_t = np.max([np.abs(np.max(the_clusters[i])-np.min(the_clusters[i])) for i in range(0,k)])
-
-
-    else:
-
-        # not maxima
-
-        if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.mean([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-            clusterstd_t = np.mean([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
-        else:
-            clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(0,k)])
-
-            if legacy:
-                clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
-            else:
-                clusterstd_t = np.mean([np.abs(np.max(the_clusters[i])-np.min(the_clusters[i])) for i in range(0,k)])
-
-
-
-        clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
-
-        # compute the mean of the cluster centers
-        if legacy:
-            theta_n = np.mean([np.abs(np.arctan(       K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        else:
-            theta_n = np.mean([       np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-
-    # return values
-    return theta_n,clustermean,clusterstd_r,clusterstd_t
-
-
-def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
-    '''
-    evaluate_clusters_polar
-        calculate statistics for clusters in polar coordinates
-
-    inputs
-    -------------
-    K
-    maxima
-    rank
-    perc
-
-
-    returns
-    -------------
-    theta_n
-    clustermean
-    clusterstd_r
-    clusterstd_t
-
-
-
-    '''
-
-    # how many clusters?
+    Examples
+    --------
+    >>> K = kmeans.KMeans(k=2, X=ApsArray)
+    >>> K.find_centers()
+    >>> theta_n, clustermean, clusterstd_r, clusterstd_t = evaluate_clusters_polar(K)
+    """
+    # Number of clusters
     k = K.K
 
-    if (rank) & (perc==0.):
-        print('evaluate_clusters_polar: Perc must be >0.')
-        return np.nan,np.nan,np.nan,np.nan
+    # Check if rank is True but perc is not set
+    if rank and perc == 0.:
+        raise SyntaxError('exptool.trapping.evaluate_clusters_polar: Perc must be >0.')
 
-
-    # compute radii and theta values from clusters
-    rad_clusters = np.array([np.sum(np.array(K.clusters[i])*np.array(K.clusters[i]),axis=1)**0.5 for i in range(0,k)])
-    the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
+    # Compute radii and theta values from clusters
+    rad_clusters = np.array([np.linalg.norm(K.clusters[i], axis=1) for i in range(k)])
+    the_clusters = np.array([np.arctan2(np.abs(K.clusters[i][:, 1]), np.abs(K.clusters[i][:, 0])) for i in range(k)])
 
     if maxima:
-        # use maxima
-
-        clustermean = np.max([np.mean(rad_clusters[i]) for i in range(0,k)])
-
-        #theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        theta_n = np.max([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        # Calculate maximum quantities
+        clustermean = np.max([np.mean(rad_clusters[i]) for i in range(k)])
+        theta_n = np.max([np.arctan2(np.abs(K.mu[i][1]), np.abs(K.mu[i][0])) for i in range(k)])
 
         if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-            clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
+            # Use rank-ordered statistics
+            organized_rad = np.array([np.sort(rad_clusters[i]) for i in range(k)])
+            organized_the = np.array([np.sort(the_clusters[i]) for i in range(k)])
+            clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]), perc) for i in range(k)])
+            clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]), perc) for i in range(k)])
         else:
-            clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(0,k)])
-            clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(0,k)])
-
+            clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(k)])
+            clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(k)])
     else:
-
-        # not maxima
-
+        # Calculate average quantities
         if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.mean([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-            clusterstd_t = np.mean([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
+            # Use rank-ordered statistics
+            organized_rad = np.array([np.sort(rad_clusters[i]) for i in range(k)])
+            organized_the = np.array([np.sort(the_clusters[i]) for i in range(k)])
+            clusterstd_r = np.mean([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]), perc) for i in range(k)])
+            clusterstd_t = np.mean([np.percentile(organized_the[i] - np.mean(the_clusters[i]), perc) for i in range(k)])
         else:
-            clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(0,k)])
-            clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
+            clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(k)])
+            clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(k)])
 
-        clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
-        #theta_n = np.mean([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        theta_n = np.mean([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(k)])
+        theta_n = np.mean([np.arctan2(np.abs(K.mu[i][1]), np.abs(K.mu[i][0])) for i in range(k)])
 
-    return theta_n,clustermean,clusterstd_r,clusterstd_t
-
+    return theta_n, clustermean, clusterstd_r, clusterstd_t
 
 
+def process_kmeans_polar(ApsArray, indx=-1, k=2, maxima=False, rank=False, perc=0.):
+    """
+    Perform robust K-means clustering on apsidal data in polar coordinates.
 
+    This function performs K-means clustering on the provided apsidal array, 
+    computes trapping metrics in polar coordinates, and handles potential 
+    edge cases where clusters may have very few points.
 
-def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
-    '''
-    #
-    # robust kmeans implementation
-    #
-    #    -can be edited for speed
-    #    -confined to two dimensions
-    #    -computes trapping metrics in polar coordinates
-
-    inputs
+    Parameters
     ----------
-    ApsArray         : the array of aps for an individual orbit
-    indx             : a designation of the orbit, for use with multiprocessing
-    k                : the number of clusters
-    maxima           : calculate average (if False) or maximum (if True) quantities
-    mad              : toggle median absolute deviation calculation
+    ApsArray : array-like
+        The array of apsides for an individual orbit. Each element should contain
+        the (r, theta) coordinates of an apsis.
+    indx : int, optional
+        A designation of the orbit, for use with multiprocessing. Default is -1.
+    k : int, optional
+        The number of clusters to form. Default is 2.
+    maxima : bool, optional
+        Calculate average (if False) or maximum (if True) quantities. Default is False.
+    rank : bool, optional
+        Toggle ranking. Default is False.
+    perc : float, optional
+        Percentage threshold for ranking. Default is 0.
 
+    Returns
+    -------
+    theta_n : float
+        Some angle measure in the context of the clusters.
+    clustermean : float
+        The mean value of the clusters.
+    clusterstd_r : float
+        The standard deviation of the clusters in the radial direction.
+    clusterstd_theta : float
+        The standard deviation of the clusters in the angular direction.
+    kmeans_plus_flag : int
+        Indicator flag: 0 for successful basic K-means, 1 for successful K-means++,
+        2 for failure in both K-means and K-means++.
 
-    returns
-    ----------
-    theta_n          : (see explanation at beginning for definitions)
-    clustermean      :
-    clusterstd_r     :
-    clusterstd_theta :
-    kmeans_plus_flag :
+    Notes
+    -----
+    This implementation confines the clustering to two dimensions and includes 
+    robustness checks to handle small cluster sizes. In case of failure in 
+    basic K-means, it retries using the K-means++ initialization method.
 
-
-
-
-    '''
+    Examples
+    --------
+    >>> ApsArray = np.array([[1.0, 0.0], [2.0, 1.0], [1.5, 0.5], [3.0, 1.5]])
+    >>> theta_n, clustermean, clusterstd_r, clusterstd_theta, flag = process_kmeans_polar(ApsArray)
+    """
     kmeans_plus_flag = 0
-    K = kmeans.KMeans(k,X=ApsArray)
+    K = kmeans.KMeans(k, X=ApsArray)
     K.find_centers()
 
-    # add an evaluation for if a cluster ends up with only X members, here hard coded to 2
-
-
-    # find the standard deviation of clusters
-
-    # first, check to make sure no single-point clusters were detected
-    # set rejection threshold
+    # Minimum cluster size threshold
     min_cluster_size = 1
 
-
     try:
+        clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
-        clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
-
-        # eliminate
+        # Ensure no single-point clusters
         while np.min(clustersize) <= min_cluster_size:
             w = np.where(clustersize > min_cluster_size)[0]
-            new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
-                        np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
+            new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:, 0] for x in w]), \
+                                np.concatenate([np.array(K.clusters[x])[:, 1] for x in w])]).T
 
-            K = kmeans.KMeans(k,X=new_aps)
+            K = kmeans.KMeans(k, X=new_aps)
             K.find_centers()
-            clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+            clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
-        theta_n,clustermean,clusterstd_r,clusterstd_t = \
-        evaluate_clusters_polar(K,maxima=maxima,rank=rank,perc=perc)
+        theta_n, clustermean, clusterstd_r, clusterstd_theta = \
+            evaluate_clusters_polar(K, maxima=maxima, rank=rank, perc=perc)
 
-
-
-    # failure on basic kmeans
     except:
-        K = kmeans.KPlusPlus(2,X=ApsArray)
+        # If basic K-means fails, try K-means++
+        K = kmeans.KPlusPlus(k, X=ApsArray)
         K.init_centers()
         K.find_centers(method='++')
         kmeans_plus_flag = 1
 
         try:
-
-            clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
-
+            clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
             while np.min(clustersize) <= min_cluster_size:
                 w = np.where(clustersize > min_cluster_size)[0]
-                new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
-                        np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
+                new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:, 0] for x in w]), \
+                                    np.concatenate([np.array(K.clusters[x])[:, 1] for x in w])]).T
 
-                K = kmeans.KPlusPlus(k,X=new_aps)
+                K = kmeans.KPlusPlus(k, X=new_aps)
                 K.init_centers()
                 K.find_centers(method='++')
-                clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+                clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
+            theta_n, clustermean, clusterstd_r, clusterstd_theta = \
+                evaluate_clusters_polar(K, maxima=maxima, rank=rank, perc=perc)
 
-            theta_n,clustermean,clusterstd_r,clusterstd_t = \
-                evaluate_clusters_polar(K,maxima=maxima,rank=rank,perc=perc)
-
-
-
-        # failure mode for advanced kmeans
         except:
-
-            #
-            # would like a more intelligent way to diagnose
-            #if indx >= 0:
-            #    print 'Orbit %i even failed in Kmeans++!!' %indx
+            # If both methods fail, set all outputs to NaN
             clusterstd_r = np.nan
-            clusterstd_t = np.nan
+            clusterstd_theta = np.nan
             clustermean = np.nan
             theta_n = np.nan
             kmeans_plus_flag = 2
 
-
-
-    return theta_n,clustermean,clusterstd_r,clusterstd_t,kmeans_plus_flag
-
-
+    return theta_n, clustermean, clusterstd_r, clusterstd_theta, kmeans_plus_flag
 
 
 
@@ -892,29 +840,43 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
 
 
 
+def transform_aps(ApsArray, BarInstance):
+    """
+    Transform the apsides array into the bar frame of reference.
 
+    This function transforms the apsides array, aligning it with the bar frame as determined
+    by the BarInstance. The transformation is offloaded for clarity.
 
-def transform_aps(ApsArray,BarInstance):
-    '''
-    transform_aps : simple transformation for the aps array, offloaded for clarity.
+    Parameters
+    ----------
+    ApsArray : np.ndarray
+        The array of apsides, where each row represents a time step and contains
+        [time, x_position, y_position].
+    BarInstance : object
+        An instance that contains information about the bar's position and motion.
 
-    inputs
-    ------------------
-    ApsArray        : the array of apsides
-    BarInstance     :
+    Returns
+    -------
+    np.ndarray
+        The transformed positions in the bar frame. The output array has the same number of rows
+        as ApsArray and two columns corresponding to the transformed x and y positions.
 
-    outputs
-    ------------------
-    X               :
+    Notes
+    -----
+    This transformation assumes that the bar motion is in one direction.
+    """
 
-    stuck in one direction, watch out
-    '''
-    bar_positions = pattern.find_barangle(ApsArray[:,0],BarInstance)
-    X = np.zeros([len(ApsArray[:,1]),2])
-    X[:,0] = ApsArray[:,1]*np.cos(bar_positions) - ApsArray[:,2]*np.sin(bar_positions)
-    X[:,1] = -ApsArray[:,1]*np.sin(bar_positions) - ApsArray[:,2]*np.cos(bar_positions)
+    # Find the bar angle positions corresponding to the times in ApsArray
+    bar_positions = pattern.find_barangle(ApsArray[:, 0], BarInstance)
+
+    # Initialize the output array for transformed positions
+    X = np.zeros([len(ApsArray[:, 1]), 2])
+
+    # Apply the transformation to align with the bar frame
+    X[:, 0] = ApsArray[:, 1] * np.cos(bar_positions) - ApsArray[:, 2] * np.sin(bar_positions)
+    X[:, 1] = -ApsArray[:, 1] * np.sin(bar_positions) - ApsArray[:, 2] * np.cos(bar_positions)
+
     return X
-
 
 
 def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
@@ -1476,7 +1438,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
 
     # go through the dictionary of trapping criteria and re-make the arrays
-    trapped = {}
+    trapped = dict()
 
     for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
@@ -1532,4 +1494,3 @@ def re_form_trapping_arrays(array,array_number):
     return net_array
 
 
-#warnings.filterwarnings("ignore",category =RuntimeWarning)
