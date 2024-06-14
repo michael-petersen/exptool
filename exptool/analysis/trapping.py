@@ -5,6 +5,7 @@ MSP  8 Dec 2016 Original commit. To be merged with neutrapping.
 MSP 23 Dec 2017 Break out bar finding algorithms to the more general pattern.py
 MSP  1 Mar 2019 Work on homogenizing docstrings and general commenting
 MSP 27 Oct 2021 Enable flexible particle number handling
+MSP 18 May 2024 Create HDF5 input/ouput
 
 
 CLASSES:
@@ -49,6 +50,9 @@ import numpy as np
 import datetime
 import os
 from scipy import interpolate
+
+# io import 
+import h5py
 
 # multiprocessing imports
 import itertools
@@ -109,7 +113,7 @@ class ApsFinding():
         ApsFinding.parse_list(self)
 
 
-    def parse_list(self):
+    def _parse_list(self):
         """
         parse files from the input list
 
@@ -128,7 +132,7 @@ class ApsFinding():
         self.SLIST = np.array(s_list)
 
         if self.verbose >= 1:
-            print('ApsFinding.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
+            print('exptool.trapping.ApsFinding.parse_list: Accepted {0:d} files.'.format(len(self.SLIST)))
 
 
     def determine_r_aps(self,filelist,comp,particle_indx=-1,runtag='',out_directory='',threedee=False,return_aps=False,changingindx=False):
@@ -141,21 +145,25 @@ class ApsFinding():
 
         # take the inputs and identify all files that we will loop through
         self.slist = filelist
-        ApsFinding.parse_list(self)
+        ApsFinding._parse_list(self)
         # now we have self.SLIST, the parsed list of files we will analyse
 
         # first, check type of particle_index
         if isinstance(particle_indx,int):
             if particle_indx < 0:
                 # if particle_indx < 0, make the comparison index all particles
-                Oa = particle.Input(self.SLIST[0],legacy=False,comp=comp,verbose=0)
-                particle_indx = np.arange(0,Oa.nbodies,1)
+                Oa = particle.Input(self.SLIST[0],comp=comp,verbose=0)
+                particle_indx = np.arange(0,Oa.data['id'].size,1)
             else:
                 # limit to the maximum number desired
                 particle_indx = np.arange(0,particle_indx,1)
+
+        # assume an array has been passed
+        elif isinstance(particle_indx,np.ndarray):
+            changingindx = True
+
         else:
-            # assume an array has been passed and accept: could check
-            pass
+            raise ValueError("exptool.ApsFinding.trapping._determin_r_aps: particle_indx must be an integer or an array.")
 
         # sort the particle indices
         particle_indx = particle_indx[particle_indx.argsort()]
@@ -167,21 +175,25 @@ class ApsFinding():
         # stamps the output file with the current time. do we like this?
         #
         tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H:%M:%S')
+        #tstamp = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d+%H')
 
         # create a new file using the particle number, runtag, and time
-        outputfile = out_directory+'RadialAps_N{}_r{}_T{}.dat'.format(total_orbits,runtag,tstamp)
-        f = open(outputfile,'wb+')
+        outputfile = out_directory+'RadialAps_N{}_r{}_T{}.h5'.format(total_orbits,runtag,tstamp)
+        f = h5py.File(outputfile,"w")
 
-        #
-        # print descriptor string
-        #
+        # createdescriptor string
         desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(total_orbits)+', threedee='+str(threedee)+', using '+filelist
-        np.array([desc],dtype='S200').tofile(f)
+        
+        # Write the descriptor string as an attribute
+        f.attrs['description'] = desc
 
-        aps_dictionary = dict() # make blank dictionary for the aps
-        for i in range(0,total_orbits): aps_dictionary[i] = []
+        # make blank dictionary for the aps
+        aps_dictionary = dict() 
 
+        # make a blank array for each orbit
+        for i in particle_indx: aps_dictionary[i] = []
 
+        # loop through files
         for i in range(1,len(self.SLIST)-1):
 
             if i==1:
@@ -213,16 +225,16 @@ class ApsFinding():
                     X2 = Ob.data['x'];Y2 = Ob.data['y'];Z2 = Ob.data['z'];I2 = Ob.data['id']
                     X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
 
+
                 # compute radial positions
                 if threedee:
-                    R1 = np.sqrt(X1*X1 + Y1*Y1 + Z1*Z1)
-                    R2 = np.sqrt(X2*X2 + Y2*Y2 + Z2*Z2)
-                    R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
-
+                    R1 = np.linalg.norm([X1,Y1,Z1],axis=0)
+                    R2 = np.linalg.norm([X2,Y2,Z2],axis=0)
+                    R3 = np.linalg.norm([X3,Y3,Z3],axis=0)
                 else:
-                    R1 = np.sqrt(X1*X1 + Y1*Y1)
-                    R2 = np.sqrt(X2*X2 + Y2*Y2)
-                    R3 = np.sqrt(X3*X3 + Y3*Y3)
+                    R1 = np.linalg.norm([X1,Y1],axis=0)
+                    R2 = np.linalg.norm([X2,Y2],axis=0)
+                    R3 = np.linalg.norm([X3,Y3],axis=0)
 
             else: # i!=1
 
@@ -252,9 +264,9 @@ class ApsFinding():
                     X3 = Oc.data['x'];Y3 = Oc.data['y'];Z3 = Oc.data['z'];I3 = Oc.data['id']
 
                 if threedee:
-                    R3 = np.sqrt(X3*X3 + Y3*Y3 + Z3*Z3)
+                    R3 = np.linalg.norm([X3,Y3,Z3],axis=0)
                 else:
-                    R3 = np.sqrt(X3*X3 + Y3*Y3)
+                    R3 = np.linalg.norm([X3,Y3],axis=0)
 
 
             # R1 might be the shortest, if particles are added, so only compare up to the length of r1
@@ -276,59 +288,61 @@ class ApsFinding():
             #orderid    = IN[:r1length][aps]
 
             if self.verbose > 0:
-                    print('Current time: {4.3f}'.format(tval),end='\r', flush=True)
+                    print('exptool.ApsFinding.trapping._determine_r_aps: Current time: {0:4.3f}'.format(tval),end='\r', flush=True)
 
-            # under this convention, the user needs to keep track of the particle index that was input
-            #for j in range(0,len(index_tags)):
-            #    aps_dictionary[orderid[j]].append([tval,x[j],y[j],z[j]])
-
-            # under this convention, the id of the orbit is preserved and used as the dictionary key
-            for j in range(0,len(index_tags)):
+            # the id of the orbit is preserved and used as the dictionary key
+            for j in range(0,len(id)):
                 aps_dictionary[id[j]].append([tval,x[j],y[j],z[j]])
 
-
+        # create a tracker for the number of aps per orbit
         self.napsides = np.zeros([total_orbits,2])
 
         # print a header with the number of orbits
-        np.array([total_orbits],dtype='i').tofile(f)
+        f.attrs['total_orbits'] = total_orbits
 
         orbits_with_apocentre = 0
 
+        # go back through all the orbits and write to file
         for j in range(0,total_orbits):
 
             orbit_aps_array = np.array(aps_dictionary[particle_indx[j]])
-
-            # print the index to the file
-            np.array([particle_indx[j]],dtype='i').tofile(f)
 
             # if there are valid turning points:
             if (len(orbit_aps_array) > 0):
 
                 orbits_with_apocentre += 1
-                naps = len(orbit_aps_array[:,0])  # this might be better as shape
 
-                np.array([naps],dtype='i').tofile(f)
+                # count the number of turning points
+                naps = len(orbit_aps_array[:,0])  
 
-                self.napsides[j,0] = naps
-                self.napsides[j,1] = len(orbit_aps_array.reshape(-1,))
+                # create a dataset with the index of the particle as the tag
+                dataset = f.create_dataset(str(particle_indx[j]), data=orbit_aps_array)
 
-                np.array( orbit_aps_array.reshape(-1,),dtype='f').tofile(f)
+                # create attributes for the dataset
+                dataset.attrs['naps'] = naps
+
 
             # no valid turning points: put in a blank
             else:
 
+                # create a dataset with the index of the particle as the tag
+                dataset = f.create_dataset(str(particle_indx[j]), data=np.array([-1.]))
+
+                # create attributes for the dataset
+                dataset.attrs['naps'] = 0
+
                 # guard against zero length
-                np.array([1],dtype='i').tofile(f)
+                #np.array([1],dtype='i').tofile(f)
 
                 # indices start at 1
-                np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
+                #np.array( np.array(([-1.,-1.,-1.,-1.])).reshape(-1,),dtype='f').tofile(f)
 
 
         f.close()
 
-        print('trapping.ApsFinding.determine_r_aps: found {} orbits (out of {}) with valid apocentres.'.format(orbits_with_apocentre,total_orbits))
+        print('exptool.trapping.ApsFinding.determine_r_aps: found {} orbits (out of {}) with valid apocentres.'.format(orbits_with_apocentre,total_orbits))
 
-        print('trapping.ApsFinding.determine_r_aps: savefile is {}'.format(outputfile))
+        print('exptool.trapping.ApsFinding.determine_r_aps: savefile is {}'.format(outputfile))
 
         if (return_aps):
             ApsDict = ApsFinding.read_aps_file(self,outputfile)
@@ -426,324 +440,272 @@ def read_trapping_file(t_file,tdtype='i1'):
 
 
 
-def reduce_aps_dictionary(TrappingInstance,norb):
-    '''
-    sometimes you just don't need all those apsides
-    '''
+def reduce_aps_dictionary(TrappingInstance, norb):
+    """
+    Reduces the apsides data in a trapping instance to only include a specified number of orbits.
+
+    This function takes a trapping instance dictionary and reduces it to include only the
+    specified number of orbits (`norb`). It retains the description and the first `norb`
+    orbits' data.
+
+    Parameters
+    ----------
+    TrappingInstance : dict
+        A dictionary containing the trapping instance data with multiple orbits.
+    norb : int
+        The number of orbits to include in the reduced dictionary.
+
+    Returns
+    -------
+    TrappingInstanceOut : dict
+        A reduced dictionary containing only the specified number of orbits
+        from the original trapping instance.
+
+    Examples
+    --------
+    >>> trapping_instance = {
+            'desc': 'Sample trapping instance',
+            0: {'apside_1': [1, 2], 'apside_2': [3, 4]},
+            1: {'apside_1': [5, 6], 'apside_2': [7, 8]},
+            2: {'apside_1': [9, 10], 'apside_2': [11, 12]}
+        }
+    >>> reduced_instance = reduce_aps_dictionary(trapping_instance, 2)
+    >>> print(reduced_instance)
+    {'norb': 2, 'desc': 'Sample trapping instance', 0: {'apside_1': [1, 2], 'apside_2': [3, 4]}, 1: {'apside_1': [5, 6], 'apside_2': [7, 8]}}
+    """
+    # Initialize the output dictionary
     TrappingInstanceOut = {}
+
+    # Add the number of orbits to the output dictionary
     TrappingInstanceOut['norb'] = norb
+
+    # Add the description to the output dictionary
     TrappingInstanceOut['desc'] = TrappingInstance['desc']
 
-    for i in range(0,norb):
+    # Loop through the specified number of orbits and add them to the output dictionary
+    for i in range(norb):
         TrappingInstanceOut[i] = TrappingInstance[i]
 
     return TrappingInstanceOut
 
 
-
-def evaluate_clusters_polar_legacy(K,maxima=False,rank=False,perc=0.):
-    '''
-    evaluate_clusters_polar
-        calculate statistics for clusters in polar coordinates
-
-    inputs
-    -------------
-    K             : number of clusters
-    maxima        : (boolean, False) if True, use the maximum value from the clusters
-    rank
-    perc
-
-
-    returns
-    -------------
-    theta_n
-    clustermean
-    clusterstd_r
-    clusterstd_t
-
-
-
-    '''
+def beane_criteria(K):
+    """Implement the criteria from Beane et al. (2024)
+    
+    works best for polar classifications"""
 
     # how many clusters?
     k = K.K
 
-    if (rank) & (perc==0.):
-        print('evaluate_clusters_polar: Perc must be >0.')
-        return np.nan,np.nan,np.nan,np.nan
+    # Compute radii and theta values from clusters
+    rad_clusters = np.array([np.linalg.norm(K.clusters[i], axis=1) for i in range(k)])
+    the_clusters = np.array([np.arctan2(np.abs(K.clusters[i][:, 1]), np.abs(K.clusters[i][:, 0])) for i in range(k)])
+
+    # implement equation A1: the maximum angle from the bar for the clusters
+    thetadiff = np.max([np.arctan2(np.abs(K.mu[i][1]), np.abs(K.mu[i][0])) for i in range(k)])
+
+    # if thetadiff < pi/8, consider the particle trapped
+
+    # implement equation A2:
+    clusterstd = np.sum([np.std(rad_clusters[i]) for i in range(k)])
+    clustermean = np.sum([np.mean(rad_clusters[i]) for i in range(k)])
+    tightness = clusterstd/clustermean
+
+    # if tightness is < 0.22, consider the particle trapped
+
+    return thetadiff,tightness
 
 
-    # compute radii and theta values from clusters
-    rad_clusters = np.array([np.sum(np.array(K.clusters[i])*np.array(K.clusters[i]),axis=1)**0.5 for i in range(0,k)])
+def evaluate_clusters_polar(K, maxima=False, rank=False, perc=0.):
+    """
+    Calculate statistics for clusters in polar coordinates.
 
-    # for computing the theta values, can decide on a version with
-    # (legacy) or without (modern) folding
+    This function evaluates the clustering results in polar coordinates (r, theta).
+    It computes various statistics such as mean, standard deviation, and optionally
+    ranks and percentiles.
 
-    legacy = True
+    Parameters
+    ----------
+    K : KMeans
+        An instance of a K-means clustering result.
+    maxima : bool, optional
+        If True, calculate maximum quantities. If False, calculate average quantities.
+        Default is False.
+    rank : bool, optional
+        If True, use rank-ordered statistics. Default is False.
+    perc : float, optional
+        Percentage threshold for rank ordering. Default is 0.
 
-    if legacy:
-        the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
-    else:
-        the_clusters = np.array([np.arctan(      (np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
+    Returns
+    -------
+    theta_n : float
+        Angle measure in the context of the clusters.
+    clustermean : float
+        The mean value of the clusters.
+    clusterstd_r : float
+        The standard deviation of the clusters in the radial direction.
+    clusterstd_t : float
+        The standard deviation of the clusters in the angular direction.
 
-    if maxima:
-        # use maxima
+    Notes
+    -----
+    This function computes the radii and theta values from the clusters, then calculates
+    either the maximum or average statistics based on the `maxima` parameter. It also
+    handles rank-ordered statistics if `rank` is True and `perc` is greater than 0.
 
-        clustermean = np.max([np.mean(rad_clusters[i]) for i in range(0,k)])
-
-        if legacy:
-            theta_n = np.max([np.abs(np.arctan(       K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        else:
-            theta_n = np.max([       np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-
-        if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-
-            # I think this needs an absolute value
-            clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
-        else:
-            clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(0,k)])
-
-            if legacy:
-                clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(0,k)])
-            else:
-                clusterstd_t = np.max([np.abs(np.max(the_clusters[i])-np.min(the_clusters[i])) for i in range(0,k)])
-
-
-    else:
-
-        # not maxima
-
-        if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.mean([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-            clusterstd_t = np.mean([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
-        else:
-            clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(0,k)])
-
-            if legacy:
-                clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
-            else:
-                clusterstd_t = np.mean([np.abs(np.max(the_clusters[i])-np.min(the_clusters[i])) for i in range(0,k)])
-
-
-
-        clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
-
-        # compute the mean of the cluster centers
-        if legacy:
-            theta_n = np.mean([np.abs(np.arctan(       K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        else:
-            theta_n = np.mean([       np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-
-    # return values
-    return theta_n,clustermean,clusterstd_r,clusterstd_t
-
-
-def evaluate_clusters_polar(K,maxima=False,rank=False,perc=0.):
-    '''
-    evaluate_clusters_polar
-        calculate statistics for clusters in polar coordinates
-
-    inputs
-    -------------
-    K
-    maxima
-    rank
-    perc
-
-
-    returns
-    -------------
-    theta_n
-    clustermean
-    clusterstd_r
-    clusterstd_t
-
-
-
-    '''
-
-    # how many clusters?
+    Examples
+    --------
+    >>> K = kmeans.KMeans(k=2, X=ApsArray)
+    >>> K.find_centers()
+    >>> theta_n, clustermean, clusterstd_r, clusterstd_t = evaluate_clusters_polar(K)
+    """
+    # Number of clusters
     k = K.K
 
-    if (rank) & (perc==0.):
-        print('evaluate_clusters_polar: Perc must be >0.')
-        return np.nan,np.nan,np.nan,np.nan
+    # Check if rank is True but perc is not set
+    if rank and perc == 0.:
+        raise SyntaxError('exptool.trapping.evaluate_clusters_polar: Perc must be >0.')
 
-
-    # compute radii and theta values from clusters
-    rad_clusters = np.array([np.sum(np.array(K.clusters[i])*np.array(K.clusters[i]),axis=1)**0.5 for i in range(0,k)])
-    the_clusters = np.array([np.arctan(np.abs(np.array(K.clusters[i])[:,1])/np.abs(np.array(K.clusters[i])[:,0])) for i in range(0,k)])
+    # Compute radii and theta values from clusters
+    rad_clusters = np.array([np.linalg.norm(K.clusters[i], axis=1) for i in range(k)])
+    the_clusters = np.array([np.arctan2(np.abs(K.clusters[i][:, 1]), np.abs(K.clusters[i][:, 0])) for i in range(k)])
 
     if maxima:
-        # use maxima
-
-        clustermean = np.max([np.mean(rad_clusters[i]) for i in range(0,k)])
-
-        #theta_n = np.max([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        theta_n = np.max([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        # Calculate maximum quantities
+        clustermean = np.max([np.mean(rad_clusters[i]) for i in range(k)])
+        theta_n = np.max([np.arctan2(np.abs(K.mu[i][1]), np.abs(K.mu[i][0])) for i in range(k)])
 
         if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-            clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
+            # Use rank-ordered statistics
+            organized_rad = np.array([np.sort(rad_clusters[i]) for i in range(k)])
+            organized_the = np.array([np.sort(the_clusters[i]) for i in range(k)])
+            clusterstd_r = np.max([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]), perc) for i in range(k)])
+            clusterstd_t = np.max([np.percentile(organized_the[i] - np.mean(the_clusters[i]), perc) for i in range(k)])
         else:
-            clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(0,k)])
-            clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(0,k)])
-
+            clusterstd_r = np.max([np.std(rad_clusters[i]) for i in range(k)])
+            clusterstd_t = np.max([np.std(the_clusters[i]) for i in range(k)])
     else:
-
-        # not maxima
-
+        # Calculate average quantities
         if rank:
-            # use rank ordered
-
-            organized_rad = np.array([rad_clusters[i][rad_clusters[i].argsort()] for i in range(0,k)])
-            organized_the = np.array([the_clusters[i][the_clusters[i].argsort()] for i in range(0,k)])
-
-            clusterstd_r = np.mean([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]),perc) for i in range(0,k)])
-            clusterstd_t = np.mean([np.percentile(organized_the[i] - np.mean(the_clusters[i]),perc) for i in range(0,k)])
-
+            # Use rank-ordered statistics
+            organized_rad = np.array([np.sort(rad_clusters[i]) for i in range(k)])
+            organized_the = np.array([np.sort(the_clusters[i]) for i in range(k)])
+            clusterstd_r = np.mean([np.percentile(organized_rad[i] - np.mean(rad_clusters[i]), perc) for i in range(k)])
+            clusterstd_t = np.mean([np.percentile(organized_the[i] - np.mean(the_clusters[i]), perc) for i in range(k)])
         else:
-            clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(0,k)])
-            clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(0,k)])
+            clusterstd_r = np.mean([np.std(rad_clusters[i]) for i in range(k)])
+            clusterstd_t = np.mean([np.std(the_clusters[i]) for i in range(k)])
 
-        clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(0,k)])
-        #theta_n = np.mean([abs(np.arctan(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
-        theta_n = np.mean([np.arctan(np.abs(K.mu[i][1]/K.mu[i][0])) for i in range(0,k)])
+        clustermean = np.mean([np.mean(rad_clusters[i]) for i in range(k)])
+        theta_n = np.mean([np.arctan2(np.abs(K.mu[i][1]), np.abs(K.mu[i][0])) for i in range(k)])
 
-    return theta_n,clustermean,clusterstd_r,clusterstd_t
-
+    return theta_n, clustermean, clusterstd_r, clusterstd_t
 
 
+def process_kmeans_polar(ApsArray, indx=-1, k=2, maxima=False, rank=False, perc=0.):
+    """
+    Perform robust K-means clustering on apsidal data in polar coordinates.
 
+    This function performs K-means clustering on the provided apsidal array, 
+    computes trapping metrics in polar coordinates, and handles potential 
+    edge cases where clusters may have very few points.
 
-def process_kmeans_polar(ApsArray,indx=-1,k=2,maxima=False,rank=False,perc=0.):
-    '''
-    #
-    # robust kmeans implementation
-    #
-    #    -can be edited for speed
-    #    -confined to two dimensions
-    #    -computes trapping metrics in polar coordinates
-
-    inputs
+    Parameters
     ----------
-    ApsArray         : the array of aps for an individual orbit
-    indx             : a designation of the orbit, for use with multiprocessing
-    k                : the number of clusters
-    maxima           : calculate average (if False) or maximum (if True) quantities
-    mad              : toggle median absolute deviation calculation
+    ApsArray : array-like
+        The array of apsides for an individual orbit. Each element should contain
+        the (r, theta) coordinates of an apsis.
+    indx : int, optional
+        A designation of the orbit, for use with multiprocessing. Default is -1.
+    k : int, optional
+        The number of clusters to form. Default is 2.
+    maxima : bool, optional
+        Calculate average (if False) or maximum (if True) quantities. Default is False.
+    rank : bool, optional
+        Toggle ranking. Default is False.
+    perc : float, optional
+        Percentage threshold for ranking. Default is 0.
 
+    Returns
+    -------
+    theta_n : float
+        Some angle measure in the context of the clusters.
+    clustermean : float
+        The mean value of the clusters.
+    clusterstd_r : float
+        The standard deviation of the clusters in the radial direction.
+    clusterstd_theta : float
+        The standard deviation of the clusters in the angular direction.
+    kmeans_plus_flag : int
+        Indicator flag: 0 for successful basic K-means, 1 for successful K-means++,
+        2 for failure in both K-means and K-means++.
 
-    returns
-    ----------
-    theta_n          : (see explanation at beginning for definitions)
-    clustermean      :
-    clusterstd_r     :
-    clusterstd_theta :
-    kmeans_plus_flag :
+    Notes
+    -----
+    This implementation confines the clustering to two dimensions and includes 
+    robustness checks to handle small cluster sizes. In case of failure in 
+    basic K-means, it retries using the K-means++ initialization method.
 
-
-
-
-    '''
+    Examples
+    --------
+    >>> ApsArray = np.array([[1.0, 0.0], [2.0, 1.0], [1.5, 0.5], [3.0, 1.5]])
+    >>> theta_n, clustermean, clusterstd_r, clusterstd_theta, flag = process_kmeans_polar(ApsArray)
+    """
     kmeans_plus_flag = 0
-    K = kmeans.KMeans(k,X=ApsArray)
+    K = kmeans.KMeans(k, X=ApsArray)
     K.find_centers()
 
-    # add an evaluation for if a cluster ends up with only X members, here hard coded to 2
-
-
-    # find the standard deviation of clusters
-
-    # first, check to make sure no single-point clusters were detected
-    # set rejection threshold
+    # Minimum cluster size threshold
     min_cluster_size = 1
 
-
     try:
+        clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
-        clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
-
-        # eliminate
+        # Ensure no single-point clusters
         while np.min(clustersize) <= min_cluster_size:
             w = np.where(clustersize > min_cluster_size)[0]
-            new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
-                        np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
+            new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:, 0] for x in w]), \
+                                np.concatenate([np.array(K.clusters[x])[:, 1] for x in w])]).T
 
-            K = kmeans.KMeans(k,X=new_aps)
+            K = kmeans.KMeans(k, X=new_aps)
             K.find_centers()
-            clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+            clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
-        theta_n,clustermean,clusterstd_r,clusterstd_t = \
-        evaluate_clusters_polar(K,maxima=maxima,rank=rank,perc=perc)
+        theta_n, clustermean, clusterstd_r, clusterstd_theta = \
+            evaluate_clusters_polar(K, maxima=maxima, rank=rank, perc=perc)
 
-
-
-    # failure on basic kmeans
     except:
-        K = kmeans.KPlusPlus(2,X=ApsArray)
+        # If basic K-means fails, try K-means++
+        K = kmeans.KPlusPlus(k, X=ApsArray)
         K.init_centers()
         K.find_centers(method='++')
         kmeans_plus_flag = 1
 
         try:
-
-            clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
-
+            clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
             while np.min(clustersize) <= min_cluster_size:
                 w = np.where(clustersize > min_cluster_size)[0]
-                new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:,0] for x in w]),\
-                        np.concatenate([np.array(K.clusters[x])[:,1] for x in w])]).T
+                new_aps = np.array([np.concatenate([np.array(K.clusters[x])[:, 0] for x in w]), \
+                                    np.concatenate([np.array(K.clusters[x])[:, 1] for x in w])]).T
 
-                K = kmeans.KPlusPlus(k,X=new_aps)
+                K = kmeans.KPlusPlus(k, X=new_aps)
                 K.init_centers()
                 K.find_centers(method='++')
-                clustersize = np.array([np.array(K.clusters[c]).size/2. for c in range(0,k)])
+                clustersize = np.array([np.array(K.clusters[c]).size / 2. for c in range(k)])
 
+            theta_n, clustermean, clusterstd_r, clusterstd_theta = \
+                evaluate_clusters_polar(K, maxima=maxima, rank=rank, perc=perc)
 
-            theta_n,clustermean,clusterstd_r,clusterstd_t = \
-                evaluate_clusters_polar(K,maxima=maxima,rank=rank,perc=perc)
-
-
-
-        # failure mode for advanced kmeans
         except:
-
-            #
-            # would like a more intelligent way to diagnose
-            #if indx >= 0:
-            #    print 'Orbit %i even failed in Kmeans++!!' %indx
+            # If both methods fail, set all outputs to NaN
             clusterstd_r = np.nan
-            clusterstd_t = np.nan
+            clusterstd_theta = np.nan
             clustermean = np.nan
             theta_n = np.nan
             kmeans_plus_flag = 2
 
-
-
-    return theta_n,clustermean,clusterstd_r,clusterstd_t,kmeans_plus_flag
-
-
+    return theta_n, clustermean, clusterstd_r, clusterstd_theta, kmeans_plus_flag
 
 
 
@@ -878,29 +840,43 @@ def process_kmeans(ApsArray,indx=-1,k=2,maxima=False,mad=False):
 
 
 
+def transform_aps(ApsArray, BarInstance):
+    """
+    Transform the apsides array into the bar frame of reference.
 
+    This function transforms the apsides array, aligning it with the bar frame as determined
+    by the BarInstance. The transformation is offloaded for clarity.
 
-def transform_aps(ApsArray,BarInstance):
-    '''
-    transform_aps : simple transformation for the aps array, offloaded for clarity.
+    Parameters
+    ----------
+    ApsArray : np.ndarray
+        The array of apsides, where each row represents a time step and contains
+        [time, x_position, y_position].
+    BarInstance : object
+        An instance that contains information about the bar's position and motion.
 
-    inputs
-    ------------------
-    ApsArray        : the array of apsides
-    BarInstance     :
+    Returns
+    -------
+    np.ndarray
+        The transformed positions in the bar frame. The output array has the same number of rows
+        as ApsArray and two columns corresponding to the transformed x and y positions.
 
-    outputs
-    ------------------
-    X               :
+    Notes
+    -----
+    This transformation assumes that the bar motion is in one direction.
+    """
 
-    stuck in one direction, watch out
-    '''
-    bar_positions = pattern.find_barangle(ApsArray[:,0],BarInstance)
-    X = np.zeros([len(ApsArray[:,1]),2])
-    X[:,0] = ApsArray[:,1]*np.cos(bar_positions) - ApsArray[:,2]*np.sin(bar_positions)
-    X[:,1] = -ApsArray[:,1]*np.sin(bar_positions) - ApsArray[:,2]*np.cos(bar_positions)
+    # Find the bar angle positions corresponding to the times in ApsArray
+    bar_positions = pattern.find_barangle(ApsArray[:, 0], BarInstance)
+
+    # Initialize the output array for transformed positions
+    X = np.zeros([len(ApsArray[:, 1]), 2])
+
+    # Apply the transformation to align with the bar frame
+    X[:, 0] = ApsArray[:, 1] * np.cos(bar_positions) - ApsArray[:, 2] * np.sin(bar_positions)
+    X[:, 1] = -ApsArray[:, 1] * np.sin(bar_positions) - ApsArray[:, 2] * np.cos(bar_positions)
+
     return X
-
 
 
 def do_single_kmeans_step(TrappingInstanceDict,BarInstance,desired_time,\
@@ -1093,9 +1069,8 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     norb = TrappingInstanceDict['norb']
     nfamilies = len(criteria.keys())
     if nfamilies == 0:
-        print('trapping.do_kmeans_dict: no families defined?')
-        #break
-        return
+        return ValueError('exptool.trapping.do_kmeans_dict: no families defined?')
+
 
     # set up final array
     trapping_array = np.zeros([nfamilies,norb,len(BarInstance.time)],dtype='i1')
@@ -1463,7 +1438,7 @@ def do_kmeans_multi(TrappingInstanceDict,BarInstance,\
     print('Total trapping calculation took {0:3.2f} seconds, or {1:3.2f} milliseconds per orbit.'.format(time.time()-t1, 1.e3*(time.time()-t1)/len(TrappingInstanceDict)))
 
     # go through the dictionary of trapping criteria and re-make the arrays
-    trapped = {}
+    trapped = dict()
 
     for nfam,family in enumerate(np.array(list(criteria.keys()))):
 
@@ -1519,4 +1494,3 @@ def re_form_trapping_arrays(array,array_number):
     return net_array
 
 
-#warnings.filterwarnings("ignore",category =RuntimeWarning)
