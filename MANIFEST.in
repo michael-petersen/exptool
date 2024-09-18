@@ -1,3 +1,0 @@
-include README.md LICENSE
-include exptool/io/*.dat
-include exptool/analysis/*.dat
