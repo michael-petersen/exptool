@@ -162,7 +162,7 @@ class OutCoef(object):
         # return to beginning
         f.seek(0)
 
-        [time0] = np.fromfile(f, dtype=np.float,count=1)
+        [time0] = np.fromfile(f, dtype='float',count=1)
         [mmax,nmax] = np.fromfile(f, dtype=np.uint32,count=2)
 
         # hard-coded to match specifications.
@@ -178,17 +178,17 @@ class OutCoef(object):
 
         for tt in range(0,n_outputs):
 
-            [time0] = np.fromfile(f, dtype=np.float,count=1)
+            [time0] = np.fromfile(f, dtype='float',count=1)
             [dummym,dummyn] = np.fromfile(f, dtype=np.uint32,count=2)
 
             times[tt] = time0
 
             for mm in range(0,mmax+1):
 
-                coef_array[tt,0,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+                coef_array[tt,0,mm,:] = np.fromfile(f, dtype='float',count=nmax)
 
                 if mm > 0:
-                    coef_array[tt,1,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+                    coef_array[tt,1,mm,:] = np.fromfile(f, dtype='float',count=nmax)
 
 
         #return times,coef_array
@@ -228,7 +228,7 @@ class OutCoef(object):
 
 
         [string1] = np.fromfile(f, dtype='a64',count=1)
-        [time0,scale] = np.fromfile(f, dtype=np.float,count=2)
+        [time0,scale] = np.fromfile(f, dtype='float',count=2)
         [nmax,lmax] = np.fromfile(f, dtype=np.uint32,count=2)
 
         # hard-coded to match specifications.
@@ -247,14 +247,14 @@ class OutCoef(object):
         for tt in range(0,n_outputs):
 
             [string1] = np.fromfile(f, dtype='a64',count=1)
-            [time0,scale] = np.fromfile(f, dtype=np.float,count=2)
+            [time0,scale] = np.fromfile(f, dtype='float',count=2)
             [nmax,lmax] = np.fromfile(f, dtype=np.uint32,count=2)
 
             times[tt] = time0
 
             for nn in range(0,nmax):
 
-                coef_array[tt,:,nn] = np.fromfile(f, dtype=np.float,count=lmax*(lmax+2)+1)
+                coef_array[tt,:,nn] = np.fromfile(f, dtype='float',count=lmax*(lmax+2)+1)
 
         #return times,coef_array
         self.T = times
@@ -327,7 +327,7 @@ class OutCoef(object):
 
             for nn in range(0,D['nmax']):
 
-                coef_array[tt,:,nn] = np.fromfile(f, dtype=np.float,count=D['lmax']*(D['lmax']+2)+1)
+                coef_array[tt,:,nn] = np.fromfile(f, dtype='float',count=D['lmax']*(D['lmax']+2)+1)
 
             tt += 1
         f.close()
@@ -399,10 +399,10 @@ class OutCoef(object):
 
             for mm in range(0,D['mmax']+1):
 
-                coef_array[tt,0,mm,:] = np.fromfile(f, dtype=np.float,count=D['nmax'])
+                coef_array[tt,0,mm,:] = np.fromfile(f, dtype='float',count=D['nmax'])
 
                 if mm > 0:
-                    coef_array[tt,1,mm,:] = np.fromfile(f, dtype=np.float,count=D['nmax'])
+                    coef_array[tt,1,mm,:] = np.fromfile(f, dtype='float',count=D['nmax'])
 
             tt += 1
 
