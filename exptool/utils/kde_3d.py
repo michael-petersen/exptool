@@ -146,9 +146,9 @@ def fast_kde(x, y, z, gridsize=(200, 200, 200), extents=None, nocorrelation=Fals
     inv_cov = np.linalg.inv(cov * scotts_factor**3.)
 
     # x & y (pixel) coords of the kernel grid, with <x,y> = <0,0> in center
-    xx = np.arange(kern_nx, dtype=np.float) - kern_nx / 2.0
-    yy = np.arange(kern_ny, dtype=np.float) - kern_ny / 2.0
-    zz = np.arange(kern_nz, dtype=np.float) - kern_nz / 2.0
+    xx = np.arange(kern_nx, dtype=float) - kern_nx / 2.0
+    yy = np.arange(kern_ny, dtype=float) - kern_ny / 2.0
+    zz = np.arange(kern_nz, dtype=float) - kern_nz / 2.0
     xx, yy, zz = np.meshgrid(xx, yy, zz)
 
     # Then evaluate the gaussian function on the kernel grid
@@ -314,8 +314,8 @@ def fast_kde_two(x, y, gridsize=(200, 200), extents=None, nocorrelation=False, w
     inv_cov = np.linalg.inv(cov * scotts_factor**2) 
 
     # x & y (pixel) coords of the kernel grid, with <x,y> = <0,0> in center
-    xx = np.arange(kern_nx, dtype=np.float) - kern_nx / 2.0
-    yy = np.arange(kern_ny, dtype=np.float) - kern_ny / 2.0
+    xx = np.arange(kern_nx, dtype=float) - kern_nx / 2.0
+    yy = np.arange(kern_ny, dtype=float) - kern_ny / 2.0
     xx, yy = np.meshgrid(xx, yy)
 
     kernel = np.vstack((xx.flatten(), yy.flatten()))

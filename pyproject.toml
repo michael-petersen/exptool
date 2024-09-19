@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exptool"
+version = "0.4.0"
+description = "exp analysis in Python"
+authors = [{ name = "Michael Petersen", email = "michael.petersen@roe.ac.uk" }]
+license = { text = "New BSD" }
+dependencies = [
+    "numpy>=1.7",
+    "scipy",
+    "matplotlib",
+]

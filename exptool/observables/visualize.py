@@ -449,7 +449,7 @@ def show_dump(infile,comp,nout=-1,type='pos',transform=True,\
     ax2.xaxis.labelpad = 18
         
     # XZ
-    ax3.contourf(kdeXZx,kdeXZz,XZ,levels_edge,cmap=cwheel)
+    ax3.contourf(kdeXZx,-kdeXZz,XZ,levels_edge,cmap=cwheel)
     ax3.axis([-0.95*face_extents,0.95*face_extents,-0.95*edge_extents,0.95*edge_extents])
     ax3.set_xticklabels(())
     for label in ax3.get_yticklabels():
