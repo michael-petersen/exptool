@@ -59,15 +59,15 @@ def denom(r,E,J,model):
 
 def make_orbit(orbit,E,K,model):
     """make an orbit"""
-      orbit.ee = E
-      #
-      # this should work, the boundaries are in radius...
-      orbit.r_circ = brentq(Ecirc,np.min(model.rcurve),np.max(model.rcurve),args=(orbit.ee,model))
-      orbit.kappa = K
-      orbit.jj = find_j(orbit.r_circ,orbit.kappa,model)
-      orbit.r_apo = brentq(denom,orbit.r_circ,np.max(model.rcurve),args=(orbit.ee,orbit.jj,model))
-      orbit.r_peri = brentq(denom,np.min(model.rcurve),orbit.r_circ,args=(orbit.ee,orbit.jj,model))
-      return orbit
+    orbit.ee = E
+    #
+    # this should work, the boundaries are in radius...
+    orbit.r_circ = brentq(Ecirc,np.min(model.rcurve),np.max(model.rcurve),args=(orbit.ee,model))
+    orbit.kappa = K
+    orbit.jj = find_j(orbit.r_circ,orbit.kappa,model)
+    orbit.r_apo = brentq(denom,orbit.r_circ,np.max(model.rcurve),args=(orbit.ee,orbit.jj,model))
+    orbit.r_peri = brentq(denom,np.min(model.rcurve),orbit.r_circ,args=(orbit.ee,orbit.jj,model))
+    return orbit
 
 
 

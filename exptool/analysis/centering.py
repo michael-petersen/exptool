@@ -13,6 +13,7 @@ Originally used for NewHorizon bar detection (Reddish et al. 2022)
     
 09 Jul 2021: First introduction
 18 Sep 2024: Class structure overhaul
+23 Oct 2024: Added radius masking to alignment
 """
 import numpy as np
 
@@ -85,7 +86,7 @@ class ParticleAlignment:
         self.vz = vz
         self.mass = mass
 
-    def recentre_pos_and_vel(self, r_max):
+    def recentre_pos_and_vel(self, r_max=np.inf):
         """
         Recenter the position and velocity of the particles based on the center of mass 
         and mass-weighted velocity within r_max.
@@ -99,14 +100,130 @@ class ParticleAlignment:
         """
         mask = (self.x**2 + self.y**2 + self.z**2) < r_max**2
         mass_tot = np.sum(self.mass[mask])
+
         x_cm = np.sum(self.x[mask]*self.mass[mask])/mass_tot
         y_cm = np.sum(self.y[mask]*self.mass[mask])/mass_tot
         z_cm = np.sum(self.z[mask]*self.mass[mask])/mass_tot
+
         vx_cm = np.sum(self.vx[mask]*self.mass[mask])/mass_tot
         vy_cm = np.sum(self.vy[mask]*self.mass[mask])/mass_tot
         vz_cm = np.sum(self.vz[mask]*self.mass[mask])/mass_tot
-        return self.x - x_cm, self.y - y_cm, self.z - z_cm, self.vx - vx_cm, self.vy - vy_cm, self.vz - vz_cm
 
+        # apply changes in place
+        self.x -= x_cm
+        self.y -= y_cm
+        self.z -= z_cm
+        self.vx -= vx_cm
+        self.vy -= vy_cm
+        self.vz -= vz_cm
+
+    def shrinking_sphere(self, w, rmin=1., stepsize=0.5, tol=0.001, verbose=0):
+        """
+        Apply the shrinking sphere method to recentre the particle system.
+
+        Parameters:
+        w : array
+            Weighting for the particles.
+        rmin : float, optional
+            Minimum radius to stop shrinking (default is 1).
+        stepsize : float, optional
+            Fraction by which to shrink the radius at each step (default is 0.5).
+        tol : float, optional
+            Minimum fraction of particles required in a sphere to continue (default is 0.001).
+        verbose : int, optional
+            Level of verbosity for output (default is 0).
+
+        Returns:
+        Recentered positions and velocities.
+        """
+        tshiftx = np.nanmedian(np.nansum(w * self.x) / np.nansum(w))
+        tshifty = np.nanmedian(np.nansum(w * self.y) / np.nansum(w))
+        tshiftz = np.nanmedian(np.nansum(w * self.z) / np.nansum(w))
+
+        self.x -= tshiftx
+        self.y -= tshifty
+        self.z -= tshiftz
+
+        rval = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+        rmax = np.nanmax(rval)
+        rmax0 = np.nanmax(rval)
+
+        if verbose:
+            print(f'Initial guess: {tshiftx:.0f}, {tshifty:.0f}, {tshiftz:.0f}')
+
+        nstep = 0
+        while rmax > rmin:
+            nstep += 1
+            u = np.where(rval < stepsize * rmax)[0]
+            if float(u.size) / float(self.x.size) < tol:
+                print(f'Too few particles to continue at radius ratio {stepsize * rmax / rmax0}')
+                break
+
+            comx = np.nanmedian(np.nansum(w[u] * self.x[u]) / np.nansum(w[u]))
+            comy = np.nanmedian(np.nansum(w[u] * self.y[u]) / np.nansum(w[u]))
+            comz = np.nanmedian(np.nansum(w[u] * self.z[u]) / np.nansum(w[u]))
+
+            self.x -= comx
+            self.y -= comy
+            self.z -= comz
+
+            tshiftx += comx
+            tshifty += comy
+            tshiftz += comz
+
+            rval = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+            rmax *= stepsize
+
+        if nstep == 0:
+            print('No shrinking done. Check that rmin is larger than the minimum particle radius.')
+
+        comvx = np.nanmedian(np.nansum(w[u] * self.vx[u]) / np.nansum(w[u]))
+        comvy = np.nanmedian(np.nansum(w[u] * self.vy[u]) / np.nansum(w[u]))
+        comvz = np.nanmedian(np.nansum(w[u] * self.vz[u]) / np.nansum(w[u]))
+
+        if verbose:
+            print(f'Final shift: {tshiftx:.0f}, {tshifty:.0f}, {tshiftz:.0f}')
+            print(f'Final velocity shift: {comvx:.0f}, {comvy:.0f}, {comvz:.0f}')
+
+        self.vx -= comvx
+        self.vy -= comvy
+        self.vz -= comvz
+
+
+    def compute_rotation_to_vec(self, vec, rmax=np.inf):
+        """
+        Compute the rotation axis and angle to align the angular momentum of the system 
+        with a given vector.
+
+        Parameters:
+        vec : array
+            Target vector to align with.
+
+        Returns:
+        axis : array
+            Rotation axis.
+        angle : float
+            Angle to rotate.
+        """
+        mask = (self.x**2 + self.y**2 + self.z**2) < r_max**2
+
+        Lxtot = np.sum((self.mass * (self.y * self.vz - self.z * self.vy))[mask])
+        Lytot = np.sum((self.mass * (self.z * self.vx - self.x * self.vz))[mask])
+        Lztot = np.sum((self.mass * (self.x * self.vy - self.y * self.vx))[mask])
+        
+        L = np.array([Lxtot, Lytot, Lztot])
+        L /= np.linalg.norm(L)
+
+        vec /= np.linalg.norm(vec)
+
+        axis = np.cross(L, vec)
+        axis /= np.linalg.norm(axis)
+
+        c = np.dot(L, vec)
+        angle = np.arccos(np.clip(c, -1, 1))
+
+        return axis, angle
+    
     def rotate(self, axis, angle):
         """
         Rotate the particles around a given axis by a specified angle.
@@ -146,106 +263,6 @@ class ParticleAlignment:
         vz_rot = self.vz * cosa + crossz_vel * sina + axisz * dot_vel * (1 - cosa)
 
         return x_rot, y_rot, z_rot, vx_rot, vy_rot, vz_rot
-
-    def compute_rotation_to_vec(self, vec):
-        """
-        Compute the rotation axis and angle to align the angular momentum of the system 
-        with a given vector.
-
-        Parameters:
-        vec : array
-            Target vector to align with.
-
-        Returns:
-        axis : array
-            Rotation axis.
-        angle : float
-            Angle to rotate.
-        """
-        Lxtot = np.sum(self.y * self.vz * self.mass - self.z * self.vy * self.mass)
-        Lytot = np.sum(self.z * self.vx * self.mass - self.x * self.vz * self.mass)
-        Lztot = np.sum(self.x * self.vy * self.mass - self.y * self.vx * self.mass)
-        
-        L = np.array([Lxtot, Lytot, Lztot])
-        L /= np.linalg.norm(L)
-        vec /= np.linalg.norm(vec)
-
-        axis = np.cross(L, vec)
-        axis /= np.linalg.norm(axis)
-
-        c = np.dot(L, vec)
-        angle = np.arccos(np.clip(c, -1, 1))
-
-        return axis, angle
-
-    def shrinking_sphere(self, w, rmin=1., stepsize=0.5, tol=0.001, verbose=0):
-        """
-        Apply the shrinking sphere method to recentre the particle system.
-
-        Parameters:
-        w : array
-            Weighting for the particles.
-        rmin : float, optional
-            Minimum radius to stop shrinking (default is 1).
-        stepsize : float, optional
-            Fraction by which to shrink the radius at each step (default is 0.5).
-        tol : float, optional
-            Minimum fraction of particles required in a sphere to continue (default is 0.001).
-        verbose : int, optional
-            Level of verbosity for output (default is 0).
-
-        Returns:
-        Recentered positions and velocities.
-        """
-        tshiftx = np.nanmedian(np.nansum(w * self.x) / np.nansum(w))
-        tshifty = np.nanmedian(np.nansum(w * self.y) / np.nansum(w))
-        tshiftz = np.nanmedian(np.nansum(w * self.z) / np.nansum(w))
-
-        self.x -= tshiftx
-        self.y -= tshifty
-        self.z -= tshiftz
-
-        rval = np.sqrt(self.x**2 + self.y**2 + self.z**2)
-        rmax = np.nanmax(rval)
-        rmax0 = np.nanmax(rval)
-
-        if verbose:
-            print(f'Initial guess: {tshiftx:.0f}, {tshifty:.0f}, {tshiftz:.0f}')
-
-        while rmax > rmin:
-            u = np.where(rval < stepsize * rmax)[0]
-            if float(u.size) / float(self.x.size) < tol:
-                print(f'Too few particles to continue at radius ratio {stepsize * rmax / rmax0}')
-                break
-
-            comx = np.nanmedian(np.nansum(w[u] * self.x[u]) / np.nansum(w[u]))
-            comy = np.nanmedian(np.nansum(w[u] * self.y[u]) / np.nansum(w[u]))
-            comz = np.nanmedian(np.nansum(w[u] * self.z[u]) / np.nansum(w[u]))
-
-            self.x -= comx
-            self.y -= comy
-            self.z -= comz
-
-            tshiftx += comx
-            tshifty += comy
-            tshiftz += comz
-
-            rval = np.sqrt(self.x**2 + self.y**2 + self.z**2)
-            rmax *= stepsize
-
-        comvx = np.nanmedian(np.nansum(w[u] * self.vx[u]) / np.nansum(w[u]))
-        comvy = np.nanmedian(np.nansum(w[u] * self.vy[u]) / np.nansum(w[u]))
-        comvz = np.nanmedian(np.nansum(w[u] * self.vz[u]) / np.nansum(w[u]))
-
-        if verbose:
-            print(f'Final shift: {tshiftx:.0f}, {tshifty:.0f}, {tshiftz:.0f}')
-            print(f'Final velocity shift: {comvx:.0f}, {comvy:.0f}, {comvz:.0f}')
-
-        self.vx -= comvx
-        self.vy -= comvy
-        self.vz -= comvz
-
-        return self.x, self.y, self.z, self.vx, self.vy, self.vz
 
     def compute_density_profile(self, R, W, rbins=10.**np.linspace(-3.7, 0.3, 100)):
         """

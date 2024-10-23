@@ -2,6 +2,9 @@
 # tools to fit rotation curves. NEEDS MUCH CONSTRUCTION
 # from NewHorizon bars project
 
+import numpy as np
+astronomicalG = 0.0000043009125 # gravitational constant, (km/s)^2 * kpc / Msun
+
 
 def kuzmin_rotation(R,c,M,G=astronomicalG):
     """see BT08
