@@ -1,10 +1,8 @@
-###########################################################3
-#
-# 09-Apr-2021: introduction
-
-#
 """
-spiral (Cox & Gomez)
+spiral (Cox & Gomez [year])
+
+09 Apr 2021:  Introduction
+24 Sep 2023:  Convert to class, improve documentation
 
 Follow notes from Hunt & Bovy (2018) for the demo application
 
@@ -17,164 +15,76 @@ construct a model to reflect this? Make the arm distribution
 # standard python modules
 import numpy as np
 
+class SpiralPotential:
+    def __init__(self, N, alpha, Rs, rho0, r0, H, phip=0):
+        self.N = N
+        self.alpha = alpha
+        self.Rs = Rs
+        self.rho0 = rho0
+        self.r0 = r0
+        self.H = H
+        self.phip = phip
+        self.G = 1  # Gravitational constant, set to 1 for simplicity
 
+    def _return_Kn(self, n, r, alpha):
+        return (n * self.N) / (r * np.sin(alpha))
 
-# code up Cox & Gomez potential
+    def _return_betan(self, n, r, alpha, H):
+        Kn = self._return_Kn(n, r, alpha)
+        return Kn * H * (1 + 0.4 * Kn * H)
 
-def return_Kn(n,N,r,alpha):
-    """
-    Cox & Gomez equation 5
-    
-    """
-    return (n*N)/(r*np.sin(alpha))
+    def _return_Dn(self, n, r, alpha, H):
+        Kn = self._return_Kn(n, r, alpha)
+        return (1 + Kn * H + 0.3 * Kn * Kn * H * H) / (1 + 0.3 * Kn * H)
 
-def return_betan(n,N,r,alpha,H):
-    """
-    Cox & Gomez equation 6
-    
-    """
-    Kn = return_Kn(n,N,r,alpha)
-    return Kn*H*(1+0.4*Kn*H)
+    def _return_gamma(self, r, phi):
+        return self.N * (phi - self.phip - np.log(r / self.r0) / np.tan(self.alpha))
 
-def return_Dn(n,N,r,alpha,H):
-    """
-    Cox & Gomez equation 7
-    
-    """
-    Kn = return_Kn(n,N,r,alpha)
-    return (1 + Kn*H + 0.3*Kn*Kn*H*H)/(1+0.3*Kn*H)
-    
-    
-def return_gamma(r,phi,r0,alpha,phip=0.):
-    """
-    Cox & Gomez equation 3
-    
-    phip=0 by default; can change the phi location of the peak if desired
-    """
-    return N*(phi - phip - np.log(r/r0)/np.tan(alpha))
+    def _combined_arms_pot(self, r, phi, z):
+        gamma = self._return_gamma(r, phi)
 
+        nsum = 0
+        for n in range(1, 4):
+            Kn = self._return_Kn(n, r, self.alpha)
+            Dn = self._return_Dn(n, r, self.alpha, self.H)
+            Bn = self._return_betan(n, r, self.alpha, self.H)
 
+            term1 = (8 / (3 * np.pi)) / (Kn * Dn)
+            term2 = np.cos(n * gamma) * (1 / np.cosh((Kn * z) / Bn)) ** Bn
 
-def phase_pattern(r,phi,z,phip,r0,alpha,H):
-    """
-    Cox & Gomez equation 4
-    """
-    #print(r,phi,N,phip,r0,alpha)
-    gamma = return_gamma(r,phi,r0,alpha,phip)
-    
-    # loop to do the n sum
-    nsum = 0
-    for n0,Cn in enumerate([8./(3*np.pi),0.5,8./(15.*np.pi)]):
-        # check out the enumerate function
-        # n is the index, in this case, [0,1,2]
-        # but we want [1,2,3]
-        # so add 1 immediately
-        n = n0+1
+            nsum += term1 * term2
 
-        nsum += np.cos(n*gamma)
-    
-    return nsum
+        return nsum
 
+    def potential(self, r, phi, z):
+        gamma = self._return_gamma(r, phi)
+        expval = np.exp(-(r - self.r0) / self.Rs)
+        prefac = -4 * np.pi * self.G * self.rho0
 
+        return prefac * expval * self._combined_arms_pot(r, phi, z)
 
+    def _combined_arms_dens(self, r, phi, z):
+        gamma = self._return_gamma(r, phi)
 
-def combined_arms_pot(r,phi,z,N,phip,r0,alpha,H):
-    """
-    sum part of Cox & Gomez equation 8
-    """
-    #print(r,phi,N,phip,r0,alpha)
-    gamma = return_gamma(r,phi,r0,alpha,phip)
-    
-    # loop to do the n sum
-    nsum = 0
-    for n0,Cn in enumerate([8./(3*np.pi),0.5,8./(15.*np.pi)]):
-        # check out the enumerate function
-        # n is the index, in this case, [0,1,2]
-        # but we want [1,2,3]
-        # so add 1 immediately
-        n = n0+1
-        Kn = return_Kn(n,N,r,alpha)
-        Dn = return_Dn(n,N,r,alpha,H)
-        Bn = return_betan(n,N,r,alpha,H)
-        
-        term1 = (Cn/(Kn*Dn))
-        term2 = np.cos(n*gamma)*np.power((1./np.cosh((Kn*z)/(Bn))),Bn)
-        
-        nsum += term1*term2
-    
-    return nsum
+        nsum = 0
+        for n in range(1, 4):
+            Kn = self._return_Kn(n, r, self.alpha)
+            Dn = self._return_Dn(n, r, self.alpha, self.H)
+            Bn = self._return_betan(n, r, self.alpha, self.H)
 
+            term1 = (8 / (3 * np.pi)) * ((Kn * self.H) / Dn) * ((Bn + 1) / Bn)
+            term2 = np.cos(n * gamma) * (1 / np.cosh((Kn * z) / Bn)) ** (2 + Bn)
 
-def spiral_pot(r,phi,z,rho0,r0,Rs,N,alpha,H,phip=0):
-    """
-    Cox & Gomez equation 8
-    
-    N     : number of arms
-    alpha : pitch angle (in radians?)
-    Rs    : radial scale length of drop-off in density amplitude of arms
-    rho0  : midplane arm density
-    r0    : fiducial radius (peak of arm density)
-    H     : scale height of the arm perturbation
-    
-    set G=1
-    """
-    G = 1
-    
-    nsum   = combined_arms_pot(r,phi,z,N,phip,r0,alpha,H)
-    expval = np.exp( -(r-r0)/(Rs))
-    prefac = -4.*np.pi*G*rho0
-    
-    return prefac*expval*nsum
-    
-    
-def combined_arms_dens(r,phi,z,N,phip,r0,alpha,H):
-    """
-    sum part of Cox & Gomez equation 10
-    """
-    #print(r,phi,N,phip,r0,alpha)
-    gamma = return_gamma(r,phi,r0,alpha,phip)
-    
-    # loop to do the n sum
-    nsum = 0
-    for n0,Cn in enumerate([8./(3*np.pi),0.5,8./(15.*np.pi)]):
-        # check out the enumerate function
-        # n is the index, in this case, [0,1,2]
-        # but we want [1,2,3]
-        # so add 1 immediately
-        n = n0+1
-        Kn = return_Kn(n,N,r,alpha)
-        Dn = return_Dn(n,N,r,alpha,H)
-        Bn = return_betan(n,N,r,alpha,H)
-        
-        term1 = Cn * ( ((Kn*H)/(Dn))*((Bn+1)/(Bn)) )
-        term2 = np.cos(n*gamma)*np.power((1./np.cosh((Kn*z)/(Bn))),2+Bn)
-        
-        nsum += term1*term2
-    
-    return nsum
+            nsum += term1 * term2
 
+        return nsum
 
+    def density(self, r, phi, z):
+        gamma = self._return_gamma(r, phi)
+        expval = np.exp(-(r - self.r0) / self.Rs)
+        prefac = self.rho0
 
-    
-def spiral_dens(r,phi,z,rho0,r0,Rs,N,alpha,H,phip=0):
-    """
-    Cox & Gomez equation 10
-    
-    N     : number of arms
-    alpha : pitch angle (in radians?)
-    Rs    : radial scale length of drop-off in density amplitude of arms
-    rho0  : midplane arm density
-    r0    : fiducial radius (peak of arm density)
-    H     : scale height of the arm perturbation
-    
-    """
-    
-    nsum   = combined_arms_dens(r,phi,z,N,phip,r0,alpha,H)
-    expval = np.exp( -(r-r0)/(Rs))
-    prefac = rho0
-    
-    return prefac*expval*nsum
-
+        return prefac * expval * self._combined_arms_dens(r, phi, z)
 
 """
 

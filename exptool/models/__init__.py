@@ -1,4 +1,2 @@
 
-
-# this is EXPtool
-
+__all__ = ['mndisc','logpot','hernquist','nfw','plummer']
