@@ -121,19 +121,31 @@ class ParticleAlignment:
         Rotated positions.
         """
         axisx, axisy, axisz = axis
-        dot = self.x * axisx + self.y * axisy + self.z * axisz
-        crossx = axisy * self.z - axisz * self.y
-        crossy = axisz * self.x - axisx * self.z
-        crossz = axisx * self.y - axisy * self.x
+
+        # Rotation for position vector (x, y, z)
+        dot_pos = self.x * axisx + self.y * axisy + self.z * axisz  # Dot product for position
+        crossx_pos = axisy * self.z - axisz * self.y  # Cross product for position
+        crossy_pos = axisz * self.x - axisx * self.z
+        crossz_pos = axisx * self.y - axisy * self.x
 
         cosa = np.cos(angle)
         sina = np.sin(angle)
 
-        x_rot = self.x * cosa + crossx * sina + axisx * dot * (1 - cosa)
-        y_rot = self.y * cosa + crossy * sina + axisy * dot * (1 - cosa)
-        z_rot = self.z * cosa + crossz * sina + axisz * dot * (1 - cosa)
+        x_rot = self.x * cosa + crossx_pos * sina + axisx * dot_pos * (1 - cosa)
+        y_rot = self.y * cosa + crossy_pos * sina + axisy * dot_pos * (1 - cosa)
+        z_rot = self.z * cosa + crossz_pos * sina + axisz * dot_pos * (1 - cosa)
 
-        return x_rot, y_rot, z_rot
+        # Rotation for velocity vector (vx, vy, vz)
+        dot_vel = self.vx * axisx + self.vy * axisy + self.vz * axisz  # Dot product for velocity
+        crossx_vel = axisy * self.vz - axisz * self.vy  # Cross product for velocity
+        crossy_vel = axisz * self.vx - axisx * self.vz
+        crossz_vel = axisx * self.vy - axisy * self.vx
+
+        vx_rot = self.vx * cosa + crossx_vel * sina + axisx * dot_vel * (1 - cosa)
+        vy_rot = self.vy * cosa + crossy_vel * sina + axisy * dot_vel * (1 - cosa)
+        vz_rot = self.vz * cosa + crossz_vel * sina + axisz * dot_vel * (1 - cosa)
+
+        return x_rot, y_rot, z_rot, vx_rot, vy_rot, vz_rot
 
     def compute_rotation_to_vec(self, vec):
         """

@@ -682,12 +682,12 @@ def map_basis(eof_file):
     rmin,rmax,numx,numy,mmax,norder,ascale,hscale,cmap,dens = eof_params(eof_file)
 
     if (dens):
-        mC = np.memmap(eof_file, dtype=np.float64, offset=76, shape=(mmax+1,norder,4,numx+1,numy+1))
-        mS = np.memmap(eof_file, dtype=np.float64, offset=76+(8*4*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,4,numx+1,numy+1))
+        mC = np.memmap(eof_file, dtype=float64, offset=76, shape=(mmax+1,norder,4,numx+1,numy+1))
+        mS = np.memmap(eof_file, dtype=float64, offset=76+(8*4*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,4,numx+1,numy+1))
 
     else:
-        mC = np.memmap(eof_file, dtype=np.float64, offset=76, shape=(mmax+1,norder,3,numx+1,numy+1))
-        mS = np.memmap(eof_file, dtype=np.float64, offset=76+(8*3*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
+        mC = np.memmap(eof_file, dtype=float64, offset=76, shape=(mmax+1,norder,3,numx+1,numy+1))
+        mS = np.memmap(eof_file, dtype=float64, offset=76+(8*3*(mmax+1)*norder*(numx+1)*(numy+1)), shape=(mmax,norder,3,numx+1,numy+1))
 
     # note that mS and potS are different sized owing to m orders: need to homogenize for full usefulness?
 
@@ -2258,7 +2258,7 @@ def read_binary_eof_coefficients(coeffile):
     # return to beginning
     f.seek(0)
 
-    [time0] = np.fromfile(f, dtype=np.float,count=1)
+    [time0] = np.fromfile(f, dtype=float,count=1)
     [mmax,nmax] = np.fromfile(f, dtype=np.uint32,count=2)
 
     # hard-coded to match specifications.
@@ -2274,17 +2274,17 @@ def read_binary_eof_coefficients(coeffile):
 
     for tt in range(0,n_outputs):
 
-        [time0] = np.fromfile(f, dtype=np.float,count=1)
+        [time0] = np.fromfile(f, dtype=float,count=1)
         [dummym,dummyn] = np.fromfile(f, dtype=np.uint32,count=2)
 
         times[tt] = time0
 
         for mm in range(0,mmax+1):
 
-            coef_array[tt,0,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+            coef_array[tt,0,mm,:] = np.fromfile(f, dtype=float,count=nmax)
 
             if mm > 0:
-                coef_array[tt,1,mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+                coef_array[tt,1,mm,:] = np.fromfile(f, dtype=float,count=nmax)
 
 
     return times,coef_array
@@ -2320,7 +2320,7 @@ def read_binary_eof_coefficients_dict(coeffile):
     # return to beginning
     f.seek(0)
 
-    [time0] = np.fromfile(f, dtype=np.float,count=1)
+    [time0] = np.fromfile(f, dtype=float,count=1)
     [mmax,nmax] = np.fromfile(f, dtype=np.uint32,count=2)
 
     # hard-coded to match specifications.
@@ -2336,7 +2336,7 @@ def read_binary_eof_coefficients_dict(coeffile):
 
         EOF_Obj = EOF_Object()
 
-        [EOF_Obj.time] = np.fromfile(f, dtype=np.float,count=1)
+        [EOF_Obj.time] = np.fromfile(f, dtype=float,count=1)
         [EOF_Obj.mmax,EOF_Obj.nmax] = np.fromfile(f, dtype=np.uint32,count=2)
 
         # fill in dummy values
@@ -2350,10 +2350,10 @@ def read_binary_eof_coefficients_dict(coeffile):
 
         for mm in range(0,mmax+1):
 
-            EOF_Obj.cos[mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+            EOF_Obj.cos[mm,:] = np.fromfile(f, dtype=float,count=nmax)
 
             if mm > 0:
-                EOF_Obj.sin[mm,:] = np.fromfile(f, dtype=np.float,count=nmax)
+                EOF_Obj.sin[mm,:] = np.fromfile(f, dtype=float,count=nmax)
 
         EOF_Dict[EOF_Obj.time] = EOF_Obj
 

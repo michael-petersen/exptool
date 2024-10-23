@@ -302,13 +302,13 @@ def show_dump(infile,comp,nout=-1,type='pos',transform=True,\
     if np.array(comp).size == 1:
 
         if nout < 0:
-            PSPDump = particle.Input(infile,comp=comp)
+            PSPDump = particle.Input(infile,comp=comp,legacy=True)
         else:
-            PSPDump = particle.Input(infile,comp=comp,nout=nout)
+            PSPDump = particle.Input(infile,comp=comp,nout=nout,legacy=True)
 
     else:
         # allow for multiple components to be mixed together
-        PartArray = [particle.Input(infile,comp=cc) for cc in comp]
+        PartArray = [particle.Input(infile,comp=cc,legacy=True) for cc in comp]
 
         PSPDump = particle.mix_particles(PartArray)
 
@@ -484,8 +484,8 @@ def compare_dumps(infile1,infile2,comp,type='pos',transform=True,\
 
     # read in files
 
-    PSPDump1 = particle.Input(infile1,comp=comp)
-    PSPDump2 = particle.Input(infile2,comp=comp)
+    PSPDump1 = particle.Input(infile1,comp=comp,legacy=True)
+    PSPDump2 = particle.Input(infile2,comp=comp,legacy=True)
 
     if transform:
         PSPDump1 = pattern.BarTransform(PSPDump1)
