@@ -22,7 +22,6 @@ jobs:
         run: |  
           python -m pip install --upgrade pip  
           pip install -r test_requirements.txt
-        run: |
           python tests/importtest.py
 #      - name: Test with pytest  
 #        run: |  
