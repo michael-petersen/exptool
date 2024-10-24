@@ -3,8 +3,8 @@
 __all__ = ['bulge',
            'fourier',
            'gaiatransform',
-           'rotationcurves',
-           'scaleheighcheck',
+           'rotationcurve',
+           'scaleheightcheck',
            'transform',
            'velocity',
            'visualize']
