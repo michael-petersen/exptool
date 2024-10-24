@@ -1,4 +1,13 @@
 
 
-# this is EXPtool
+__all__ = ['bulge',
+           'fourier',
+           'gaiatransform',
+           'rotationcurve',
+           'scaleheightcheck',
+           'transform',
+           'velocity',
+           'visualize']
+
+
 

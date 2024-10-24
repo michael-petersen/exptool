@@ -22,10 +22,10 @@ from skimage.measure import find_contours
 
 
 # exptool imports
-from .io import particle
-from .utils import kde_3d
-from .observables import transform
-from .analysis import pattern
+from ..io import particle
+from ..utils import kde_3d
+from ..observables import transform
+from ..analysis import pattern
 
 
 # location of the files to become a movie: satellite edition

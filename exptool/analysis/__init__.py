@@ -1,7 +1,14 @@
 
 
-# this is EXPtool
 
-__all__ = ['commensurability','directdetection','ellipsetools','forcetrace','globalquantities','pattern','trapping']
+__all__ = ['centering',
+           'commensurability',
+           'directdetection',
+           'ellipsetools',
+           'globalquantities',
+           'pattern',
+           'resonancemodel',
+           'rotationcurves',
+           'trapping']
 
 

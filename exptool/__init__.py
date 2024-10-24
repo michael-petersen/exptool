@@ -1,7 +1,2 @@
 
-
-# this is EXPtool
-
-#http://python-guide-pt-br.readthedocs.io/en/latest/writing/structure/
-
-
+__version__ = "0.4.0"

@@ -13,6 +13,7 @@ Originally used for NewHorizon bar detection (Reddish et al. 2022)
     
 09 Jul 2021: First introduction
 18 Sep 2024: Class structure overhaul
+23 Oct 2024: Added radius masking to alignment
 """
 import numpy as np
 
@@ -85,7 +86,7 @@ class ParticleAlignment:
         self.vz = vz
         self.mass = mass
 
-    def recentre_pos_and_vel(self, r_max):
+    def recentre_pos_and_vel(self, r_max=np.inf):
         """
         Recenter the position and velocity of the particles based on the center of mass 
         and mass-weighted velocity within r_max.
@@ -95,78 +96,28 @@ class ParticleAlignment:
             Maximum radius to consider for recentering.
 
         Returns:
-        Recentered positions and velocities.
+            None. The operation is performed in place.
         """
         mask = (self.x**2 + self.y**2 + self.z**2) < r_max**2
         mass_tot = np.sum(self.mass[mask])
+
         x_cm = np.sum(self.x[mask]*self.mass[mask])/mass_tot
         y_cm = np.sum(self.y[mask]*self.mass[mask])/mass_tot
         z_cm = np.sum(self.z[mask]*self.mass[mask])/mass_tot
+
         vx_cm = np.sum(self.vx[mask]*self.mass[mask])/mass_tot
         vy_cm = np.sum(self.vy[mask]*self.mass[mask])/mass_tot
         vz_cm = np.sum(self.vz[mask]*self.mass[mask])/mass_tot
-        return self.x - x_cm, self.y - y_cm, self.z - z_cm, self.vx - vx_cm, self.vy - vy_cm, self.vz - vz_cm
 
-    def rotate(self, axis, angle):
-        """
-        Rotate the particles around a given axis by a specified angle.
+        # apply changes in place
+        self.x -= x_cm
+        self.y -= y_cm
+        self.z -= z_cm
+        self.vx -= vx_cm
+        self.vy -= vy_cm
+        self.vz -= vz_cm
 
-        Parameters:
-        axis : array
-            Axis of rotation.
-        angle : float
-            Angle of rotation in radians.
-
-        Returns:
-        Rotated positions.
-        """
-        axisx, axisy, axisz = axis
-        dot = self.x * axisx + self.y * axisy + self.z * axisz
-        crossx = axisy * self.z - axisz * self.y
-        crossy = axisz * self.x - axisx * self.z
-        crossz = axisx * self.y - axisy * self.x
-
-        cosa = np.cos(angle)
-        sina = np.sin(angle)
-
-        x_rot = self.x * cosa + crossx * sina + axisx * dot * (1 - cosa)
-        y_rot = self.y * cosa + crossy * sina + axisy * dot * (1 - cosa)
-        z_rot = self.z * cosa + crossz * sina + axisz * dot * (1 - cosa)
-
-        return x_rot, y_rot, z_rot
-
-    def compute_rotation_to_vec(self, vec):
-        """
-        Compute the rotation axis and angle to align the angular momentum of the system 
-        with a given vector.
-
-        Parameters:
-        vec : array
-            Target vector to align with.
-
-        Returns:
-        axis : array
-            Rotation axis.
-        angle : float
-            Angle to rotate.
-        """
-        Lxtot = np.sum(self.y * self.vz * self.mass - self.z * self.vy * self.mass)
-        Lytot = np.sum(self.z * self.vx * self.mass - self.x * self.vz * self.mass)
-        Lztot = np.sum(self.x * self.vy * self.mass - self.y * self.vx * self.mass)
-        
-        L = np.array([Lxtot, Lytot, Lztot])
-        L /= np.linalg.norm(L)
-        vec /= np.linalg.norm(vec)
-
-        axis = np.cross(L, vec)
-        axis /= np.linalg.norm(axis)
-
-        c = np.dot(L, vec)
-        angle = np.arccos(np.clip(c, -1, 1))
-
-        return axis, angle
-
-    def shrinking_sphere(self, w, rmin=1., stepsize=0.5, tol=0.001, verbose=0):
+    def shrinking_sphere(self, w=None, rmin=1., stepsize=0.5, tol=0.001, verbose=0):
         """
         Apply the shrinking sphere method to recentre the particle system.
 
@@ -183,8 +134,12 @@ class ParticleAlignment:
             Level of verbosity for output (default is 0).
 
         Returns:
-        Recentered positions and velocities.
+            None. The operation is performed in place.
         """
+        # If w is None, default to self.mass
+        if w is None:
+            w = self.mass
+
         tshiftx = np.nanmedian(np.nansum(w * self.x) / np.nansum(w))
         tshifty = np.nanmedian(np.nansum(w * self.y) / np.nansum(w))
         tshiftz = np.nanmedian(np.nansum(w * self.z) / np.nansum(w))
@@ -193,14 +148,16 @@ class ParticleAlignment:
         self.y -= tshifty
         self.z -= tshiftz
 
-        rval = np.sqrt(self.x**2 + self.y**2 + self.z**2)
-        rmax = np.nanmax(rval)
+        rval  = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+        rmax  = np.nanmax(rval)
         rmax0 = np.nanmax(rval)
 
         if verbose:
             print(f'Initial guess: {tshiftx:.0f}, {tshifty:.0f}, {tshiftz:.0f}')
 
+        nstep = 0
         while rmax > rmin:
+            nstep += 1
             u = np.where(rval < stepsize * rmax)[0]
             if float(u.size) / float(self.x.size) < tol:
                 print(f'Too few particles to continue at radius ratio {stepsize * rmax / rmax0}')
@@ -221,6 +178,9 @@ class ParticleAlignment:
             rval = np.sqrt(self.x**2 + self.y**2 + self.z**2)
             rmax *= stepsize
 
+        if nstep == 0:
+            print('No shrinking done. Check that rmin is larger than the minimum particle radius.')
+
         comvx = np.nanmedian(np.nansum(w[u] * self.vx[u]) / np.nansum(w[u]))
         comvy = np.nanmedian(np.nansum(w[u] * self.vy[u]) / np.nansum(w[u]))
         comvz = np.nanmedian(np.nansum(w[u] * self.vz[u]) / np.nansum(w[u]))
@@ -233,9 +193,94 @@ class ParticleAlignment:
         self.vy -= comvy
         self.vz -= comvz
 
-        return self.x, self.y, self.z, self.vx, self.vy, self.vz
 
-    def compute_density_profile(self, R, W, rbins=10.**np.linspace(-3.7, 0.3, 100)):
+    def compute_rotation_to_vec(self, vec, r_max=np.inf):
+        """
+        Compute the rotation axis and angle to align the angular momentum of the system 
+        with a given vector.
+
+        Parameters:
+        vec : array
+            Target vector to align with.
+        r_max : float, optional
+            Maximum radius to consider for the alignment (default is infinity).
+
+        Returns:
+        axis : array
+            Rotation axis.
+        angle : float
+            Angle to rotate.
+        """
+        mask = (self.x**2 + self.y**2 + self.z**2) < r_max**2
+
+        Lxtot = np.sum((self.mass * (self.y * self.vz - self.z * self.vy))[mask])
+        Lytot = np.sum((self.mass * (self.z * self.vx - self.x * self.vz))[mask])
+        Lztot = np.sum((self.mass * (self.x * self.vy - self.y * self.vx))[mask])
+        
+        L = np.array([Lxtot, Lytot, Lztot])
+        L /= np.linalg.norm(L)
+
+        vec /= np.linalg.norm(vec)
+
+        axis = np.cross(L, vec)
+        axis /= np.linalg.norm(axis)
+
+        c = np.dot(L, vec)
+        angle = np.arccos(np.clip(c, -1, 1))
+
+        return axis, angle
+    
+    def rotate(self, vec=[0.,0.,1.], r_max=np.inf):
+        """
+        Rotate the particles around a given axis by a specified angle.
+
+        Parameters:
+        vec : array, optional
+            Target vector to align with (default is [0, 0, 1]; i.e. angular momentum aligned with z-axis).
+        r_max : float, optional
+            Maximum radius to consider for the alignment (default is infinity).
+
+        Returns:
+            None. The operation is performed in place.
+        """
+        axis, angle = self.compute_rotation_to_vec(vec,r_max=r_max)
+        
+        axisx, axisy, axisz = axis
+
+        # Rotation for position vector (x, y, z)
+        dot_pos = self.x * axisx + self.y * axisy + self.z * axisz  # Dot product for position
+        crossx_pos = axisy * self.z - axisz * self.y  # Cross product for position
+        crossy_pos = axisz * self.x - axisx * self.z
+        crossz_pos = axisx * self.y - axisy * self.x
+
+        cosa = np.cos(angle)
+        sina = np.sin(angle)
+
+        x_rot = self.x * cosa + crossx_pos * sina + axisx * dot_pos * (1 - cosa)
+        y_rot = self.y * cosa + crossy_pos * sina + axisy * dot_pos * (1 - cosa)
+        z_rot = self.z * cosa + crossz_pos * sina + axisz * dot_pos * (1 - cosa)
+
+        # Rotation for velocity vector (vx, vy, vz)
+        dot_vel = self.vx * axisx + self.vy * axisy + self.vz * axisz  # Dot product for velocity
+        crossx_vel = axisy * self.vz - axisz * self.vy  # Cross product for velocity
+        crossy_vel = axisz * self.vx - axisx * self.vz
+        crossz_vel = axisx * self.vy - axisy * self.vx
+
+        vx_rot = self.vx * cosa + crossx_vel * sina + axisx * dot_vel * (1 - cosa)
+        vy_rot = self.vy * cosa + crossy_vel * sina + axisy * dot_vel * (1 - cosa)
+        vz_rot = self.vz * cosa + crossz_vel * sina + axisz * dot_vel * (1 - cosa)
+
+        # perform operation in place
+        self.x = x_rot
+        self.y = y_rot
+        self.z = z_rot
+        self.vx = vx_rot
+        self.vy = vy_rot
+        self.vz = vz_rot
+
+        #return x_rot, y_rot, z_rot, vx_rot, vy_rot, vz_rot
+
+    def compute_density_profile(self, R, W, rbins=10.**np.linspace(-3.7, 0.3, 100),astronomicalG = 0.0000043009125):
         """
         Compute the density profile, enclosed mass, and potential for the particle system.
 
@@ -246,6 +291,8 @@ class ParticleAlignment:
             Weights of the particles.
         rbins : array, optional
             Radial bins to compute the profile (default is logarithmic bins from 10^-3.7 to 10^0.3).
+        astronomicalG : float, optional
+            Gravitational constant (default is 0.0000043009125 km/s/kpc/Msun).
 
         Returns:
         dens : array
@@ -259,7 +306,6 @@ class ParticleAlignment:
         menc = np.zeros(rbins.size)
         potp = np.zeros(rbins.size)
 
-        astronomicalG = 0.0000043009125
         rbinstmp = np.concatenate([rbins, [2. * rbins[-1] - rbins[-2]]])
 
         for indx, val in enumerate(rbinstmp[:-1]):
