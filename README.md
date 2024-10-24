@@ -1,13 +1,29 @@
 # exptool: galactic dynamics in python using basis function expansions
 ## msp, 2014-present
 
-### Version 0.3
-exptool is primarily collection of analysis methods used to analyze _n_-body simulations, primarily those running with _EXP_, though any _n_-body
-code could use the methodology (Generation 1).
+### Version 0.4
+exptool is primarily collection of analysis methods used to analyze _n_-body simulations, primarily those running with `EXP`, though any _n_-body
+code could use the methodology (Generation 0.1).
 
-As of 2018, exptool has expanded to be an all-purpose dynamical framework for studying disc galaxies (Generation 2).
+As of 2018, exptool has expanded to be an all-purpose dynamical framework for studying disc galaxies (Generation 0.2).
 
-As of 2020, exptool includes support for analysing stellar halos (Generation 3).
+As of 2020, exptool includes support for analysing stellar halos (Generation 0.3).
+
+As of 2024, `exptool` supports analysis of cosmological simulation outputs for bar measurements and a range of basic dynamical models (Generation 0.4).
+
+### Installation
+
+`exptool` is not a registered package, so the best installation is
+
+```
+git clone git@github.com:michael-petersen/exptool.git
+cd exptool
+pip install . --user
+python tests/importtest.py
+```
+
+and then you will be ready to use it! For any updates, you'll need to `git pull` and rebuild using `pip install . --user`.
+
 
 The tests/ directory contains simulation outputs to play with, as well as some usage examples for methods.
 
