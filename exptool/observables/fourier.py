@@ -100,7 +100,7 @@ class FourierAnalysis:
         r = np.sqrt(self.xpos**2 + self.ypos**2 + self.zpos**2)
         return r < radius
     
-    def compute_fourier(self, harmonic=2):
+    def compute_fourier(self, mask=None, harmonic=2, normalize=True):
         """
         Compute Fourier moments for the particle system.
 
@@ -111,14 +111,36 @@ class FourierAnalysis:
         - mod: The modulus of the Fourier moment.
         - angle: The phase angle of the Fourier moment.
         """
-        phi = np.arctan2(self.y, self.x)
-        A = np.nansum(self.mass * np.cos(harmonic * phi)) / np.nansum(self.mass)
-        B = np.nansum(self.mass * np.sin(harmonic * phi)) / np.nansum(self.mass)
-        mod = np.sqrt(A * A + B * B)
-        angle = np.arctan2(B, A) / 2.
+
+        norm = 1.0
+
+        if mask is None:
+            phi = np.arctan2(self.y, self.x)
+
+            if normalize:
+                norm = np.nansum(self.mass)
+
+            A = np.nansum(self.mass * np.cos(harmonic * phi)) / norm
+            B = np.nansum(self.mass * np.sin(harmonic * phi)) / norm
+
+            mod = np.sqrt(A * A + B * B)
+            angle = np.arctan2(B, A) / 2.
+
+        else:
+            phi = np.arctan2(self.y[mask], self.x[mask])
+
+            if normalize:
+                norm = np.nansum(self.mass[mask])
+
+            A = np.nansum(self.mass[mask] * np.cos(harmonic * phi)) / norm
+            B = np.nansum(self.mass[mask] * np.sin(harmonic * phi)) / norm
+
+            mod = np.sqrt(A * A + B * B)
+            angle = np.arctan2(B, A) / 2.
+
         return mod, angle
     
-    def compute_fourier_vel(self, harmonic=2):
+    def compute_fourier_vel(self, mask=None, harmonic=2):
         """
         Compute velocity-weighted Fourier moments.
 
@@ -128,15 +150,22 @@ class FourierAnalysis:
         Returns:
         - mod: The modulus of the velocity-weighted Fourier moment.
         """
-        phi = np.arctan2(self.y, self.x)
-        # Compute the tangential velocity
-        vel = (self.x * self.vy - self.y * self.vx) / np.sqrt(self.x**2 + self.y**2)
-        A = np.nansum(self.mass * vel * np.cos(harmonic * phi)) / np.nansum(self.mass)
-        B = np.nansum(self.mass * vel * np.sin(harmonic * phi)) / np.nansum(self.mass)
-        mod = np.sqrt(A * A + B * B)
+        if mask is None:
+            phi = np.arctan2(self.y, self.x)
+            # Compute the tangential velocity
+            vel = (self.x * self.vy - self.y * self.vx) / np.sqrt(self.x**2 + self.y**2)
+            A = np.nansum(self.mass * vel * np.cos(harmonic * phi)) / np.nansum(self.mass)
+            B = np.nansum(self.mass * vel * np.sin(harmonic * phi)) / np.nansum(self.mass)
+            mod = np.sqrt(A * A + B * B)
+        else:
+            phi = np.arctan2(self.y[mask], self.x[mask])
+            vel = (self.x[mask] * self.vy[mask] - self.y[mask] * self.vx[mask]) / np.sqrt(self.x[mask]**2 + self.y[mask]**2)
+            A = np.nansum(self.mass[mask] * vel * np.cos(harmonic * phi)) / np.nansum(self.mass[mask])
+            B = np.nansum(self.mass[mask] * vel * np.sin(harmonic * phi)) / np.nansum(self.mass[mask])
+            mod = np.sqrt(A * A + B * B)
         return mod
     
-    def fourier_tabulate(self, bins=75):
+    def fourier_tabulate(self, bins=75,mmax=2, r_max=None,normalize=True):
         """
         Compute the Fourier moments and velocity-weighted Fourier moments in radial bins.
 
@@ -150,19 +179,25 @@ class FourierAnalysis:
         - fvpower: The velocity-weighted Fourier moments for harmonics 0 to 4.
         """
         rval = np.sqrt(self.x**2 + self.y**2)
-        rtest = np.linspace(0., np.nanpercentile(rval, 75), bins)
+
+        if r_max is None:
+            rtest = np.linspace(0., np.nanpercentile(rval, 75), bins)
+        else:
+            rtest = np.linspace(0., r_max, bins)
+
+
         dr = rtest[1] - rtest[0]
         rbin = (np.floor(rval / dr)).astype(int)
         
-        fpower = np.zeros((5, rtest.size))
-        fangle = np.zeros((5, rtest.size))
-        fvpower = np.zeros((5, rtest.size))
+        fpower = np.zeros((mmax+1, rtest.size))
+        fangle = np.zeros((mmax+1, rtest.size))
+        fvpower = np.zeros((mmax+1, rtest.size))
         
         for ir, rv in enumerate(rtest):
             w = np.where(rbin == ir)[0]
-            for h in range(5):
-                fpower[h, ir], fangle[h, ir] = self.compute_fourier(harmonic=h)
-                fvpower[h, ir] = self.compute_fourier_vel(harmonic=h)
+            for h in range(mmax+1):
+                fpower[h, ir], fangle[h, ir] = self.compute_fourier(harmonic=h,mask=w,normalize=normalize)
+                fvpower[h, ir] = self.compute_fourier_vel(harmonic=h,mask=w)
         
         return rtest, fpower, fangle, fvpower
 
