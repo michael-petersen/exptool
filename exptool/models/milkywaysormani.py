@@ -224,9 +224,9 @@ class Sormani2022MilkyWay:
         - x (float): X-coordinate.
         - y (float): Y-coordinate.
         - z (float): Z-coordinate.
+        - c (float): C parameter for the calculation.
         - x_c (float): X-coordinate parameter for the calculation.
         - y_c (float): Y-coordinate parameter for the calculation.
-        - c_perp (float): Perpendicular parameter for the calculation.
 
         Returns:
         - tuple: A tuple containing 'a_plus' and 'a_minus' values.
