@@ -1,30 +1,6 @@
 """
-
-24 Sep 2023  Introduction
-
-# Create an instance of the Icosphere class with 3 subdivisions
-icosphere = Icosphere(subdivisions=3)
-
-# Access the generated points
-points = icosphere.points
-
-# Use the points as needed
-print(points)
-
-
-# Create a 3D plot to visualize the evenly spaced points on the sphere
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=2)
-
-# Set equal aspect ratio to show a perfect sphere
-ax.set_box_aspect([1, 1, 1])
-
-# Show the plot
-plt.title('Evenly Spaced Points on a Sphere')
-plt.show()
-
-
+Provides the Icosphere class for generating evenly distributed points on a sphere
+using recursive subdivision of an icosahedron.
 """
 
 import numpy as np
