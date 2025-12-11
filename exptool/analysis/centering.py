@@ -221,7 +221,7 @@ class ParticleAlignment:
         L /= np.linalg.norm(L)
 
         # in case of diagnostic checking
-        self.prerotationLvec = L
+        self.prerotation_lvec = L
 
         vec /= np.linalg.norm(vec)
 
