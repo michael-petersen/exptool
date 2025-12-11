@@ -11,7 +11,6 @@ plummer (part of exptool.models)
 # general python imports
 import numpy as np
 
-import numpy as np
 
 class Plummer:
     '''
