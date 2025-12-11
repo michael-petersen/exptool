@@ -31,7 +31,23 @@ except ImportError:
     raise ImportError("You will need to 'pip install pyyaml' to use this reader.")
 
 def _to_python(obj):
-    """convert numpy types to native python types recursively"""
+    """
+    Recursively convert numpy types to native Python types.
+
+    This helper function ensures that objects containing numpy types (such as numpy scalars or arrays)
+    are converted to their native Python equivalents. This is particularly important for YAML serialization,
+    which may not handle numpy types correctly.
+
+    Parameters
+    ----------
+    obj : any
+        Any Python object, potentially containing numpy types (e.g., numpy scalars, arrays, or nested structures).
+
+    Returns
+    -------
+    out : any
+        The input object with all numpy types converted to native Python types.
+    """
     if isinstance(obj, dict):
         return {k: _to_python(v) for k, v in obj.items()}
     elif isinstance(obj, list):
