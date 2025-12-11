@@ -1,5 +1,4 @@
 
-import numpy as np
 
 from exptool.models.mndisc import MiyamotoNagai
 from exptool.models.nfw import NFW
