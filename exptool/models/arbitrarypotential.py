@@ -1,18 +1,5 @@
 """
-use jax to take an arbitrary potential and compute the density
-
-# Example usage
-potential = ...  # Replace with your potential data
-gravitational_constant = 6.67430e-11  # Gravitational constant (adjust as needed)
-
-# Convert potential and gravitational constant to JAX arrays
-potential = jnp.array(potential)
-gravitational_constant = jnp.array(gravitational_constant)
-
-# Compute the density using JAX
-density = calculate_density(potential, gravitational_constant)
-
-
+Provides functions to compute the density from an arbitrary potential using JAX.
 """
 
 import jax
