@@ -264,8 +264,6 @@ class Input:
         compdict = _to_python(compdict)
 
         info        = yaml.safe_dump(compdict)
-        print(info)
-
         info_bytes = info.encode()
         info_len   = len(info_bytes)
 
