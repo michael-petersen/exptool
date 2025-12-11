@@ -200,7 +200,6 @@ class Sormani2022MilkyWay:
         - x_i (float): X-coordinate parameter for the calculation.
         - y_i (float): Y-coordinate parameter for the calculation.
         - c_perp_i (float): Perpendicular parameter for the calculation.
-        - c_parallel_i (float): Parallel parameter for the calculation.
 
         Returns:
         - float: The calculated 'a' value.
