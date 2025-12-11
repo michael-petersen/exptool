@@ -1,57 +1,10 @@
 """
-The inner MW model of Sormani+ 2022
-(itself a fit to Portail+ 2017)
+Implementation of the inner Milky Way model from Sormani et al. (2022),
+which is itself a fit to Portail et al. (2017).
 
-23 Sep 2023  Implement
-24 Sep 2023  New docstrings
+Provides density calculations for the model components.
 
-
-density only at present
-
-
-# Example usage:
-model = Sormani2022MilkyWay()
-
-# quick and dirty 3d grid sampling for mass enclosed
-radius = 1.0
-xvals = np.linspace(0.001,radius,60)
-dx = xvals[1]-xvals[0]
-enclosed_mass = 0.0
-for x in xvals:
-    for y in xvals:
-        for z in xvals:
-            if np.sqrt(x**2+y**2+z**2)<=radius:
-                enclosed_mass += (dx**3)*model.total_density(x,y,z)
-
-enclosed_mass *= 8.0
-
-
-print(f"Enclosed Mass within radius {radius} kpc: {enclosed_mass} Msun")
-
-# compute the equivalent circular velocity
-# vc = sqrt(GM/r)
-astroG = 4.3e4 # kpc km^2 s^(-2) Msun^(-1) (e10)
-vcirc = np.sqrt(astroG*enclosed_mass/radius)
-
-print(f"Circular velocity at radius {radius} kpc: {vcirc} km/s")
-
-
-import matplotlib.pyplot as plt
-
-# make a very simple x,y grid
-xvals,yvals = np.linspace(-6.,6.,100),np.linspace(-6.,6.,100)
-xx,yy = np.meshgrid(xvals,yvals)
-
-plt.figure()
-
-totaldensity = model.total_density(xx,yy,0.8)
-print(f"Density at {x} kpc: {totaldensity} Msun")
-
-plt.contourf(xx,yy,np.log10(totaldensity))
-plt.colorbar()
-
-plt.show()
-
+Example usage and demonstrations can be found in the documentation or examples directory.
 """
 
 import numpy as np
