@@ -216,10 +216,6 @@ class Input:
         head_normal = head[0].decode()
         head_dict = yaml.safe_load(head_normal)
 
-        print(head_normal)
-        print(head_dict)
-
-
         # deprecated backward compatibility here: see frozen versions if this is an old file
         # https://raw.githubusercontent.com/michael-petersen/exptool/f5de2b380dd73e31ab8015d366ac44b0b41a2e18/exptool/io/psp_io.py
 
