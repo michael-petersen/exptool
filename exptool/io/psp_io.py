@@ -288,7 +288,7 @@ class Input:
 
         if self._float_len == 4:
             # the 6 numbers at the start: magic number + 5 (so only write 5)
-            magic = 2915019716 if self._float_len == 4 else 0 # this should always be magic, but leave as a guard
+            magic = 2915019716
             arr = np.array([magic, 0, nbodies,
                             nint_attr, nfloat_attr, info_len],
                             dtype=np.uint32)
