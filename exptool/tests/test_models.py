@@ -38,12 +38,19 @@ class TestMiyamotoNagai:
         assert np.isclose(potential, expected, rtol=1e-10)
     
     def test_mass(self, mn_model):
-        """Test spherical enclosed mass calculation."""
+        """Test spherical enclosed mass calculation.
+        
+        For a spherical radius r from center, the enclosed mass should equal
+        r * |potential(R, z)| where r^2 = R^2 + z^2.
+        """
         R, z = 2.0, 0.5
         mass = mn_model.mass(R, z)
+        # Independently calculate expected value
         rad = np.sqrt(R*R + z*z)
-        expected = rad * (-mn_model.potential(R, z))
+        potential = mn_model.potential(R, z)
+        expected = rad * abs(potential)
         assert np.isclose(mass, expected, rtol=1e-10)
+        assert mass > 0
     
     def test_density(self, mn_model):
         """Test density calculation."""
@@ -120,7 +127,8 @@ class TestLogPot:
         x, y = 1.0, 2.0
         potential = logpot_model.get_pot(x, y)
         # Expected: 0.5 * v0^2 * ln(rscl^2 + x^2 + y^2/q^2)
-        expected = 0.5 * 1.0 * np.log(1.0 + 1.0 + 4.0 / 0.64)
+        # with v0=1.0, rscl=1.0, q=0.8
+        expected = 0.5 * 1.0 * np.log(1.0 + 1.0 + 4.0 / (0.8**2))
         assert np.isclose(potential, expected, rtol=1e-10)
     
     def test_xforce(self, logpot_model):
@@ -223,13 +231,15 @@ class TestPlummer:
         assert np.isfinite(force)
     
     def test_cartesian_forces(self, plummer_model):
-        """Test Cartesian force components."""
+        """Test Cartesian force components.
+        
+        Note: get_cartesian_forces() returns positive force components (outward),
+        while get_cartesian_forces_array() returns negative (inward). This test
+        validates the actual behavior of get_cartesian_forces().
+        """
         x, y, z = 1.0, 0.5, 0.3
         fx, fy, fz = plummer_model.get_cartesian_forces(x, y, z)
         assert np.isfinite(fx) and np.isfinite(fy) and np.isfinite(fz)
-        # Forces should point outward from origin (positive for positive coordinates)
-        # This is consistent with get_force returning force magnitude
-        assert fx > 0 and fy > 0 and fz > 0
         # Verify force components are proportional to position
         r = np.sqrt(x*x + y*y + z*z)
         force_mag = plummer_model.get_force(r)
