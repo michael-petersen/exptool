@@ -1,5 +1,5 @@
 """
-spiral (Cox & Gomez [year])
+spiral (Cox & Gomez 2002)
 
 09 Apr 2021:  Introduction
 24 Sep 2023:  Convert to class, improve documentation
