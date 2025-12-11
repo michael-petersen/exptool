@@ -53,6 +53,6 @@ def generate_sphere_surface(npoints, cartesian=True):
             npoint += 1
 
     if cartesian:
-        return points[:npoint], None  # Returning None for spherical points
+        return points[:npoint, 0], points[:npoint, 1], points[:npoint, 2], None  # x, y, z, None for spherical
     else:
-        return None, sphpoints[:npoint]
+        return None, sphpoints[:npoint, 0], sphpoints[:npoint, 1]  # None for cartesian, phi, theta
