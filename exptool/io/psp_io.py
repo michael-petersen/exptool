@@ -182,13 +182,14 @@ class Input:
 
         # next the component headers must follow immediately
         # magic number goes at byte 16
+        # TODO: Writing the magic number is required for full PSP file compatibility,
+        # but this is not yet implemented. Uncomment and verify the following lines
+        # when ready to support the magic number in the output file format.
         #f.seek(16)
         #magic = 2915019716 if self._float_len == 4 else 0
         #np.array([magic], dtype=np.uint32).tofile(f)
         # double up the magic number for consistency
         #np.array([magic], dtype=np.uint32).tofile(f)
-
-
     def _summarise_primary_header(self):
         """a short summary of what is in the file"""
 
