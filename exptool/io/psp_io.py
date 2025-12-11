@@ -280,9 +280,9 @@ class Input:
         nint_attr   = _to_python(compdict['nint_attr'])
         nfloat_attr = _to_python(compdict['nfloat_attr'])
 
-        compdict = _to_python(compdict)
+        compdict_clean = _to_python(compdict)
 
-        info        = yaml.safe_dump(compdict)
+        info        = yaml.safe_dump(compdict_clean)
         info_bytes = info.encode()
         info_len   = len(info_bytes)
 
