@@ -79,7 +79,6 @@ class SpiralPotential:
         return nsum
 
     def density(self, r, phi, z):
-        gamma = self._return_gamma(r, phi)
         expval = np.exp(-(r - self.r0) / self.Rs)
         prefac = self.rho0
 
