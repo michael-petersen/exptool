@@ -8,7 +8,6 @@ Example usage and demonstrations can be found in the documentation or examples d
 """
 
 import numpy as np
-from scipy.integrate import tplquad
 #from multiprocessing import Pool
 
 class Sormani2022MilkyWay:
