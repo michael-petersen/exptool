@@ -79,4 +79,6 @@ def measured_rotation(infile, comp, rmax=0.06, nsamp=256):
     rbins = np.linspace(0.0, rmax, nsamp)
 
     # Compute rotation velocity profile by normalizing weighted density by unweighted density
-    return rbins, vv / tt
+    rotation_profile = vv / tt
+    
+    return rbins, rotation_profile
