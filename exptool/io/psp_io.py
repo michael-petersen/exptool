@@ -141,7 +141,29 @@ class Input:
         self.f.close()
 
     def write(self, filename):
+        """
+        Write the current data to a PSP/OUT. file.
 
+        Parameters
+        ----------
+        filename : str
+            The output filename to which the data will be written.
+
+        Behavior
+        --------
+        Writes all components to the specified file if `comp='all'` was used when reading.
+        Writing of single components is not implemented and will raise an exception.
+
+        Exceptions
+        ----------
+        NotImplementedError
+            Raised if attempting to write when `comp` is not 'all'.
+
+        Example
+        -------
+        >>> inp = Input("input.OUT", comp="all")
+        >>> inp.write("output.OUT")
+        """
         if self.comp != 'all':
             raise NotImplementedError("Writing single components is not implemented yet. Use comp='all'.")
         
