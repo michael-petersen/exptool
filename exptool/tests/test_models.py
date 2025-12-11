@@ -12,6 +12,7 @@ This module contains unit tests for various analytical models including:
 import numpy as np
 import pytest
 
+
 from exptool.models.mndisc import MiyamotoNagai
 from exptool.models.nfw import NFW
 from exptool.models.plummer import Plummer

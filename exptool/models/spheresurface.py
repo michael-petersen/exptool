@@ -18,7 +18,8 @@ def generate_sphere_surface(npoints, cartesian=True):
         cartesian (bool, optional): If True, return (x, y, z) coordinates. If False, return (phi, theta) angles.
 
     Returns:
-        tuple: A tuple containing arrays (or tuples) representing the points on the sphere's surface.
+        tuple: If cartesian=True, returns (x, y, z) where each is a 1D array of coordinates.
+               If cartesian=False, returns (phi, theta) where each is a 1D array of angles.
 
     Note:
         npoints is the maximum because we are enforcing equal spacing; not all npoints values return even spacing.
@@ -53,6 +54,6 @@ def generate_sphere_surface(npoints, cartesian=True):
             npoint += 1
 
     if cartesian:
-        return points[:npoint], None  # Returning None for spherical points
+        return points[:npoint, 0], points[:npoint, 1], points[:npoint, 2]
     else:
-        return None, sphpoints[:npoint]
+        return sphpoints[:npoint, 0], sphpoints[:npoint, 1]
