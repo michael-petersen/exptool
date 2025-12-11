@@ -45,7 +45,6 @@ def measured_rotation(infile, comp, rmax=0.06, nsamp=256):
     O = particle.Input(infile, comp=comp)
 
     # Set the extent and number of KDE samples
-    extent = rmax
 
     # Compute rotation-weighted KDE weight as (x*yvel - y*xvel) / sqrt(x^2 + y^2)
     # This approximates the tangential (rotational) velocity component in 2D
