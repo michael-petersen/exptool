@@ -220,6 +220,9 @@ class ParticleAlignment:
         L = np.array([Lxtot, Lytot, Lztot])
         L /= np.linalg.norm(L)
 
+        # in case of diagnostic checking
+        self.prerotation_lvec = L
+
         vec /= np.linalg.norm(vec)
 
         axis = np.cross(L, vec)
