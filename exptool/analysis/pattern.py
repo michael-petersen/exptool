@@ -43,7 +43,6 @@ from scipy.interpolate import UnivariateSpline
 # exptool imports
 from ..io import particle
 from ..utils import kmeans
-from ..utils import utils
 
 
 class BarFromCoefficients:
