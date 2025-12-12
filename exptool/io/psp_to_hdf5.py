@@ -145,19 +145,19 @@ class HDFConverter():
                             # Create attributes for the deepest level
                             try:
                                 f['{}/header/{}/{}'.format(comp, key, subkey)].attrs.create(subsubkey, O.header[comp][key][subkey][subsubkey])
-                            except:
+                            except (KeyError, AttributeError, TypeError):
                                 # Create subgroups if necessary
                                 f['{}/header/{}/{}'.format(comp, key, subkey)].create_group(subsubkey)
                                 f['{}/header/{}/{}'.format(comp, key, subkey)].attrs.create(subsubkey, O.header[comp][key][subkey][subsubkey])
-                    except:
+                    except (KeyError, AttributeError, TypeError):
                         # Create attributes for the intermediate level
                         try:
                             f['{}/header/{}/{}'.format(comp, key, subkey)].attrs.create(subkey, O.header[comp][key][subkey])
-                        except:
+                        except (KeyError, AttributeError, TypeError):
                             # Create subgroups if necessary
                             f['{}/header'.format(comp)].create_group(key)
                             f['{}/header/{}'.format(comp, key)].attrs.create(subkey, O.header[comp][key][subkey])
-            except:
+            except (KeyError, AttributeError, TypeError):
                 # Create attributes for the top-level header
                 f['{}/header'.format(comp)].attrs.create(key, O.header[comp][key])
 
