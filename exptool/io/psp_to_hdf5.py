@@ -28,7 +28,6 @@ if __name__ == '__main__':
 
 import h5py
 outputfilename = 'OUT.run0.00000.h5'
-outputfilename = 'OUT.run0.00000.h5'
 
 # how is the global header information saved?
 # only time is saved
@@ -88,20 +87,25 @@ class HDFConverter():
         self.verbose = verbose
 
         # Start the conversion process
-        self.convert_psp_to_hdf5()
+        self.convert_psp_to_hdf5(self.filename, comp=self.comp, verbose=self.verbose)
 
     def convert_psp_to_hdf5(self):
         """
         Convert a PSP input file to HDF5 format.
 
         Uses the filename stored in self.filename during initialization.
+
         """
         # Define the output file name
         outputfilename = self.filename + '.h5'
 
+        if verbose > 0:
+            print(f"Converting {inputfilename} to {outputfilename}")
+
         # Open the PSP input file and extract components
         O = particle.Input(self.filename)
         comps = list(O.header.keys())
+
 
         # Create a new HDF5 file for storing the converted data
         f = h5py.File(outputfilename, 'w')
@@ -110,6 +114,9 @@ class HDFConverter():
         f['time'] = O.time
 
         for comp in comps:
+            if verbose > 0:
+                print(f"Processing component: {comp}")
+            
             # Create a group for each component
             f.create_group(comp)
 
@@ -121,6 +128,9 @@ class HDFConverter():
 
         # Close the HDF5 file
         f.close()
+        
+        if verbose > 0:
+            print(f"Conversion complete: {outputfilename}")
 
     def print_component_header(self, f, O, comp):
         """
@@ -175,4 +185,4 @@ class HDFConverter():
         PS = np.array([O1.data['m'], O1.data['x'], O1.data['y'], O1.data['z'], O1.data['vx'], O1.data['vy'], O1.data['vz'], O1.data['potE']]).T
 
         # Store the phase space data as a dataset
-        dset = f[comp].create_dataset('phasespace', data=PS)
+        f[comp].create_dataset('phasespace', data=PS)

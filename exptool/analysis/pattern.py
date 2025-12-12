@@ -295,9 +295,9 @@ class BarDetermine():
             try:
                 # check to see if bar file has already been created
                 self.read_bar(kwargs['file'])
-                print('pattern.BarDetermine: BarInstance sucessfully read.')
+                print('pattern.BarDetermine: BarInstance successfully read.')
 
-            except:
+            except (FileNotFoundError, IOError, ValueError):
                 print('pattern.BarDetermine: no compatible bar file found.')
 
 
@@ -557,7 +557,7 @@ class BarDetermine():
             pos.append(q[1])
             try:
                 deriv.append(q[2])
-            except:
+            except IndexError:
                 pass
 
         self.time = np.array(time)
@@ -599,7 +599,7 @@ def find_barangle(time, BarInstance, interpolate=True):
     in the bar positions.
     """
     # Place a guard against NaN values
-    BarInstance.pos[np.isnan(BarInstance.pos)] = 0.
+    BarInstance.pos = np.nan_to_num(BarInstance.pos, nan=0.0)
 
     sord = 0  # Should this be a variable?
 
