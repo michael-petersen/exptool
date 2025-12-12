@@ -155,8 +155,9 @@ class KMeans:
         else:
             raise ValueError("Unsupported method: {}".format(method))
 
-        # Initialize oldmu to mu before the first iteration
-        self.oldmu = self.mu
+        # Initialize oldmu to ensure first iteration runs
+        # Use values guaranteed to be different from initial mu
+        self.oldmu = [np.array([float('inf')] * len(X[0]))] * K
         
         iter = 0
         while not self._has_converged() and iter < nitermax:
