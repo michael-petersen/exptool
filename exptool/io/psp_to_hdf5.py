@@ -177,4 +177,4 @@ class HDFConverter():
         PS = np.array([O1.data['m'], O1.data['x'], O1.data['y'], O1.data['z'], O1.data['vx'], O1.data['vy'], O1.data['vz'], O1.data['potE']]).T
 
         # Store the phase space data as a dataset
-        dset = f[comp].create_dataset('phasespace', data=PS)
+        f[comp].create_dataset('phasespace', data=PS)
