@@ -657,7 +657,7 @@ def find_barpattern(intime, BarInstance, smth_order=2):
             # Get the derivative (bar pattern speed) at the closest time
             barpattern[indx] = BarInstance.deriv[best_time]
 
-    except:
+    except TypeError:
         # Handle the case where intime is a single value
         best_time = abs(intime - BarInstance.time).argmin()
 
