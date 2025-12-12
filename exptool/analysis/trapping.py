@@ -1069,7 +1069,7 @@ def do_kmeans_dict(TrappingInstanceDict,BarInstance,\
     norb = TrappingInstanceDict['norb']
     nfamilies = len(criteria.keys())
     if nfamilies == 0:
-        return ValueError('exptool.trapping.do_kmeans_dict: no families defined?')
+        raise ValueError('exptool.trapping.do_kmeans_dict: no families defined?')
 
 
     # set up final array
