@@ -181,7 +181,7 @@ class ApsFinding():
         outputfile = out_directory+'RadialAps_N{}_r{}_T{}.h5'.format(total_orbits,runtag,tstamp)
         f = h5py.File(outputfile,"w")
 
-        # createdescriptor string
+        # create descriptor string
         desc = 'apsfile for '+comp+' in '+out_directory+', norbits='+str(total_orbits)+', threedee='+str(threedee)+', using '+filelist
         
         # Write the descriptor string as an attribute
