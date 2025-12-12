@@ -297,7 +297,7 @@ class BarDetermine():
             try:
                 # check to see if bar file has already been created
                 self.read_bar(kwargs['file'])
-                print('pattern.BarDetermine: BarInstance sucessfully read.')
+                print('pattern.BarDetermine: BarInstance successfully read.')
 
             except (FileNotFoundError, IOError, ValueError):
                 print('pattern.BarDetermine: no compatible bar file found.')
