@@ -599,7 +599,7 @@ def find_barangle(time, BarInstance, interpolate=True):
     in the bar positions.
     """
     # Place a guard against NaN values
-    BarInstance.pos[np.isnan(BarInstance.pos)] = 0.
+    BarInstance.pos = np.nan_to_num(BarInstance.pos, nan=0.0)
 
     sord = 0  # Should this be a variable?
 
