@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    HDFConverter.convert_psp_to_hdf5(args.filename)
+    HDFConverter(args.filename)
 
 
 
@@ -90,19 +90,17 @@ class HDFConverter():
         # Start the conversion process
         self.convert_psp_to_hdf5()
 
-    @staticmethod
-    def convert_psp_to_hdf5(inputfilename):
+    def convert_psp_to_hdf5(self):
         """
         Convert a PSP input file to HDF5 format.
 
-        Args:
-            inputfilename (str): The name of the PSP input file to be converted.
+        Uses the filename stored in self.filename during initialization.
         """
         # Define the output file name
-        outputfilename = inputfilename + '.h5'
+        outputfilename = self.filename + '.h5'
 
         # Open the PSP input file and extract components
-        O = particle.Input(inputfilename)
+        O = particle.Input(self.filename)
         comps = list(O.header.keys())
 
         # Create a new HDF5 file for storing the converted data
@@ -116,16 +114,15 @@ class HDFConverter():
             f.create_group(comp)
 
             # Print the header information for the component
-            HDFConverter.print_component_header(f, O, comp)
+            self.print_component_header(f, O, comp)
 
             # Create and store the phase space data for the component
-            HDFConverter.make_phasespace(f, inputfilename, comp)
+            self.make_phasespace(f, comp)
 
         # Close the HDF5 file
         f.close()
 
-    @staticmethod
-    def print_component_header(f, O, comp):
+    def print_component_header(self, f, O, comp):
         """
         Print header information for a component to an HDF5 file.
 
@@ -161,18 +158,18 @@ class HDFConverter():
                 # Create attributes for the top-level header
                 f['{}/header'.format(comp)].attrs.create(key, O.header[comp][key])
 
-    @staticmethod
-    def make_phasespace(f, inputfilename, comp):
+    def make_phasespace(self, f, comp):
         """
         Convert and store phase space data for a component in an HDF5 file.
 
         Args:
             f (h5py.Group): The HDF5 group to store the phase space data.
-            inputfilename (str): The name of the PSP input file.
             comp (str): The name of the component.
+
+        Uses the filename stored in self.filename during initialization.
         """
         # Read data from the PSP input file
-        O1 = particle.Input(inputfilename, comp)
+        O1 = particle.Input(self.filename, comp)
 
         # Create a phase space array
         PS = np.array([O1.data['m'], O1.data['x'], O1.data['y'], O1.data['z'], O1.data['vx'], O1.data['vy'], O1.data['vz'], O1.data['potE']]).T
