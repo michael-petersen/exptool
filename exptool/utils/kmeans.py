@@ -157,7 +157,7 @@ class KMeans:
 
         # Initialize oldmu to ensure first iteration runs
         # Use values guaranteed to be different from initial mu
-        self.oldmu = [np.array([float('inf')] * len(X[0]))] * K
+        self.oldmu = [np.array([float('inf')] * len(X[0])) for _ in range(K)]
         
         iter = 0
         while not self._has_converged() and iter < nitermax:
