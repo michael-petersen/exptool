@@ -87,22 +87,34 @@ class HDFConverter():
         self.verbose = verbose
 
         # Start the conversion process
-        self.convert_psp_to_hdf5()
+        self.convert_psp_to_hdf5(self.filename, comp=self.comp, verbose=self.verbose)
 
     @staticmethod
-    def convert_psp_to_hdf5(inputfilename):
+    def convert_psp_to_hdf5(inputfilename, comp=None, verbose=0):
         """
         Convert a PSP input file to HDF5 format.
 
         Args:
             inputfilename (str): The name of the PSP input file to be converted.
+            comp (str, optional): The specific component to convert. If provided, only the data for the specified component will be converted.
+            verbose (int, optional): Verbosity level for printing progress and messages during conversion.
         """
         # Define the output file name
         outputfilename = inputfilename + '.h5'
 
+        if verbose > 0:
+            print(f"Converting {inputfilename} to {outputfilename}")
+
         # Open the PSP input file and extract components
         O = particle.Input(inputfilename)
-        comps = list(O.header.keys())
+        
+        # Determine which components to convert
+        if comp is not None:
+            comps = [comp] if comp in O.header.keys() else []
+            if not comps and verbose > 0:
+                print(f"Warning: Component '{comp}' not found in file")
+        else:
+            comps = list(O.header.keys())
 
         # Create a new HDF5 file for storing the converted data
         f = h5py.File(outputfilename, 'w')
@@ -111,6 +123,9 @@ class HDFConverter():
         f['time'] = O.time
 
         for comp in comps:
+            if verbose > 0:
+                print(f"Processing component: {comp}")
+            
             # Create a group for each component
             f.create_group(comp)
 
@@ -122,6 +137,9 @@ class HDFConverter():
 
         # Close the HDF5 file
         f.close()
+        
+        if verbose > 0:
+            print(f"Conversion complete: {outputfilename}")
 
     @staticmethod
     def print_component_header(f, O, comp):
