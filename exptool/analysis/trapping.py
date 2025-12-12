@@ -697,7 +697,7 @@ def process_kmeans_polar(ApsArray, indx=-1, k=2, maxima=False, rank=False, perc=
             theta_n, clustermean, clusterstd_r, clusterstd_theta = \
                 evaluate_clusters_polar(K, maxima=maxima, rank=rank, perc=perc)
 
-        except:
+        except Exception:
             # If both methods fail, set all outputs to NaN
             clusterstd_r = np.nan
             clusterstd_theta = np.nan
