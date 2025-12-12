@@ -163,7 +163,7 @@ class ApsFinding():
             changingindx = True
 
         else:
-            raise ValueError("exptool.ApsFinding.trapping._determin_r_aps: particle_indx must be an integer or an array.")
+            raise ValueError("exptool.ApsFinding.trapping._determine_r_aps: particle_indx must be an integer or an array.")
 
         # sort the particle indices
         particle_indx = particle_indx[particle_indx.argsort()]
