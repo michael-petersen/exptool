@@ -1,5 +1,5 @@
 """
-draft conversion from PSP format the HDF5.
+draft conversion from PSP format to HDF5.
 
 
 For each component group, there is a subgroup named 'header', which stores header information related to that component. This information may include various parameters and metadata. The header information is organized into nested groups and attributes within the 'header' subgroup. The structure of the header data may vary depending on the specific PSP file format.
