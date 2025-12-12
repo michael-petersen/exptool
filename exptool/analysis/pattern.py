@@ -606,7 +606,7 @@ def find_barangle(time, BarInstance, interpolate=True):
     sord = 0  # Should this be a variable?
 
     if interpolate:
-        not_nan = np.where(np.isnan(BarInstance.pos) == False)
+        not_nan = np.where(~np.isnan(BarInstance.pos))
         bar_func = UnivariateSpline(BarInstance.time[not_nan], -BarInstance.pos[not_nan], s=sord)
 
     try:
