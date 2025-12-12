@@ -28,7 +28,6 @@ if __name__ == '__main__':
 
 import h5py
 outputfilename = 'OUT.run0.00000.h5'
-outputfilename = 'OUT.run0.00000.h5'
 
 # how is the global header information saved?
 # only time is saved
