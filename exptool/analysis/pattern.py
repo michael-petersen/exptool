@@ -299,7 +299,7 @@ class BarDetermine():
                 self.read_bar(kwargs['file'])
                 print('pattern.BarDetermine: BarInstance sucessfully read.')
 
-            except:
+            except (FileNotFoundError, IOError, ValueError):
                 print('pattern.BarDetermine: no compatible bar file found.')
 
 
@@ -559,7 +559,7 @@ class BarDetermine():
             pos.append(q[1])
             try:
                 deriv.append(q[2])
-            except:
+            except IndexError:
                 pass
 
         self.time = np.array(time)
@@ -659,7 +659,7 @@ def find_barpattern(intime, BarInstance, smth_order=2):
             # Get the derivative (bar pattern speed) at the closest time
             barpattern[indx] = BarInstance.deriv[best_time]
 
-    except:
+    except TypeError:
         # Handle the case where intime is a single value
         best_time = abs(intime - BarInstance.time).argmin()
 
